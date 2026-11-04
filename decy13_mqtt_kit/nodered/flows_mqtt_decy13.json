@@ -1,0 +1,778 @@
+[
+    {
+        "id": "4545b853eee3bf43",
+        "type": "tab",
+        "label": "Cyclotron Dashboard",
+        "disabled": false,
+        "info": "Dashboard Web-Only (Gradual Animation, Full Manual SOP & Interlock)"
+    },
+    {
+        "id": "fd921ed015991a77",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-light",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#097479",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#0094CE",
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#fafafa",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#1bbfff",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#0094ce",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey",
+                "palette": "light"
+            }
+        },
+        "site": {
+            "name": "Node-RED Dashboard",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "5fbe07aa9044766a",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-dark",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#009688",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#097479",
+                    "value": "#009688",
+                    "edited": true
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#009688",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#333333",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#00e5d0",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#555555",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#333333",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#eeeeee",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#009688",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#333333",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey",
+                "palette": "light"
+            }
+        },
+        "site": {
+            "name": "CYCLOTRON CONTROL CENTER",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 2,
+                "gy": 2,
+                "cx": 2,
+                "cy": 2,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "mqtt_local",
+        "type": "mqtt-broker",
+        "name": "Local Mosquitto Broker",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "node-red-cyclotron",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1074a57897769b93",
+        "type": "http in",
+        "z": "4545b853eee3bf43",
+        "name": "GET /dashboard",
+        "url": "/dashboard",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 80,
+        "wires": [
+            [
+                "9b3406460c75f14d"
+            ]
+        ]
+    },
+    {
+        "id": "9b3406460c75f14d",
+        "type": "template",
+        "z": "4545b853eee3bf43",
+        "name": "HTML Dashboard Siklotron",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "<!DOCTYPE html>\n<html lang=\"id\">\n<head>\n<meta charset=\"UTF-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n<title>Cyclotron Control Center</title>\n<style>\n  * { box-sizing: border-box; }\n  body {\n    margin: 0;\n    font-family: Arial, Helvetica, sans-serif;\n    background: #111;\n    color: #e8e8e8;\n  }\n  .topbar {\n    height: 50px;\n    background: #008b8b;\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 0 18px;\n    font-weight: bold;\n    letter-spacing: .2px;\n  }\n  .brand { display: flex; align-items: center; gap: 12px; }\n  .hamburger { font-size: 22px; }\n  .container {\n    display: grid;\n    grid-template-columns: 255px 1fr;\n    gap: 8px;\n    padding: 8px;\n    min-height: calc(100vh - 50px);\n    background: #161616;\n  }\n  .panel, .card {\n    background: #2a2a2a;\n    border: 1px solid #101010;\n    box-shadow: inset 0 0 0 1px #363636;\n  }\n  .panel-title, .card-title {\n    background: #202020;\n    padding: 9px 10px;\n    font-size: 14px;\n    font-weight: bold;\n    border-bottom: 1px solid #111;\n  }\n  .panel-body { padding: 10px; }\n  .status-row {\n    display: grid;\n    grid-template-columns: 1fr 48px 74px;\n    align-items: center;\n    gap: 8px;\n    padding: 7px 0;\n    border-bottom: 1px solid rgba(255,255,255,.05);\n    font-size: 13px;\n  }\n  .toggle {\n    width: 44px;\n    height: 20px;\n    border-radius: 20px;\n    background: #575757;\n    position: relative;\n  }\n  .toggle::after {\n    content: \"\";\n    width: 18px;\n    height: 18px;\n    border-radius: 50%;\n    position: absolute;\n    top: 1px;\n    left: 1px;\n    background: #c8c8c8;\n    transition: .2s;\n  }\n  .toggle.on { background: #10b936; }\n  .toggle.on::after { left: 25px; background: #eaffea; }\n  .clickable:hover { filter: brightness(1.3); }\n  .small-label { color: #d7d7d7; }\n  .btn {\n    width: 100%;\n    border: none;\n    color: white;\n    padding: 15px 8px;\n    margin-bottom: 8px;\n    font-size: 14px;\n    font-weight: bold;\n    cursor: pointer;\n    border-radius: 2px;\n    transition: transform .08s, filter .15s;\n  }\n  .btn:hover { filter: brightness(1.12); }\n  .btn:active { transform: scale(.98); }\n  .start { background: #00a817; }\n  .emergency { background: #ff1010; padding: 22px 8px; box-shadow: 0 0 0 2px #ff6969 inset; }\n  .grid {\n    display: grid;\n    grid-template-columns: repeat(4, minmax(180px, 1fr));\n    grid-auto-rows: 178px;\n    gap: 8px;\n  }\n  .card { position: relative; overflow: hidden; }\n  .card-body { padding: 10px; height: calc(100% - 35px); }\n  .big { font-size: 26px; text-align: center; margin: 4px 0 6px; }\n  .unit { font-size: 14px; color: #cfcfcf; }\n  .metric-note { text-align:center; color:#cfcfcf; font-size:12px; margin-top:2px; }\n  .gauge-wrap { display: flex; align-items: center; justify-content: center; height: 112px; }\n  .gauge {\n    --p: 50;\n    --c1: #27d447;\n    --c2: #ffcf23;\n    --c3: #ef3f2d;\n    width: 112px;\n    height: 112px;\n    border-radius: 50%;\n    background: conic-gradient(var(--c1) 0deg, var(--c2) calc(var(--p) * 1.8deg), var(--c3) calc(var(--p) * 2.2deg), #595959 250deg 360deg);\n    display: grid;\n    place-items: center;\n    transform: rotate(-125deg);\n  }\n  .gauge::before {\n    content: \"\";\n    width: 76px;\n    height: 76px;\n    border-radius: 50%;\n    background: #333;\n    position: absolute;\n  }\n  .gauge-value {\n    position: relative;\n    text-align: center;\n    transform: rotate(125deg);\n    font-size: 18px;\n    line-height: 1.2;\n  }\n  .wave {\n    height: 82px;\n    width: 100%;\n    background: repeating-linear-gradient(90deg, rgba(255,150,60,.95) 0 3px, transparent 3px 9px);\n    clip-path: polygon(0 52%,4% 20%,8% 80%,12% 20%,16% 80%,20% 20%,24% 80%,28% 20%,32% 80%,36% 20%,40% 80%,44% 20%,48% 80%,52% 20%,56% 80%,60% 20%,64% 80%,68% 20%,72% 80%,76% 20%,80% 80%,84% 20%,88% 80%,92% 20%,96% 80%,100% 52%);\n    opacity: .9;\n    margin-top: 14px;\n  }\n  canvas { width: 100%; height: 95px; background: #253338; border: 1px solid #151515; }\n  .beam-profile {\n    width: 116px;\n    height: 116px;\n    margin: 5px auto 0;\n    background: radial-gradient(circle, #fff 0 5%, #ffff00 7% 12%, #ff5500 16% 24%, #006dff 36% 50%, #00114f 64%, #000 100%);\n    border: 1px solid #223;\n  }\n  .wide { grid-column: span 2; }\n  .full { grid-column: span 4; }\n  .logs {\n    height: 125px;\n    background: #171717;\n    overflow-y: auto;\n    padding: 8px;\n    font-size: 12px;\n    line-height: 1.35;\n    white-space: pre-wrap;\n    border: 1px solid #333;\n  }\n  .footer-status {\n    margin-top: 8px;\n    padding: 9px 10px;\n    font-size: 13px;\n    background: #1f1f1f;\n    border-left: 4px solid #00a817;\n  }\n  .indicator-grid {\n    display: grid;\n    grid-template-columns: repeat(6, minmax(120px, 1fr));\n    gap: 8px;\n    height: 100%;\n    align-items: stretch;\n  }\n  .indicator {\n    background: #1c1c1c;\n    border: 1px solid #3e3e3e;\n    border-left: 5px solid #777;\n    padding: 10px;\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    min-height: 92px;\n  }\n  .indicator .label {\n    font-size: 12px;\n    color: #cfcfcf;\n    margin-bottom: 7px;\n    letter-spacing: .3px;\n  }\n  .indicator .value {\n    font-size: 19px;\n    font-weight: bold;\n  }\n  .indicator.ok { border-left-color: #10b936; }\n  .indicator.warn { border-left-color: #ffd600; }\n  .indicator.bad { border-left-color: #ff1010; }\n  .indicator.neutral { border-left-color: #38c4df; }\n  .exposure-time {\n    font-family: Consolas, \"Courier New\", monospace;\n    font-size: 32px;\n    text-align: center;\n    margin-top: 24px;\n  }\n  @media (max-width: 1100px) {\n    .indicator-grid { grid-template-columns: repeat(3, minmax(120px, 1fr)); }\n  }\n  @media (max-width: 900px) {\n    .container { grid-template-columns: 1fr; }\n    .grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }\n    .full { grid-column: span 2; }\n  }\n</style>\n</head>\n<body>\n  <div class=\"topbar\">\n    <div class=\"brand\"><span class=\"hamburger\">\u2630</span><span>CYCLOTRON CONTROL CENTER</span></div>\n    <div>Cyclotron Dashboard - ACCELERATORS CYCLOTRON.</div>\n  </div>\n\n  <div class=\"container\">\n    <div class=\"sidebar\">\n      <div class=\"panel\">\n        <div class=\"panel-title\">SYSTEM STATUS</div>\n        <div class=\"panel-body\">\n          <div class=\"status-row\"><span>\u23fb Power</span><span id=\"pwr\" class=\"toggle clickable\" style=\"cursor:pointer;\" onclick=\"sendCmd('TOGGLE_POWER')\"></span><span id=\"pwrText\" class=\"small-label\">Off</span></div>\n          <div class=\"status-row\"><span>\u2668 Vacuum</span><span id=\"vac\" class=\"toggle clickable\" style=\"cursor:pointer;\" onclick=\"sendCmd('TOGGLE_VACUUM')\"></span><span id=\"vacText\" class=\"small-label\">Off</span></div>\n          <div class=\"status-row\"><span>\u26a1 RF System</span><span id=\"rf\" class=\"toggle\"></span><span id=\"rfText\" class=\"small-label\">Idle</span></div>\n          <div class=\"status-row\"><span>\ud83e\uddf2 Magnet</span><span id=\"mag\" class=\"toggle\"></span><span id=\"magText\" class=\"small-label\">Off</span></div>\n          <div class=\"status-row\"><span>\u2713 Interlocks</span><span id=\"int\" class=\"toggle clickable\" style=\"cursor:pointer;\" onclick=\"sendCmd('TOGGLE_INTERLOCK')\"></span><span id=\"intText\" class=\"small-label\">Not Set</span></div>\n          <div class=\"status-row\"><span>\u2622 Beam</span><span id=\"beam\" class=\"toggle\"></span><span id=\"beamText\" class=\"small-label\">Off</span></div>\n        </div>\n      </div>\n\n      <div class=\"panel\" style=\"margin-top:8px;\">\n        <div class=\"panel-title\">OPERATION CONTROL</div>\n        <div class=\"panel-body\">\n          <button class=\"btn start\" onclick=\"sendCmd('START_BEAM')\">[START BEAM]</button>\n          <button class=\"btn start\" style=\"background:#d84315; box-shadow: 0 0 0 1px #ff8833 inset;\" onclick=\"sendCmd('SHOOT')\">[SHOOT EXPOSURE]</button>\n          <button class=\"btn emergency\" onclick=\"sendCmd('EMERGENCY_STOP')\">[EMERGENCY STOP]</button>\n        </div>\n      </div>\n    </div>\n\n    <div>\n      <div class=\"grid\">\n        <div class=\"card full\">\n          <div class=\"card-title\">STATUS INDIKATOR OPERASI</div>\n          <div class=\"card-body\">\n            <div class=\"indicator-grid\">\n              <div id=\"indMode\" class=\"indicator neutral\"><div class=\"label\">MODE OPERASI</div><div id=\"indModeVal\" class=\"value\">Standby</div></div>\n              <div id=\"indReady\" class=\"indicator warn\"><div class=\"label\">BEAM READY</div><div id=\"indReadyVal\" class=\"value\">Not Ready</div></div>\n              <div id=\"indBeam\" class=\"indicator neutral\"><div class=\"label\">STATUS BERKAS</div><div id=\"indBeamVal\" class=\"value\">Off</div></div>\n              <div id=\"indExposure\" class=\"indicator neutral\"><div class=\"label\">EXPOSURE</div><div id=\"indExposureVal\" class=\"value\">Inactive</div></div>\n              <div id=\"indSafety\" class=\"indicator ok\"><div class=\"label\">SAFETY INTERLOCK</div><div id=\"indSafetyVal\" class=\"value\">Normal</div></div>\n              <div id=\"indEnergy\" class=\"indicator neutral\"><div class=\"label\">ENERGI PUNCAK</div><div id=\"indEnergyVal\" class=\"value\">0.0 MeV</div></div>\n            </div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">MAGNET SYSTEM</div>\n          <div class=\"card-body\">\n            <div style=\"text-align:center; font-size:13px;\">Bending Magnet Current</div>\n            <div class=\"big\"><span id=\"magnetCurrent\">0</span> <span class=\"unit\">A</span></div>\n            <div class=\"gauge-wrap\"><div class=\"gauge\" id=\"gMag\"><div class=\"gauge-value\"><span id=\"gMagVal\">0</span><br><span class=\"unit\">A</span></div></div></div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">RF SYSTEM</div>\n          <div class=\"card-body\">\n            <div style=\"text-align:center; font-size:13px;\">Frequency</div>\n            <div class=\"big\"><span id=\"freq\">0</span> <span class=\"unit\">MHz</span></div>\n            <div class=\"wave\"></div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">RF POWER</div>\n          <div class=\"card-body\">\n            <div class=\"gauge-wrap\"><div class=\"gauge\" id=\"gRf\"><div class=\"gauge-value\"><span id=\"rfPower\">0</span><br><span class=\"unit\">kW</span></div></div></div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">VACUUM SYSTEM</div>\n          <div class=\"card-body\">\n            <div style=\"text-align:center; font-size:13px;\">Beam Line Pressure</div>\n            <div class=\"big\"><span id=\"pressure\">0</span> <span class=\"unit\">mbar</span></div>\n            <canvas id=\"pressureChart\"></canvas>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">MAGNET POWER</div>\n          <div class=\"card-body\">\n            <div class=\"big\"><span id=\"magnetPower\">0</span> <span class=\"unit\">kW</span></div>\n            <div class=\"gauge-wrap\"><div class=\"gauge\" id=\"gMP\"><div class=\"gauge-value\"><span id=\"gMPVal\">0</span><br><span class=\"unit\">kW</span></div></div></div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">ARUS BERKAS / BEAM CURRENT</div>\n          <div class=\"card-body\">\n            <div class=\"gauge-wrap\"><div class=\"gauge\" id=\"gBeamCurrent\"><div class=\"gauge-value\"><span id=\"beamCurrent\">0</span><br><span class=\"unit\">\u00b5A</span></div></div></div>\n            <div class=\"metric-note\">Arus berkas aktual saat iradiasi</div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">BEAM ENERGY</div>\n          <div class=\"card-body\">\n            <div class=\"gauge-wrap\"><div class=\"gauge\" id=\"gEnergy\"><div class=\"gauge-value\"><span id=\"beamEnergy\">0</span><br><span class=\"unit\">MeV</span></div></div></div>\n            <div class=\"metric-note\">Maksimum energi puncak: <b>13 MeV</b></div>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">WAKTU EXPOSURE</div>\n          <div class=\"card-body\">\n            <div class=\"exposure-time\" id=\"exposureTime\">00:00:00</div>\n            <div class=\"metric-note\">Akumulasi waktu saat beam aktif</div>\n          </div>\n        </div>\n\n        <div class=\"card wide\">\n          <div class=\"card-title\">BEAM DIAGNOSTICS</div>\n          <div class=\"card-body\">\n            <div style=\"font-size:13px; margin-bottom:4px;\">Target Current: <b><span id=\"targetCurrent\">0</span> \u00b5A</b></div>\n            <canvas id=\"targetChart\"></canvas>\n          </div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">BEAM PROFILE</div>\n          <div class=\"card-body\"><div class=\"beam-profile\"></div></div>\n        </div>\n\n        <div class=\"card\">\n          <div class=\"card-title\">BEAM CURRENT TREND</div>\n          <div class=\"card-body\">\n            <canvas id=\"beamCurrentChart\"></canvas>\n            <div class=\"metric-note\">Trend arus berkas \u00b5A</div>\n          </div>\n        </div>\n\n        <div class=\"card wide\">\n          <div class=\"card-title\">ALERTS & LOGS</div>\n          <div class=\"card-body\"><div class=\"logs\" id=\"logs\"></div></div>\n        </div>\n      </div>\n      <div class=\"footer-status\" id=\"footerStatus\">Status: menunggu data...</div>\n    </div>\n  </div>\n\n<script>\n  function setToggle(id, value, textId, textOn, textOff) {\n    document.getElementById(id).classList.toggle('on', !!value);\n    document.getElementById(textId).textContent = value ? textOn : textOff;\n  }\n\n  function setGauge(id, percent) {\n    document.getElementById(id).style.setProperty('--p', Math.max(0, Math.min(100, percent)));\n  }\n\n  function formatDuration(seconds) {\n    seconds = Math.max(0, Math.floor(Number(seconds) || 0));\n    const h = String(Math.floor(seconds / 3600)).padStart(2, '0');\n    const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');\n    const s = String(seconds % 60).padStart(2, '0');\n    return h + ':' + m + ':' + s;\n  }\n\n  function setIndicator(id, valueId, text, stateClass) {\n    const el = document.getElementById(id);\n    el.className = 'indicator ' + stateClass;\n    document.getElementById(valueId).textContent = text;\n  }\n\n  function drawLine(canvasId, values) {\n    const canvas = document.getElementById(canvasId);\n    const ctx = canvas.getContext('2d');\n    const w = canvas.width = canvas.offsetWidth;\n    const h = canvas.height = canvas.offsetHeight;\n    ctx.clearRect(0, 0, w, h);\n    ctx.strokeStyle = '#234d5a';\n    ctx.lineWidth = 1;\n    for (let i = 0; i < 5; i++) {\n      let y = (h / 4) * i;\n      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();\n    }\n    if (!values || values.length < 2) return;\n    const max = Math.max(...values);\n    const min = Math.min(...values);\n    const span = (max - min) || 1;\n    ctx.strokeStyle = '#38c4df';\n    ctx.lineWidth = 2;\n    ctx.beginPath();\n    values.forEach((v, i) => {\n      const x = (w / (values.length - 1)) * i;\n      const y = h - ((v - min) / span) * (h - 12) - 6;\n      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);\n    });\n    ctx.stroke();\n  }\n\n  async function loadStatus() {\n    try {\n      const res = await fetch('/api/status');\n      const data = await res.json();\n\n      const beamReady = data.status.power && data.status.vacuum && data.status.interlocks && !data.status.emergency;\n      const exposureActive = !!data.status.exposureActive;\n\n      setToggle('pwr', data.status.power, 'pwrText', 'On', 'Off');\n      setToggle('vac', data.status.vacuum, 'vacText', 'On', 'Off');\n      setToggle('rf', data.status.rf, 'rfText', 'Active', 'Idle');\n      setToggle('mag', data.status.magnet, 'magText', 'Stable', 'Off');\n      setToggle('int', data.status.interlocks, 'intText', 'Set', 'Not Set');\n      setToggle('beam', data.status.beam, 'beamText', 'On', 'Off');\n\n      setIndicator('indMode', 'indModeVal', data.mode, data.status.emergency ? 'bad' : (data.status.paused ? 'warn' : (data.status.beam ? 'ok' : 'neutral')));\n      setIndicator('indReady', 'indReadyVal', beamReady ? 'Ready' : 'Not Ready', beamReady ? 'ok' : 'warn');\n      setIndicator('indBeam', 'indBeamVal', data.status.beam ? 'Beam On' : 'Beam Off', data.status.beam ? 'ok' : 'neutral');\n      setIndicator('indExposure', 'indExposureVal', exposureActive ? 'Active' : 'Inactive', exposureActive ? 'ok' : 'neutral');\n      setIndicator('indSafety', 'indSafetyVal', data.status.emergency ? 'Emergency' : (data.status.interlocks ? 'Normal' : 'Interlock Off'), data.status.emergency ? 'bad' : (data.status.interlocks ? 'ok' : 'warn'));\n      \n      document.getElementById('indEnergyVal').textContent = data.metrics.beamEnergy.toFixed(1) + ' MeV';\n      setIndicator('indEnergy', 'indEnergyVal', data.metrics.beamEnergy.toFixed(1) + ' MeV', 'neutral');\n\n      document.getElementById('magnetCurrent').textContent = data.metrics.magnetCurrent.toFixed(1);\n      document.getElementById('gMagVal').textContent = data.metrics.magnetCurrent.toFixed(0);\n      document.getElementById('freq').textContent = data.metrics.frequency.toFixed(2);\n      document.getElementById('rfPower').textContent = data.metrics.rfPower.toFixed(1);\n      document.getElementById('pressure').textContent = data.metrics.pressure.toExponential(1);\n      document.getElementById('magnetPower').textContent = data.metrics.magnetPower.toFixed(1);\n      document.getElementById('gMPVal').textContent = data.metrics.magnetPower.toFixed(1);\n      document.getElementById('targetCurrent').textContent = data.metrics.targetCurrent.toFixed(1);\n      document.getElementById('beamCurrent').textContent = data.metrics.beamCurrent.toFixed(1);\n      document.getElementById('beamEnergy').textContent = data.metrics.beamEnergy.toFixed(1);\n      document.getElementById('exposureTime').textContent = formatDuration(data.metrics.exposureSeconds);\n      document.getElementById('logs').textContent = data.logs.join('\\n');\n      document.getElementById('footerStatus').textContent = 'Status: ' + data.mode + ' | Arus berkas: ' + data.metrics.beamCurrent.toFixed(1) + ' \u00b5A | Exposure: ' + formatDuration(data.metrics.exposureSeconds) + ' | Update terakhir: ' + data.time;\n\n      setGauge('gMag', data.metrics.magnetCurrent / 20);\n      setGauge('gRf', data.metrics.rfPower / 3);\n      setGauge('gMP', data.metrics.magnetPower);\n      setGauge('gBeamCurrent', data.metrics.beamCurrent / 0.15);\n      setGauge('gEnergy', (data.metrics.beamEnergy / 13) * 100);\n      drawLine('pressureChart', data.history.pressure);\n      drawLine('targetChart', data.history.target);\n      drawLine('beamCurrentChart', data.history.beamCurrent);\n    } catch (e) {\n      document.getElementById('footerStatus').textContent = 'Status: koneksi ke Node-RED gagal';\n    }\n  }\n\n  async function sendCmd(cmd) {\n    await fetch('/api/control', {\n      method: 'POST',\n      headers: {'Content-Type': 'application/json'},\n      body: JSON.stringify({cmd})\n    });\n  }\n\n  async function loadStatusLoop() {\n    await loadStatus();\n    setTimeout(loadStatusLoop, 250); // Dipercepat ke 4 FPS agar animasi fisika mulus\n  }\n  loadStatusLoop();\n</script>\n</body>\n</html>",
+        "output": "str",
+        "x": 380,
+        "y": 80,
+        "wires": [
+            [
+                "d3e3a2af06abe82b"
+            ]
+        ]
+    },
+    {
+        "id": "d3e3a2af06abe82b",
+        "type": "http response",
+        "z": "4545b853eee3bf43",
+        "name": "Response HTML",
+        "statusCode": "",
+        "headers": {
+            "content-type": "text/html; charset=utf-8"
+        },
+        "x": 770,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "ff4b84a601f8dfcf",
+        "type": "http in",
+        "z": "4545b853eee3bf43",
+        "name": "GET /api/status",
+        "url": "/api/status",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "dcd1ca73c11dc214"
+            ]
+        ]
+    },
+    {
+        "id": "dcd1ca73c11dc214",
+        "type": "function",
+        "z": "4545b853eee3bf43",
+        "name": "Physics Engine & Status",
+        "func": "function initState() {\n    return {\n        power: false,\n        vacuum: false,\n        rf: false,\n        magnet: true,\n        interlocks: false, // Wajib ON Manual\n        beam: false,\n        paused: false,\n        emergency: false,\n        exposureActive: false,\n        basePressure: 1013.0, // Mulai dari 1 atm\n        baseRf: 0.0,\n        baseCurrent: 0.0,\n        baseEnergy: 0.0,\n        magnetCurrent: 1450,\n        frequency: 22.50,\n        rfPower: 0.0,\n        cavityTemp: 54.3,\n        pressure: 1013.0,\n        magnetPower: 85.2,\n        targetCurrent: 0.0,\n        beamCurrent: 0.0,\n        beamEnergy: 0.0,\n        peakEnergy: 13.0,\n        exposureSeconds: 0,\n        exposureStartedAt: null,\n        lastTickMs: Date.now(),\n        pressureHistory: [1013, 1013, 1013, 1013, 1013],\n        targetHistory: [0, 0, 0, 0, 0],\n        beamCurrentHistory: [0, 0, 0, 0, 0],\n        logs: [],\n        mode: \"Standby\"\n    };\n}\nfunction log(state, text) {\n    const t = new Date().toLocaleTimeString('id-ID', {hour12:false});\n    state.logs.unshift(t + ' - ' + text);\n    state.logs = state.logs.slice(0, 12);\n}\nfunction jitter(value, percent) {\n    return value + ((Math.random() - 0.5) * value * percent);\n}\nfunction clamp(value, min, max) {\n    return Math.max(min, Math.min(max, value));\n}\n\nlet state = global.get('cyclotron');\nif (!state) {\n    state = initState();\n    log(state, 'Sistem dinyalakan. Menunggu Power & Vacuum.');\n    global.set('cyclotron', state);\n}\n\n// Kalkulasi Delta Time (dt) untuk Fisika Animasi\nlet nowMs = Date.now();\nlet dt = (nowMs - state.lastTickMs) / 1000.0;\nif (dt > 2.0 || dt < 0) dt = 0.25; // Clamp jika terjadi lag ekstrim\nstate.lastTickMs = nowMs;\n\n// 1. PHYSICS: Vacuum Pressure (Naik turun dalam 5 detik)\nlet pTarget = state.vacuum ? 1.2e-7 : 1013.0;\nlet pRate = 1013.0 / 5.0; // Pergerakan per detik\nif (state.basePressure < pTarget) state.basePressure = Math.min(state.basePressure + pRate * dt, pTarget);\nif (state.basePressure > pTarget) state.basePressure = Math.max(state.basePressure - pRate * dt, pTarget);\n\n// 2. PHYSICS: RF Power (Naik 5s, Turun 5s)\nlet rfTarget = state.beam ? 185.7 : 0.0;\nlet rfRate = 185.7 / 5.0;\nif (state.baseRf < rfTarget) state.baseRf = Math.min(state.baseRf + rfRate * dt, rfTarget);\nif (state.baseRf > rfTarget) state.baseRf = Math.max(state.baseRf - rfRate * dt, rfTarget);\n\n// 3. PHYSICS: Beam Current (Naik 3s, Turun 3s)\nlet curTarget = state.beam ? 8.4 : 0.0;\nlet curRate = 8.4 / 3.0;\nif (state.baseCurrent < curTarget) state.baseCurrent = Math.min(state.baseCurrent + curRate * dt, curTarget);\nif (state.baseCurrent > curTarget) state.baseCurrent = Math.max(state.baseCurrent - curRate * dt, curTarget);\n\n// 4. PHYSICS: Beam Energy (Naik 8s, Turun 3s)\nlet enTarget = state.beam ? 13.0 : 0.0;\nlet enRateRise = 13.0 / 8.0;\nlet enRateFall = 13.0 / 3.0;\nif (state.baseEnergy < enTarget) state.baseEnergy = Math.min(state.baseEnergy + enRateRise * dt, enTarget);\nif (state.baseEnergy > enTarget) state.baseEnergy = Math.max(state.baseEnergy - enRateFall * dt, enTarget);\n\n// Terapkan Jitter HANYA ketika nilai sudah stabil\nstate.pressure = (Math.abs(state.basePressure - 1.2e-7) < 1e-6) ? jitter(1.2e-7, 0.35) : state.basePressure;\nstate.rfPower = (state.baseRf === 185.7) ? jitter(185.7, 0.025) : state.baseRf;\nstate.beamCurrent = (state.baseCurrent === 8.4) ? clamp(jitter(8.4, 0.45), 0, 12.0) : state.baseCurrent;\nstate.beamEnergy = (state.baseEnergy === 13.0) ? clamp(jitter(12.95, 0.008), 0, 13.0) : state.baseEnergy;\nstate.targetCurrent = state.beam ? clamp(jitter(state.beamCurrent, 0.25), 0, 12.0) : state.baseCurrent;\n\n// Cascading Safety (Interlock drop jika power/vac mati)\nif (!state.power || !state.vacuum) {\n    if (state.interlocks) log(state, 'CAUTION: Interlock terputus karena Vacuum/Power mati!');\n    state.interlocks = false;\n}\n// Beam otomatis mati jika interlock lepas\nif (!state.interlocks && state.beam) {\n    state.beam = false;\n    log(state, 'BEAM DROP: Safety Interlock terbuka!');\n}\n\n// Update Mode & State RF HMI\nif (state.beam || state.baseRf > 0) {\n    state.rf = true;\n    if (state.beam) {\n        state.mode = state.exposureActive ? \"Exposure Active\" : \"Beam On\";\n        if (state.exposureActive) state.exposureSeconds += dt;\n    } else {\n        state.mode = \"Cooling Down\"; // Sedang proses turun bertahap\n    }\n    state.magnetCurrent = jitter(1450, 0.015);\n    state.frequency = jitter(22.50, 0.001);\n    state.cavityTemp = jitter(54.3, 0.02);\n    state.magnetPower = jitter(85.2, 0.05);\n} else {\n    state.mode = \"Standby\";\n    state.rf = false;\n    state.exposureActive = false;\n}\n\n// Catat ke Grafik (Setiap beberapa waktu)\nif (Math.random() < 0.3) { // Karena refresh cepat, kita kurangi sample rate ke grafik\n    state.pressureHistory.push(Number(state.pressure));\n    state.targetHistory.push(Number(state.targetCurrent));\n    state.beamCurrentHistory.push(Number(state.beamCurrent));\n    state.pressureHistory = state.pressureHistory.slice(-30);\n    state.targetHistory = state.targetHistory.slice(-30);\n    state.beamCurrentHistory = state.beamCurrentHistory.slice(-30);\n}\nglobal.set('cyclotron', state);\n\nmsg.payload = {\n    time: new Date().toLocaleTimeString('id-ID', {hour12:false}),\n    mode: state.mode,\n    status: {\n        power: Boolean(state.power),\n        vacuum: Boolean(state.vacuum),\n        rf: Boolean(state.rf),\n        magnet: Boolean(state.magnet),\n        interlocks: Boolean(state.interlocks),\n        beam: Boolean(state.beam),\n        paused: Boolean(state.paused),\n        emergency: Boolean(state.emergency),\n        exposureActive: Boolean(state.exposureActive)\n    },\n    metrics: {\n        magnetCurrent: Number(state.magnetCurrent),\n        frequency: Number(state.frequency),\n        rfPower: Number(state.rfPower),\n        cavityTemp: Number(state.cavityTemp),\n        pressure: Number(state.pressure),\n        magnetPower: Number(state.magnetPower),\n        targetCurrent: Number(state.targetCurrent),\n        beamCurrent: Number(state.beamCurrent),\n        beamEnergy: Number(state.beamEnergy),\n        peakEnergy: Number(state.peakEnergy),\n        exposureSeconds: Number(state.exposureSeconds)\n    },\n    history: {\n        pressure: state.pressureHistory,\n        target: state.targetHistory,\n        beamCurrent: state.beamCurrentHistory\n    },\n    logs: state.logs\n};\nmsg.headers = {\"content-type\":\"application/json\"};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 160,
+        "wires": [
+            [
+                "26f22e484341c5a9"
+            ]
+        ]
+    },
+    {
+        "id": "26f22e484341c5a9",
+        "type": "http response",
+        "z": "4545b853eee3bf43",
+        "name": "Response JSON",
+        "statusCode": "",
+        "headers": {},
+        "x": 730,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "4d678f90dd6b1355",
+        "type": "http in",
+        "z": "4545b853eee3bf43",
+        "name": "POST /api/control",
+        "url": "/api/control",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 240,
+        "wires": [
+            [
+                "535d75bf57449b3b"
+            ]
+        ]
+    },
+    {
+        "id": "535d75bf57449b3b",
+        "type": "function",
+        "z": "4545b853eee3bf43",
+        "name": "Operation Control Handler",
+        "func": "function log(state, text) {\n    const t = new Date().toLocaleTimeString('id-ID', {hour12:false});\n    state.logs.unshift(t + ' - ' + text);\n    state.logs = state.logs.slice(0, 12);\n}\n\nlet state = global.get('cyclotron');\nif (!state) return [null, null];\n\nlet body = msg.payload || (msg.req && msg.req.body) || {};\nif (typeof body === 'string') {\n    try { body = JSON.parse(body); } catch(e) { body = {}; }\n}\nlet cmd = String(body.cmd || '').toUpperCase();\nlet hwCmdStr = 'IGNORE_HARDWARE'; // Aman dari trigger palsu\n\nswitch (cmd) {\n    case 'TOGGLE_POWER':\n        state.power = !state.power;\n        log(state, 'Sistem Power ' + (state.power ? 'ON (Buzzer 5s)' : 'OFF'));\n        if (state.power) hwCmdStr = 'POWER_ON';\n        break;\n        \n    case 'TOGGLE_VACUUM':\n        state.vacuum = !state.vacuum;\n        log(state, 'Sistem Vacuum ' + (state.vacuum ? 'ON (Relay Kipas Aktif/LOW)' : 'OFF (Relay Mati/HIGH)'));\n        hwCmdStr = 'VACUUM_STATE_UPDATE'; // Update pin relay\n        break;\n        \n    case 'TOGGLE_INTERLOCK':\n        if (state.power && state.vacuum) {\n            state.interlocks = !state.interlocks;\n            log(state, 'Interlock ' + (state.interlocks ? 'SET (Ready)' : 'DIBUKA (Cleared)'));\n        } else {\n            log(state, 'Interlock GAGAL: Power & Vacuum harus ON!');\n        }\n        break;\n        \n    case 'START_BEAM':\n        if (state.interlocks && state.vacuum && state.power) {\n            state.emergency = false;\n            state.beam = true;\n            state.paused = false;\n            state.exposureActive = false; \n            log(state, 'Beam On initiated (Energy mendaki pelan)');\n            hwCmdStr = 'START_BEAM';\n        } else {\n            log(state, 'START ditolak: Interlock belum SET!');\n        }\n        break;\n        \n    case 'SHOOT':\n        if (state.beam) {\n            state.exposureActive = true;\n            state.lastTickMs = Date.now();\n            if (!state.exposureStartedAt) state.exposureStartedAt = new Date().toISOString();\n            log(state, 'Shoot / Exposure Triggered to Hardware');\n            hwCmdStr = 'SHOOT';\n        } else {\n            log(state, 'SHOOT rejected: Beam is not active');\n        }\n        break;\n        \n    case 'EMERGENCY_STOP':\n        state.emergency = true; \n        state.power = false;\n        state.vacuum = false;\n        state.interlocks = false;\n        state.beam = false;\n        state.exposureActive = false;\n        log(state, 'Emergency Stop! Seluruh sistem dimatikan.');\n        hwCmdStr = 'EMERGENCY_STOP';\n        break;\n        \n    case 'AUTO_RESET':\n        state.emergency = false;\n        state.beam = false;\n        state.exposureActive = false;\n        // Power, Vacuum, Interlock tetap ON\n        log(state, 'Exposure complete. Auto-reset ke Standby (Energi merosot).');\n        hwCmdStr = 'AUTO_RESET';\n        break;\n        \n    case 'SET_PARAMS':\n        if (body.magnet_a !== undefined) state.setpointMagnetA = Number(body.magnet_a);\n        if (body.rf_mhz !== undefined) state.setpointFreqMhz = Number(body.rf_mhz);\n        if (body.rf_kv !== undefined) state.setpointRfKv = Number(body.rf_kv);\n        if (body.beam_ua !== undefined) state.setpointBeamUa = Number(body.beam_ua);\n        log(state, 'Parameter HMI diperbarui via MQTT/API');\n        break;\n    default:\n        log(state, 'Unknown command: ' + cmd);\n}\n\nglobal.set('cyclotron', state);\n\n// Payload Balasan ke Web Dashboard\nmsg.payload = { ok: true, command: cmd, mode: state.mode };\nmsg.headers = {\"content-type\":\"application/json\"};\n\n// Payload Perintah Fisik ke Hardware\nlet hwCommand = {\n    payload: {\n        cmd: hwCmdStr,\n        vac_pin: state.vacuum ? 0 : 1 // Logic Active Low untuk Vacuum Relay\n    }\n};\n\nreturn [msg, hwCommand];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 240,
+        "wires": [
+            [
+                "04ce3e9764eba368"
+            ],
+            [
+                "99480b60559efc6a",
+                "change_vac_state"
+            ]
+        ]
+    },
+    {
+        "id": "04ce3e9764eba368",
+        "type": "http response",
+        "z": "4545b853eee3bf43",
+        "name": "Response Control",
+        "statusCode": "",
+        "headers": {},
+        "x": 650,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "14bbc2448416371d",
+        "type": "http in",
+        "z": "4545b853eee3bf43",
+        "name": "POST Sensor dari Raspi",
+        "url": "/api/sensor",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 360,
+        "wires": [
+            [
+                "c9f60388d9206765"
+            ]
+        ]
+    },
+    {
+        "id": "c9f60388d9206765",
+        "type": "function",
+        "z": "4545b853eee3bf43",
+        "name": "Update Data Sensor HTTP",
+        "func": "let state = global.get('cyclotron') || {};\nlet data = msg.payload || (msg.req && msg.req.body) || {};\nif (typeof data === 'string') {\n    try { data = JSON.parse(data); } catch(e) { data = {}; }\n}\n\nconst keys = [\n    'power','vacuum','rf','magnet','interlocks','beam','paused','emergency','exposureActive',\n    'magnetCurrent','frequency','rfPower','cavityTemp','pressure','magnetPower',\n    'targetCurrent','beamCurrent','beamEnergy','peakEnergy','exposureSeconds'\n];\nkeys.forEach(k => {\n    if (data[k] !== undefined) state[k] = data[k];\n});\n\nglobal.set('cyclotron', state);\nmsg.payload = { status: \"success\", message: \"Sensor data updated via LAN\", data_received: data };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 360,
+        "wires": [
+            [
+                "208eb9d4db1c8e21"
+            ]
+        ]
+    },
+    {
+        "id": "208eb9d4db1c8e21",
+        "type": "http response",
+        "z": "4545b853eee3bf43",
+        "name": "Respon Sensor API",
+        "statusCode": "",
+        "headers": {},
+        "x": 630,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "99480b60559efc6a",
+        "type": "switch",
+        "z": "4545b853eee3bf43",
+        "name": "Filter Perintah Hardware",
+        "property": "payload.cmd",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "START_BEAM",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "SHOOT",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "EMERGENCY_STOP",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "POWER_ON",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 870,
+        "y": 220,
+        "wires": [
+            [
+                "8004b34a6d8e6a15"
+            ],
+            [
+                "12f82d9869b8fdec",
+                "3921c6ed6576f345"
+            ],
+            [
+                "ff26d825ce301f84"
+            ],
+            [
+                "trig_pwr"
+            ]
+        ]
+    },
+    {
+        "id": "8004b34a6d8e6a15",
+        "type": "trigger",
+        "z": "4545b853eee3bf43",
+        "name": "Kirim Pulse 3000ms",
+        "op1": "1",
+        "op2": "0",
+        "op1type": "num",
+        "op2type": "num",
+        "duration": "3000",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "ms",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 1360,
+        "y": 160,
+        "wires": [
+            [
+                "8162ac1a293636b3"
+            ]
+        ]
+    },
+    {
+        "id": "12f82d9869b8fdec",
+        "type": "trigger",
+        "z": "4545b853eee3bf43",
+        "name": "Kirim Pulse 3000ms",
+        "op1": "1",
+        "op2": "0",
+        "op1type": "num",
+        "op2type": "num",
+        "duration": "3000",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "ms",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 1360,
+        "y": 200,
+        "wires": [
+            [
+                "2798231b69438b42"
+            ]
+        ]
+    },
+    {
+        "id": "8162ac1a293636b3",
+        "type": "pi-gpiod out",
+        "z": "4545b853eee3bf43",
+        "name": "[OUT] GPIO 18 (Ke Pin 27 ESP)",
+        "host": "192.168.137.100",
+        "port": 8888,
+        "pin": "18",
+        "set": true,
+        "level": "0",
+        "out": "out",
+        "sermin": "",
+        "sermax": "",
+        "x": 1610,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "2798231b69438b42",
+        "type": "pi-gpiod out",
+        "z": "4545b853eee3bf43",
+        "name": "[OUT] GPIO 16 / Label 24 (Ke Pin 26 ESP)",
+        "host": "192.168.137.100",
+        "port": 8888,
+        "pin": "16",
+        "set": true,
+        "level": "0",
+        "out": "out",
+        "sermin": "",
+        "sermax": "",
+        "x": 1630,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "3921c6ed6576f345",
+        "type": "delay",
+        "z": "4545b853eee3bf43",
+        "name": "Tunggu 3 Detik",
+        "pauseType": "delay",
+        "timeout": "3",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1350,
+        "y": 320,
+        "wires": [
+            [
+                "980b77864f8cc55b"
+            ]
+        ]
+    },
+    {
+        "id": "980b77864f8cc55b",
+        "type": "change",
+        "z": "4545b853eee3bf43",
+        "name": "Cmd: AUTO_RESET",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{\"cmd\":\"AUTO_RESET\"}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1590,
+        "y": 340,
+        "wires": [
+            [
+                "535d75bf57449b3b"
+            ]
+        ]
+    },
+    {
+        "id": "ff26d825ce301f84",
+        "type": "trigger",
+        "z": "4545b853eee3bf43",
+        "name": "Kirim Pulse 3000ms",
+        "op1": "1",
+        "op2": "0",
+        "op1type": "num",
+        "op2type": "num",
+        "duration": "3000",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "ms",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 1360,
+        "y": 260,
+        "wires": [
+            [
+                "760cb4a23065016d"
+            ]
+        ]
+    },
+    {
+        "id": "760cb4a23065016d",
+        "type": "pi-gpiod out",
+        "z": "4545b853eee3bf43",
+        "name": "[OUT] GPIO 20 / Label 23 (Ke Pin 25 ESP)",
+        "host": "192.168.137.100",
+        "port": 8888,
+        "pin": "20",
+        "set": true,
+        "level": "0",
+        "out": "out",
+        "sermin": "",
+        "sermax": "",
+        "x": 1620,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "trig_pwr",
+        "type": "trigger",
+        "z": "4545b853eee3bf43",
+        "name": "Buzzer 5s",
+        "op1": "1",
+        "op2": "0",
+        "op1type": "num",
+        "op2type": "num",
+        "duration": "5000",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "ms",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 1330,
+        "y": 380,
+        "wires": [
+            [
+                "out_pwr"
+            ]
+        ]
+    },
+    {
+        "id": "out_pwr",
+        "type": "pi-gpiod out",
+        "z": "4545b853eee3bf43",
+        "name": "[OUT] GPIO 17 (Ke Buzzer)",
+        "host": "192.168.137.100",
+        "port": 8888,
+        "pin": "17",
+        "set": true,
+        "level": "0",
+        "out": "out",
+        "sermin": "",
+        "sermax": "",
+        "x": 1610,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "change_vac_state",
+        "type": "change",
+        "z": "4545b853eee3bf43",
+        "name": "Extract Vacuum State",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.vac_pin",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 460,
+        "wires": [
+            [
+                "out_vac"
+            ]
+        ]
+    },
+    {
+        "id": "out_vac",
+        "type": "pi-gpiod out",
+        "z": "4545b853eee3bf43",
+        "name": "[OUT] GPIO 21 / Label 27 (Ke Relay Kipas)",
+        "host": "192.168.137.100",
+        "port": 8888,
+        "pin": "21",
+        "set": true,
+        "level": "1",
+        "out": "out",
+        "sermin": "",
+        "sermax": "",
+        "x": 1600,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "mqtt_out_cmd",
+        "type": "mqtt out",
+        "z": "4545b853eee3bf43",
+        "name": "Publish decy13/hmi/cmd ke RPi 3B+",
+        "topic": "decy13/hmi/cmd",
+        "qos": "0",
+        "retain": "false",
+        "broker": "mqtt_local",
+        "x": 680,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "mqtt_in_state",
+        "type": "mqtt in",
+        "z": "4545b853eee3bf43",
+        "name": "Subscribe decy13/rpi/state dari RPi 3B+",
+        "topic": "decy13/rpi/state",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "mqtt_local",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 440,
+        "wires": [
+            [
+                "c9f60388d9206765"
+            ]
+        ]
+    }
+]

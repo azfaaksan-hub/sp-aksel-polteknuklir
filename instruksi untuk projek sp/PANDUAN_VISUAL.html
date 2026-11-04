@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Panduan Kelompok — Alat Peraga Siklotron DECY-13</title>
+<style>
+  :root {
+    --teal: #0d9488; --teal-light: #99f6e4; --teal-dark: #134e4a;
+    --sky: #0ea5e9; --amber: #f59e0b; --green: #22c55e;
+    --red: #ef4444; --slate: #1e293b; --card: #0f2027;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(135deg, #0b1724 0%, #0f2027 100%);
+    color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh; padding: 0 0 60px;
+  }
+  /* HEADER */
+  header {
+    background: linear-gradient(90deg, #065f46, #0d9488, #065f46);
+    padding: 28px 24px 20px; text-align: center;
+    border-bottom: 2px solid #14b8a6;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  header h1 { font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: 2px; }
+  header p  { color: #99f6e4; margin-top: 6px; font-size: 0.95rem; }
+  .badge {
+    display: inline-block; background: rgba(0,0,0,0.35);
+    border: 1px solid #14b8a6; border-radius: 20px;
+    padding: 4px 14px; font-size: 0.78rem; color: #5eead4; margin-top: 10px;
+  }
+
+  /* NAV PILLS */
+  nav {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    padding: 16px; background: #071820; border-bottom: 1px solid #1e3a4a;
+    position: sticky; top: 0; z-index: 50;
+  }
+  nav a {
+    text-decoration: none; background: #1e293b; color: #94a3b8;
+    border: 1px solid #334155; border-radius: 999px;
+    padding: 6px 16px; font-size: 0.82rem; font-weight: 600;
+    transition: all .2s;
+  }
+  nav a:hover, nav a.active { background: #0d9488; color: #fff; border-color: #14b8a6; }
+
+  /* SECTIONS */
+  section { max-width: 1000px; margin: 32px auto; padding: 0 16px; }
+  h2 {
+    font-size: 1.25rem; font-weight: 700; color: #5eead4;
+    border-left: 4px solid #0d9488; padding-left: 12px;
+    margin-bottom: 18px; scroll-margin-top: 70px;
+  }
+  h3 { font-size: 1rem; font-weight: 700; color: #7dd3fc; margin: 14px 0 8px; }
+  p  { color: #94a3b8; line-height: 1.7; margin-bottom: 10px; }
+
+  /* CARDS */
+  .card {
+    background: linear-gradient(160deg, #1a2a3a 0%, #0d1b28 100%);
+    border: 1px solid #1e3a4a; border-radius: 12px;
+    padding: 20px; margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 16px; }
+
+  /* ROLE CARDS */
+  .role { border-left: 4px solid var(--c, #0d9488); }
+  .role .role-icon { font-size: 2.2rem; margin-bottom: 8px; }
+  .role .role-title { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
+  .role .role-sub   { font-size: 0.78rem; color: #94a3b8; margin-bottom: 10px; }
+  .role ul { list-style: none; padding: 0; }
+  .role ul li { font-size: 0.82rem; color: #cbd5e1; padding: 3px 0; }
+  .role ul li::before { content: '▸ '; color: var(--c, #0d9488); }
+
+  /* FLOW STEPS */
+  .flow {
+    display: flex; flex-direction: column; gap: 0;
+    position: relative; padding-left: 40px;
+  }
+  .flow::before {
+    content: ''; position: absolute; left: 16px; top: 0; bottom: 0;
+    width: 2px; background: linear-gradient(to bottom, #0d9488, #065f46);
+  }
+  .step {
+    position: relative; background: #1a2a3a;
+    border: 1px solid #1e3a4a; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .step .step-num {
+    position: absolute; left: -32px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #0d9488; color: #fff; font-weight: 800;
+    font-size: 0.8rem; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 3px #0b1724;
+  }
+  .step .step-title { font-weight: 700; color: #e2e8f0; font-size: 0.95rem; }
+  .step .step-desc  { color: #94a3b8; font-size: 0.82rem; margin-top: 4px; }
+  .step .step-cmd   {
+    background: #071820; border: 1px solid #1e3a4a; border-radius: 6px;
+    padding: 6px 10px; margin-top: 8px; font-family: monospace;
+    font-size: 0.8rem; color: #34d399;
+  }
+  .step.active-step { border-color: #0d9488; background: #0d2e2b; }
+  .step .chip {
+    display: inline-block; background: #0d9488; color: #fff;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.7rem;
+    font-weight: 700; margin-right: 6px;
+  }
+  .chip.amber  { background: #b45309; }
+  .chip.red    { background: #b91c1c; }
+  .chip.sky    { background: #0369a1; }
+  .chip.green  { background: #15803d; }
+  .chip.purple { background: #6d28d9; }
+
+  /* WIRING TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th { background: #0d2e2b; color: #5eead4; padding: 10px 12px; text-align: left; border-bottom: 2px solid #0d9488; }
+  td { padding: 8px 12px; border-bottom: 1px solid #1e3a4a; color: #cbd5e1; }
+  tr:hover td { background: #111e2a; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
+  .tag-teal   { background: #0d4a43; color: #5eead4; }
+  .tag-amber  { background: #451a03; color: #fbbf24; }
+  .tag-sky    { background: #0c2d48; color: #7dd3fc; }
+  .tag-red    { background: #450a0a; color: #fca5a5; }
+  .tag-green  { background: #052e16; color: #86efac; }
+
+  /* MQTT FLOW DIAGRAM */
+  .mqtt-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap; padding: 20px 0;
+  }
+  .mqtt-node {
+    background: #1a2a3a; border: 2px solid #1e3a4a; border-radius: 12px;
+    padding: 16px 20px; text-align: center; min-width: 140px;
+  }
+  .mqtt-node .n-icon { font-size: 2rem; margin-bottom: 4px; }
+  .mqtt-node .n-title { font-weight: 700; font-size: 0.9rem; color: #e2e8f0; }
+  .mqtt-node .n-sub   { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+  .mqtt-node.highlight { border-color: #0d9488; background: #0d2e2b; }
+  .mqtt-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; padding: 0 8px; min-width: 120px;
+  }
+  .mqtt-arrow .arr-label {
+    background: #071820; border: 1px solid #1e3a4a; border-radius: 6px;
+    padding: 3px 8px; font-size: 0.68rem; font-family: monospace; color: #34d399;
+    white-space: nowrap;
+  }
+  .mqtt-arrow .arr-line {
+    font-size: 1.4rem; color: #0d9488;
+  }
+
+  /* FILE TREE */
+  .tree { font-family: monospace; font-size: 0.85rem; line-height: 1.9; padding: 16px; }
+  .tree .dir  { color: #7dd3fc; font-weight: 700; }
+  .tree .file { color: #cbd5e1; }
+  .tree .note { color: #64748b; }
+  .tree .imp  { color: #34d399; font-weight: 700; }
+  .tree .new  { color: #fb923c; }
+
+  /* ALERT BOXES */
+  .alert {
+    border-left: 4px solid; border-radius: 8px;
+    padding: 12px 16px; margin: 12px 0; font-size: 0.85rem;
+  }
+  .alert-info    { border-color: #0ea5e9; background: #0c2d48; color: #7dd3fc; }
+  .alert-warn    { border-color: #f59e0b; background: #451a03; color: #fbbf24; }
+  .alert-success { border-color: #22c55e; background: #052e16; color: #86efac; }
+  .alert-danger  { border-color: #ef4444; background: #450a0a; color: #fca5a5; }
+
+  /* FOOTER */
+  footer {
+    text-align: center; padding: 24px;
+    color: #334155; font-size: 0.78rem; border-top: 1px solid #1e293b;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>◎ PANDUAN KELOMPOK — ALAT PERAGA SIKLOTRON DECY-13</h1>
+  <p>13 MeV H⁻ Cyclotron Demonstrator · Politeknik Teknologi Nuklir Indonesia, BRIN</p>
+  <span class="badge">Versi 1.0 · November 2026 · Sistem MQTT State-Driven</span>
+</header>
+
+<nav>
+  <a href="#overview" class="active">📖 Gambaran Umum</a>
+  <a href="#roles">👥 Peran Tim</a>
+  <a href="#flow">⚡ Alur 7 Tahap</a>
+  <a href="#arsitektur">🏗️ Arsitektur</a>
+  <a href="#wiring">🔌 Wiring</a>
+  <a href="#files">📁 Daftar File</a>
+  <a href="#quickstart">🚀 Mulai Cepat</a>
+</nav>
+
+<!-- ==================== GAMBARAN UMUM ==================== -->
+<section id="overview">
+  <h2>📖 Gambaran Umum — Apa itu DECY-13?</h2>
+  <div class="card">
+    <p>
+      <strong style="color:#5eead4">DECY-13</strong> adalah akselerator siklotron 13 MeV untuk ion H⁻ (hidrogen negatif)
+      yang dikembangkan di BRIN. Proyek ini membuat <strong>alat peraga interaktif</strong> yang mensimulasikan
+      cara kerja siklotron tersebut menggunakan perangkat nyata dan antarmuka komputer.
+    </p>
+    <div class="alert alert-info" style="margin-top:14px">
+      💡 <strong>Analoginya sederhana:</strong> Bayangkan siklotron seperti <em>putaran bola golf yang dipercepat
+      secara spiral</em>. Partikel dimulai dari tengah, dipercepat oleh medan RF, berputar makin lebar karena
+      magnet, lalu "ditembakkan" ke target saat mencapai energi 13 MeV.
+    </div>
+  </div>
+
+  <h3>Apa yang kita buat?</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:2rem;margin-bottom:8px">🍓</div>
+      <div style="font-weight:700;color:#e2e8f0">Raspberry Pi 3B+</div>
+      <div style="font-size:0.82rem;color:#94a3b8;margin-top:6px">
+        Otak sistem — mengendalikan semua hardware nyata:
+        LED strip spiral, kipas vakum, buzzer, dan layar LCD.
+        Mengirim data ke Web HMI setiap 200ms.
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:2rem;margin-bottom:8px">🖥️</div>
+      <div style="font-weight:700;color:#e2e8f0">Web HMI (Mini PC)</div>
+      <div style="font-size:0.82rem;color:#94a3b8;margin-top:6px">
+        Ruang kontrol digital — tampilan animasi siklotron 2D,
+        grafik tekanan & arus, dan tombol kendali. Semua animasinya
+        mengikuti hardware nyata di RPi.
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:2rem;margin-bottom:8px">📡</div>
+      <div style="font-weight:700;color:#e2e8f0">MQTT (Mosquitto Broker)</div>
+      <div style="font-size:0.82rem;color:#94a3b8;margin-top:6px">
+        Penghubung komunikasi antara Web HMI dan RPi.
+        Seperti "WhatsApp" antara dua perangkat — perintah dan
+        status data dikirim via jaringan lokal.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PERAN TIM ==================== -->
+<section id="roles">
+  <h2>👥 Peran Anggota Tim</h2>
+  <p>Bagi pekerjaan sesuai keahlian. Setiap peran bisa dikerjakan paralel.</p>
+  <div class="card-grid">
+    <div class="card role" style="--c:#0d9488">
+      <div class="role-icon">🍓</div>
+      <div class="role-title">Teknisi RPi & Hardware</div>
+      <div class="role-sub">1–2 orang · Python + Elektronik</div>
+      <ul>
+        <li>Setup OS & konfigurasi RPi</li>
+        <li>Sambung kabel wiring GPIO</li>
+        <li>Jalankan skrip uji 01–04</li>
+        <li>Pantau terminal RPi saat demo</li>
+        <li>Tangani masalah hardware</li>
+      </ul>
+    </div>
+    <div class="card role" style="--c:#0ea5e9">
+      <div class="role-icon">🖥️</div>
+      <div class="role-title">Operator Web HMI</div>
+      <div class="role-sub">1 orang · Browser + Jaringan</div>
+      <ul>
+        <li>Setup Mini PC & browser</li>
+        <li>Buka dan operasikan index.html</li>
+        <li>Hubungkan MQTT ke RPi</li>
+        <li>Operasikan tombol saat demo</li>
+        <li>Monitor grafik & animasi</li>
+      </ul>
+    </div>
+    <div class="card role" style="--c:#f59e0b">
+      <div class="role-icon">📡</div>
+      <div class="role-title">Admin Jaringan & MQTT</div>
+      <div class="role-sub">1 orang · Jaringan + Debugging</div>
+      <ul>
+        <li>Setup WiFi/LAN antara RPi & Mini PC</li>
+        <li>Pastikan Mosquitto broker aktif</li>
+        <li>Monitoring MQTT dengan mosquitto_sub</li>
+        <li>Debug koneksi jika gagal</li>
+        <li>Catat IP address perangkat</li>
+      </ul>
+    </div>
+    <div class="card role" style="--c:#22c55e">
+      <div class="role-icon">📋</div>
+      <div class="role-title">Dokumentasi & Presenter</div>
+      <div class="role-sub">1 orang · Laporan + Demo</div>
+      <ul>
+        <li>Baca semua file panduan ini</li>
+        <li>Pahami alur 7 tahap operasional</li>
+        <li>Siapkan narasi presentasi demo</li>
+        <li>Foto/video proses pengujian</li>
+        <li>Pastikan checklist terpenuhi</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ALUR 7 TAHAP ==================== -->
+<section id="flow">
+  <h2>⚡ Alur 7 Tahap Operasional Siklotron</h2>
+  <p>Inilah urutan yang harus dilakukan saat demo. Tidak boleh dilewati!</p>
+
+  <div class="flow">
+    <div class="step active-step">
+      <div class="step-num">1</div>
+      <div class="step-title"><span class="chip">TAHAP 1</span> Inisiasi Sistem — POWER ON</div>
+      <div class="step-desc">Klik saklar Power di Web HMI. RPi akan menerima perintah dan membunyikan buzzer 5 detik sebagai tanda sistem aktif. LED #0 menyala biru tanda standby.</div>
+      <div class="step-cmd">{"cmd": "TOGGLE_POWER"}</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title"><span class="chip sky">TAHAP 2</span> Input Parameter HMI</div>
+      <div class="step-desc">Atur nilai parameter fisika: Arus Magnet (1450 A), Frekuensi RF (22.5 MHz), Tegangan Dee (45 kV), dan Arus Berkas target (8.4 µA). Parameter dikirim ke RPi.</div>
+      <div class="step-cmd">{"cmd": "SET_PARAMS", "magnet_a": 1450, "rf_mhz": 22.5, "rf_kv": 45, "beam_ua": 8.4}</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title"><span class="chip amber">TAHAP 3</span> Transmisi MQTT</div>
+      <div class="step-desc">Setiap klik tombol di Web HMI otomatis mengirim perintah JSON lewat jaringan MQTT ke RPi. RPi menerima dan langsung merespons hardware nyata. Tidak ada delay besar — komunikasi real-time!</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title"><span class="chip sky">TAHAP 4</span> Vakum Aktif — Pompa Ruang Hampa</div>
+      <div class="step-desc">Klik VACUUM di HMI. Relay GPIO 21 aktif → kipas DC 12V berputar mensimulasikan pompa vakum. Tekanan turun secara eksponensial dari 1013 mbar menuju 1.2×10⁻⁷ mbar. LCD RPi menampilkan tekanan real-time.</div>
+      <div class="step-cmd">{"cmd": "TOGGLE_VACUUM"} → Kipas berputar → Pressure turun</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-title"><span class="chip">TAHAP 5</span> Safety Interlock & LCD</div>
+      <div class="step-desc">Saat tekanan mencapai ≤ 1×10⁻³ mbar, tombol INTERLOCK bisa diklik. LCD TFT SPI menampilkan "BEAM READY". Ini adalah kunci keselamatan — beam tidak bisa dinyalakan tanpa vakum yang cukup!</div>
+      <div class="step-cmd">{"cmd": "TOGGLE_INTERLOCK"} → hanya aktif jika P ≤ 1e-3 mbar</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-title"><span class="chip green">TAHAP 6</span> Akselerasi Spiral — START BEAM</div>
+      <div class="step-desc">Klik START BEAM. LED strip WS2812B di dalam area elektroda Dee mulai berputar spiral dari tengah ke luar, makin cepat seiring energi meningkat menuju 13 MeV. Indeks LED aktif dikirim RPi tiap 200ms ke HMI sehingga animasi sinkron persis dengan LED fisik!</div>
+      <div class="step-cmd">{"cmd": "START_BEAM"} → activeLedIdx naik → animasi spiral HMI ikut</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-title"><span class="chip amber">TAHAP 7</span> Ekstraksi & Tembak Target</div>
+      <div class="step-desc">Klik SHOOT EXPOSURE. LED segmen beamline (piksel 48–63) menyala oranye menembak ke arah target. Buzzer berbunyi beep berulang tanda iradiasi aktif. Timer iradiasi berjalan. Tekan lagi untuk menghentikan.</div>
+      <div class="step-cmd">{"cmd": "SHOOT"} → shootLedIdx aktif → buzzer beep → timer mulai</div>
+    </div>
+
+    <div class="step" style="border-color:#b91c1c;background:#1c0a0a">
+      <div class="step-num" style="background:#dc2626">!</div>
+      <div class="step-title"><span class="chip red">DARURAT</span> Emergency Stop</div>
+      <div class="step-desc">Kapanpun bisa ditekan — tombol fisik GPIO 22 di RPi atau tombol merah di HMI. Semua sistem langsung mati: RF OFF, kipas OFF, LED merah semua, buzzer alarm 3 detik. Reset dengan klik Power ON lagi.</div>
+      <div class="step-cmd">{"cmd": "EMERGENCY_STOP"} → SEMUA SUBSISTEM MATI SEKETIKA</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ARSITEKTUR ==================== -->
+<section id="arsitektur">
+  <h2>🏗️ Arsitektur Sistem — Siapa Ngomong ke Siapa?</h2>
+
+  <div class="card">
+    <div class="mqtt-flow">
+      <div class="mqtt-node highlight">
+        <div class="n-icon">🖥️</div>
+        <div class="n-title">Mini PC</div>
+        <div class="n-sub">Web HMI<br>index.html<br>Chrome Browser</div>
+      </div>
+      <div class="mqtt-arrow">
+        <div class="arr-label">decy13/hmi/cmd</div>
+        <div class="arr-line">→→→→→</div>
+        <div style="font-size:0.68rem;color:#64748b;text-align:center">Perintah JSON<br>dari tombol HMI</div>
+      </div>
+      <div class="mqtt-node highlight" style="border-color:#f59e0b;background:#1c1407">
+        <div class="n-icon">📡</div>
+        <div class="n-title">Mosquitto Broker</div>
+        <div class="n-sub">TCP: 1883<br>WebSocket: 9001<br>IP: 192.168.137.1</div>
+      </div>
+      <div class="mqtt-arrow">
+        <div class="arr-label">decy13/rpi/state</div>
+        <div class="arr-line">→→→→→</div>
+        <div style="font-size:0.68rem;color:#64748b;text-align:center">State JSON tiap<br>200ms dari RPi</div>
+      </div>
+      <div class="mqtt-node highlight" style="border-color:#22c55e;background:#071c0f">
+        <div class="n-icon">🍓</div>
+        <div class="n-title">Raspberry Pi 3B+</div>
+        <div class="n-sub">04_decy13_mqtt_daemon.py<br>Python + GPIO</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;border-top:1px solid #1e3a4a;padding-top:16px">
+      <h3 style="margin-top:0">Hardware yang Dikendalikan RPi</h3>
+      <div class="card-grid" style="gap:10px">
+        <div style="background:#071820;border:1px solid #1e3a4a;border-radius:8px;padding:12px;font-size:0.8rem">
+          💡 <strong style="color:#7dd3fc">LED WS2812B</strong><br>
+          <span style="color:#64748b">GPIO 18 · 64 piksel<br>Spiral (0–47) + Shoot (48–63)</span>
+        </div>
+        <div style="background:#071820;border:1px solid #1e3a4a;border-radius:8px;padding:12px;font-size:0.8rem">
+          🌀 <strong style="color:#7dd3fc">Relay Kipas 12V</strong><br>
+          <span style="color:#64748b">GPIO 21 · Active-LOW<br>Simulasi Pompa Vakum</span>
+        </div>
+        <div style="background:#071820;border:1px solid #1e3a4a;border-radius:8px;padding:12px;font-size:0.8rem">
+          🔔 <strong style="color:#7dd3fc">Buzzer SFM-27</strong><br>
+          <span style="color:#64748b">GPIO 17<br>Power 5s · Beep · Alarm</span>
+        </div>
+        <div style="background:#071820;border:1px solid #1e3a4a;border-radius:8px;padding:12px;font-size:0.8rem">
+          📺 <strong style="color:#7dd3fc">LCD TFT ILI9341</strong><br>
+          <span style="color:#64748b">SPI0 · 320×240 px<br>Status 4-baris real-time</span>
+        </div>
+        <div style="background:#071820;border:1px solid #1e3a4a;border-radius:8px;padding:12px;font-size:0.8rem">
+          🛑 <strong style="color:#7dd3fc">Tombol E-Stop</strong><br>
+          <span style="color:#64748b">GPIO 22 · Input Pull-Up<br>NC ke GND · Interupsi ISR</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-success">
+    ✅ <strong>Prinsip Utama STATE-DRIVEN:</strong> Animasi dan grafik di Web HMI
+    <em>tidak berjalan sendiri</em>. Semua mengikuti data nyata dari RPi yang dikirim lewat MQTT.
+    Jika RPi belum dinyalakan → HMI berjalan dalam Mode Simulasi Lokal (fallback).
+  </div>
+</section>
+
+<!-- ==================== WIRING ==================== -->
+<section id="wiring">
+  <h2>🔌 Wiring — Sambungan Kabel GPIO</h2>
+  <div class="alert alert-warn">
+    ⚠️ <strong>MATIKAN RPi terlebih dahulu</strong> sebelum memasang atau melepas kabel!
+    Semua nomor GPIO menggunakan sistem <strong>BCM</strong> (bukan nomor pin fisik).
+  </div>
+
+  <div class="card">
+    <h3>Peta Pin Lengkap</h3>
+    <table>
+      <thead><tr><th>Komponen</th><th>GPIO (BCM)</th><th>Pin Fisik</th><th>Ke Mana</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>💡 LED WS2812B DIN</td><td>GPIO 18</td><td>Pin 12</td>
+          <td><span class="tag tag-teal">via R 330Ω → DIN Strip</span></td>
+          <td>DMA PWM0 — Audio harus OFF!</td>
+        </tr>
+        <tr>
+          <td>🌀 Relay Kipas IN</td><td>GPIO 21</td><td>Pin 40</td>
+          <td><span class="tag tag-sky">IN Modul Relay</span></td>
+          <td>Active-LOW: LOW=ON, HIGH=OFF</td>
+        </tr>
+        <tr>
+          <td>🔔 Buzzer (+)</td><td>GPIO 17</td><td>Pin 11</td>
+          <td><span class="tag tag-amber">Buzzer + (atau basis transistor)</span></td>
+          <td>Active-HIGH: HIGH=bunyi</td>
+        </tr>
+        <tr>
+          <td>🛑 E-Stop Tombol</td><td>GPIO 22</td><td>Pin 15</td>
+          <td><span class="tag tag-red">Kaki NC Tombol (COM ke GND)</span></td>
+          <td>Input Pull-Up internal aktif</td>
+        </tr>
+        <tr>
+          <td>📺 LCD CS (CE0)</td><td>GPIO 8</td><td>Pin 24</td>
+          <td><span class="tag tag-green">LCD Pin CS/CE0</span></td>
+          <td>SPI0 Chip Select</td>
+        </tr>
+        <tr>
+          <td>📺 LCD MOSI</td><td>GPIO 10</td><td>Pin 19</td>
+          <td><span class="tag tag-green">LCD Pin SDI/MOSI</span></td>
+          <td>SPI0 Data</td>
+        </tr>
+        <tr>
+          <td>📺 LCD SCLK</td><td>GPIO 11</td><td>Pin 23</td>
+          <td><span class="tag tag-green">LCD Pin SCK</span></td>
+          <td>SPI0 Clock</td>
+        </tr>
+        <tr>
+          <td>📺 LCD DC</td><td>GPIO 24</td><td>Pin 18</td>
+          <td><span class="tag tag-green">LCD Pin DC/A0/RS</span></td>
+          <td>Data/Command Select</td>
+        </tr>
+        <tr>
+          <td>📺 LCD RST</td><td>GPIO 25</td><td>Pin 22</td>
+          <td><span class="tag tag-green">LCD Pin RESET</span></td>
+          <td>Reset LCD</td>
+        </tr>
+        <tr>
+          <td>⚡ Power 5V</td><td>—</td><td>Pin 2 atau 4</td>
+          <td><span class="tag tag-amber">VCC Relay, VCC LED (jika kecil)</span></td>
+          <td>Maks 1A dari RPi header</td>
+        </tr>
+        <tr>
+          <td>⚡ Power 3.3V</td><td>—</td><td>Pin 17</td>
+          <td><span class="tag tag-sky">VCC LCD (cek datasheet)</span></td>
+          <td>Atau 5V jika LCD butuh 5V</td>
+        </tr>
+        <tr>
+          <td>⏚ GND Bersama</td><td>—</td><td>Pin 6, 9, 14, 25, 39</td>
+          <td><span class="tag tag-red">GND semua modul + PS Eksternal</span></td>
+          <td>WAJIB common ground!</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alert alert-info">
+    💡 <strong>Tips Urutan Wiring:</strong> Sambungkan dulu GND semua modul → lalu power (VCC) → terakhir sinyal data (GPIO).
+    Lepas dalam urutan terbalik: sinyal → power → GND.
+  </div>
+</section>
+
+<!-- ==================== DAFTAR FILE ==================== -->
+<section id="files">
+  <h2>📁 Daftar File & Fungsinya</h2>
+  <div class="card">
+    <div class="tree">
+<span class="dir">decy13_mqtt_kit/</span>
+│
+├── <span class="dir">raspi_cli/</span>                         ← <span class="note">File-file yang berjalan di Raspberry Pi</span>
+│   ├── <span class="imp">config_hardware.json</span>           ← <span class="note">⚙️ Pengaturan PIN GPIO & MQTT (JANGAN HAPUS)</span>
+│   ├── <span class="imp">01_test_relay_buzzer.py</span>        ← <span class="note">🔧 UJI TAHAP 1: Cek kipas & buzzer</span>
+│   ├── <span class="imp">02_test_lcd_ili9341.py</span>         ← <span class="note">🔧 UJI TAHAP 2: Cek layar LCD</span>
+│   ├── <span class="imp">03_test_led_pixel_finder.py</span>    ← <span class="note">🔧 UJI TAHAP 3: Temukan nomor piksel LED (sudo!)</span>
+│   ├── <span class="imp">04_decy13_mqtt_daemon.py</span>       ← <span class="note">🚀 PROGRAM UTAMA — jalankan ini untuk demo (sudo!)</span>
+│   ├── <span class="new">05_laptop_dryrun_simulator.py</span>  ← <span class="note">💻 Simulasi di laptop tanpa RPi (baru!)</span>
+│   ├── <span class="file">mosquitto_decy13.conf</span>          ← <span class="note">📡 Konfigurasi broker MQTT untuk RPi/Linux</span>
+│   ├── <span class="new">mosquitto_decy13_windows.conf</span>  ← <span class="note">📡 Konfigurasi broker MQTT untuk Windows (baru!)</span>
+│   ├── <span class="new">setup_raspi_decy13.sh</span>          ← <span class="note">⚡ Script auto-setup RPi 1 klik (baru!)</span>
+│   └── <span class="file">requirements.txt</span>               ← <span class="note">📦 Daftar library Python yang dibutuhkan</span>
+│
+├── <span class="dir">web_hmi/</span>                           ← <span class="note">File yang berjalan di Mini PC (browser)</span>
+│   └── <span class="imp">index.html</span>                     ← <span class="note">🖥️ Web HMI — buka di Chrome/Edge di Mini PC</span>
+│
+├── <span class="dir">nodered/</span>                           ← <span class="note">Alternatif: import ke Node-RED (opsional)</span>
+│   └── <span class="file">flows_mqtt_decy13.json</span>
+│
+└── <span class="dir">instruksi untuk projek sp/</span>        ← <span class="note">📚 SEMUA PANDUAN ADA DI SINI</span>
+    ├── <span class="new">PANDUAN_VISUAL.html</span>            ← <span class="note">📖 File ini! Buka di browser</span>
+    ├── <span class="file">PANDUAN_UJI_RASPI_LENGKAP.txt</span> ← <span class="note">📋 Fase 0–8 detail dari laptop ke demo</span>
+    ├── <span class="file">PANDUAN_DRYRUN_LAPTOP_WINDOWS.txt</span> ← <span class="note">💻 Cara uji di laptop tanpa RPi</span>
+    ├── <span class="file">KARTU_REFERENSI_CEPAT.txt</span>     ← <span class="note">🃏 Cheat sheet bisa dicetak</span>
+    ├── <span class="file">INSTRUKSI_LENGKAP.txt</span>          ← <span class="note">📝 Instruksi A-Z lengkap</span>
+    ├── <span class="file">WIRING_DIAGRAM.txt</span>             ← <span class="note">🔌 Diagram sambungan kabel teks</span>
+    ├── <span class="file">SOFTWARE_MINI_PC.txt</span>           ← <span class="note">💿 Software yang perlu di Mini PC</span>
+    └── <span class="file">CHECKLIST_COMMISSIONING.txt</span>   ← <span class="note">☑️ Daftar ceklis sebelum demo</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== QUICKSTART ==================== -->
+<section id="quickstart">
+  <h2>🚀 Mulai Cepat — Pilih Kondisi Anda</h2>
+
+  <h3>🅐 Saya di laptop, belum ada hardware RPi</h3>
+  <div class="card" style="border-color:#0ea5e9">
+    <ol style="padding-left:20px;color:#94a3b8;font-size:0.85rem;line-height:2">
+      <li>Install <strong style="color:#7dd3fc">Mosquitto Windows</strong> → <a href="https://mosquitto.org/download/" style="color:#38bdf8">mosquitto.org/download</a></li>
+      <li>Jalankan: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">mosquitto.exe -c mosquitto_decy13_windows.conf -v</code></li>
+      <li>Buka PowerShell: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">pip install paho-mqtt</code></li>
+      <li>Jalankan: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">python 05_laptop_dryrun_simulator.py</code></li>
+      <li>Buka <strong>index.html</strong> di Chrome, URL: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">ws://127.0.0.1:9001</code></li>
+      <li>Klik <strong>Hubungkan</strong> → animasi HMI aktif! ✅</li>
+    </ol>
+    <div class="alert alert-info" style="margin-top:8px">
+      📖 Panduan lengkap: <strong>PANDUAN_DRYRUN_LAPTOP_WINDOWS.txt</strong>
+    </div>
+  </div>
+
+  <h3>🅑 Saya punya RPi 3B+ dan mau setup dari nol</h3>
+  <div class="card" style="border-color:#22c55e">
+    <ol style="padding-left:20px;color:#94a3b8;font-size:0.85rem;line-height:2">
+      <li>Flash OS ke MicroSD (<a href="https://www.raspberrypi.com/software/" style="color:#38bdf8">Raspberry Pi Imager</a>) — aktifkan SSH saat flash</li>
+      <li>SSH masuk: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">ssh pi@[IP_RPi]</code></li>
+      <li>Transfer file setup: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">scp setup_raspi_decy13.sh pi@[IP_RPi]:/home/pi/</code></li>
+      <li>Jalankan auto-setup: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">sudo bash setup_raspi_decy13.sh</code></li>
+      <li>Reboot RPi, transfer semua file Python via WinSCP</li>
+      <li>Sambung hardware sesuai tabel Wiring di atas</li>
+      <li>Uji bertahap: 01 → 02 → sudo 03 → sudo 04</li>
+    </ol>
+    <div class="alert alert-success" style="margin-top:8px">
+      📖 Panduan lengkap: <strong>PANDUAN_UJI_RASPI_LENGKAP.txt</strong> (Fase 0–8)
+    </div>
+  </div>
+
+  <h3>🅒 RPi & HMI sudah siap, mau langsung demo</h3>
+  <div class="card" style="border-color:#f59e0b">
+    <ol style="padding-left:20px;color:#94a3b8;font-size:0.85rem;line-height:2">
+      <li>Di RPi: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">sudo python3 04_decy13_mqtt_daemon.py</code></li>
+      <li>Di Mini PC: buka Chrome → buka index.html</li>
+      <li>Tab <strong>Konfigurasi Broker MQTT</strong> → URL: <code style="background:#071820;padding:2px 6px;border-radius:4px;color:#34d399">ws://[IP_RPi]:9001</code></li>
+      <li>Klik <strong>Hubungkan ke Raspberry Pi</strong> → indikator hijau</li>
+      <li>Ikuti urutan 7 tahap di atas!</li>
+    </ol>
+    <div class="alert alert-warn" style="margin-top:8px">
+      ☑️ Cek dulu: <strong>CHECKLIST_COMMISSIONING.txt</strong> sebelum demo!
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px;border-color:#6d28d9;background:#1a0e2e">
+    <h3 style="color:#c4b5fd;margin:0 0 10px">❓ FAQ Cepat</h3>
+    <div style="display:grid;gap:10px;font-size:0.82rem">
+      <div><strong style="color:#e2e8f0">Q: Animasi HMI tidak bergerak meski sudah klik Power?</strong><br>
+      <span style="color:#94a3b8">A: Periksa apakah MQTT sudah terhubung (indikator hijau di header HMI). Jika masih amber, klik Hubungkan di tab Konfigurasi Broker.</span></div>
+      <div><strong style="color:#e2e8f0">Q: LED tidak menyala saat daemon jalan?</strong><br>
+      <span style="color:#94a3b8">A: Pastikan: (1) audio sudah OFF di /boot/config.txt, (2) jalankan dengan sudo, (3) resistor 330Ω terpasang di jalur DIN.</span></div>
+      <div><strong style="color:#e2e8f0">Q: MQTT HMI tidak bisa connect ke RPi?</strong><br>
+      <span style="color:#94a3b8">A: Cek (1) Mini PC & RPi di jaringan sama, (2) ping [IP_RPi] dari Mini PC berhasil, (3) Mosquitto aktif (port 9001 WebSocket).</span></div>
+      <div><strong style="color:#e2e8f0">Q: Bisa demo tanpa hardware RPi dulu?</strong><br>
+      <span style="color:#94a3b8">A: Ya! Gunakan 05_laptop_dryrun_simulator.py di laptop. Lihat panduan PANDUAN_DRYRUN_LAPTOP_WINDOWS.txt.</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Alat Peraga Akselerator Siklotron DECY-13 (13 MeV H⁻) ·
+  Politeknik Teknologi Nuklir Indonesia, BRIN ·
+  Panduan Visual v1.0 · November 2026
+</footer>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('nav a');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) cur = s.id; });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + cur);
+    });
+  });
+  // Smooth scroll
+  navLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

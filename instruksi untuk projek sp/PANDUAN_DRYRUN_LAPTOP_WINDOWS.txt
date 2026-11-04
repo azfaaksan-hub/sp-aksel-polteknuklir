@@ -1,0 +1,192 @@
+================================================================================
+  PANDUAN DRY-RUN DI LAPTOP WINDOWS
+  Uji Web HMI + Daemon Simulator TANPA RPi fisik
+  Cocok untuk: testing UI, verifikasi MQTT, latihan sebelum ke RPi
+================================================================================
+
+  TUJUAN:
+  Jalankan seluruh simulasi DECY-13 (Web HMI + State Machine + MQTT)
+  sepenuhnya di laptop Windows — tanpa RPi, tanpa hardware.
+
+  YANG BERJALAN DI LAPTOP:
+  - Mosquitto Broker  (port 1883 TCP + 9001 WebSocket)
+  - 05_laptop_dryrun_simulator.py  (menggantikan RPi daemon)
+  - Web HMI index.html di Chrome  (terhubung ke ws://127.0.0.1:9001)
+
+================================================================================
+  LANGKAH 1 — Install Mosquitto di Windows
+================================================================================
+
+  a) Buka browser, download Mosquitto untuk Windows:
+     https://mosquitto.org/download/
+     Pilih: "mosquitto-x.x.x-install-win64.exe"
+     Install seperti biasa (ikuti wizard, klik Next–Next–Finish)
+
+  b) Buat folder: C:\mosquitto\
+     Salin file: mosquitto_decy13_windows.conf ke C:\mosquitto\
+     (file ini ada di folder raspi_cli\ proyek ini)
+
+  c) Buka PowerShell sebagai Administrator (klik kanan → Run as Admin)
+     Ketik:
+       cd "C:\Program Files\mosquitto"
+       .\mosquitto.exe -c C:\mosquitto\mosquitto_decy13_windows.conf -v
+
+     Jika berhasil, output akan seperti:
+       1234567890: mosquitto version x.x starting
+       1234567890: Opening ipv4 listen socket on port 1883.
+       1234567890: Opening websockets listen socket on port 9001.
+
+     BIARKAN PowerShell ini tetap terbuka!
+
+  CATATAN — Jika muncul error "Access Denied":
+    → Pastikan jalankan sebagai Administrator
+    → Atau: netstat -ano | findstr :1883
+            Jika port sudah dipakai, kill process-nya dulu
+
+================================================================================
+  LANGKAH 2 — Install paho-mqtt di Python
+================================================================================
+
+  Buka PowerShell BARU (tidak perlu Admin), ketik:
+    pip install paho-mqtt
+
+  Verifikasi:
+    python -c "import paho.mqtt.client; print('OK')"
+
+  Harus muncul "OK".
+
+================================================================================
+  LANGKAH 3 — Jalankan Simulator Daemon Laptop
+================================================================================
+
+  Masih di PowerShell, navigasi ke folder proyek:
+    cd "C:\Users\ucing\agy_vscode\decy13_cyclotron_mqtt_cli_kit\decy13_mqtt_kit\raspi_cli"
+
+  Jalankan simulator:
+    python 05_laptop_dryrun_simulator.py
+
+  Output yang muncul:
+    ============================================================
+      DECY-13 MQTT DRY-RUN SIMULATOR (Mode Laptop)
+      Broker: 127.0.0.1:1883
+      CMD  : decy13/hmi/cmd
+      STATE: decy13/rpi/state (tiap 200 ms)
+    ============================================================
+    [HH:MM:SS] Terhubung ke Mosquitto 127.0.0.1:1883...
+
+  BIARKAN PowerShell ini tetap terbuka juga!
+
+================================================================================
+  LANGKAH 4 — Buka Web HMI di Chrome
+================================================================================
+
+  a) Buka File Explorer, navigasi ke:
+     C:\Users\ucing\agy_vscode\decy13_cyclotron_mqtt_cli_kit\decy13_mqtt_kit\web_hmi\
+
+  b) Klik kanan index.html → Open With → Google Chrome
+
+  c) Klik tab "Konfigurasi Broker MQTT" (di navigasi atas)
+
+  d) Ubah URL endpoint menjadi:
+     ws://127.0.0.1:9001
+
+  e) Klik tombol "Hubungkan ke Raspberry Pi"
+
+  f) Indikator di header harus berubah:
+     AMBER "MQTT LOOPBACK" → HIJAU "MQTT TERHUBUNG - RPi 3B+"
+     
+     Di PowerShell simulator akan muncul:
+     [HH:MM:SS] Terhubung ke Mosquitto 127.0.0.1:1883. Subscribe: decy13/rpi/state
+
+================================================================================
+  LANGKAH 5 — Uji Semua Kontrol
+================================================================================
+
+  Sekarang di Web HMI, coba satu per satu:
+
+  [a] Klik saklar POWER (kiri atas SCADA)
+      → Di simulator PowerShell: "Tahap 1: POWER ON — Buzzer 5 detik (simulasi)"
+      → Di HMI: indikator stage berubah, teks LCD berubah
+      → Tunggu ~5 detik
+
+  [b] Klik saklar VACUUM
+      → PowerShell: "Tahap 4: Kipas Vakum ON — memompa"
+      → HMI: grafik tekanan mulai turun dari 1013 mbar
+      → Animasi kipas berputar di panel Hardware Digital Twin
+
+  [c] Tunggu tekanan di HMI turun sampai < 1e-3 mbar (~20 detik simulasi)
+      Lalu klik INTERLOCK
+      → PowerShell: "Tahap 5: Interlock LOCKED — BEAM READY"
+      → HMI: indikator hijau "Ready"
+
+  [d] Klik START BEAM (tombol hijau besar)
+      → PowerShell: "Tahap 6: START BEAM! LED Spiral mulai berputar."
+      → HMI: animasi spiral berputar di canvas siklotron!
+      → Grafik energi mulai naik menuju 13 MeV
+
+  [e] Klik SHOOT EXPOSURE
+      → PowerShell: "Tahap 7: SHOOT AKTIF — menembak target!"
+      → HMI: partikel menembak ke target, buzzer beep animasi
+
+  [f] Klik EMERGENCY STOP (merah)
+      → PowerShell: "!!! EMERGENCY STOP !!! Semua sistem diputus."
+      → HMI: semua merah, animasi berhenti total
+
+  HASIL YANG DIHARAPKAN:
+  ✓ Semua kontrol HMI merespons simulasi
+  ✓ Animasi 100% mengikuti data dari simulator (state-driven)
+  ✓ Grafik tekanan & energi bergerak realistis
+  ✓ LCD panel di HMI menampilkan teks dari simulator
+  ✓ Log panel menampilkan pesan dari simulator tiap aksi
+
+================================================================================
+  LANGKAH 6 — Uji dengan mosquitto_pub (Opsional)
+================================================================================
+
+  Buka PowerShell KETIGA, ketik perintah manual:
+
+  # Power ON:
+  mosquitto_pub -h 127.0.0.1 -t "decy13/hmi/cmd" -m "{\"cmd\":\"TOGGLE_POWER\"}"
+
+  # Vacuum ON:
+  mosquitto_pub -h 127.0.0.1 -t "decy13/hmi/cmd" -m "{\"cmd\":\"TOGGLE_VACUUM\"}"
+
+  # Monitor state (Ctrl+C untuk berhenti):
+  mosquitto_sub -h 127.0.0.1 -t "decy13/rpi/state" -v
+
+  Catatan Windows: pastikan mosquitto_pub.exe ada di PATH.
+  Jika tidak, gunakan full path:
+    "C:\Program Files\mosquitto\mosquitto_pub.exe" -h 127.0.0.1 ...
+
+================================================================================
+  PERSIAPAN UNTUK LIVE DEMO DI RPi NANTI
+================================================================================
+
+  Saat nanti beralih ke RPi fisik, hanya 3 hal yang perlu diubah:
+
+  1. Hentikan 05_laptop_dryrun_simulator.py di laptop
+  2. Hentikan Mosquitto di laptop
+  3. Di Web HMI, ubah URL dari:
+       ws://127.0.0.1:9001
+     menjadi:
+       ws://[IP_RASPI]:9001
+  4. Jalankan di RPi:
+       sudo python3 04_decy13_mqtt_daemon.py
+  5. Klik Hubungkan di HMI → sekarang terhubung ke hardware nyata!
+
+  Animasi di HMI tidak perlu diubah sama sekali.
+  State machine, fisika, dan semua logika sudah identik antara
+  simulator laptop dan daemon RPi sesungguhnya.
+
+================================================================================
+  FILE YANG DIGUNAKAN DALAM DRY-RUN INI
+================================================================================
+
+  raspi_cli/05_laptop_dryrun_simulator.py   ← Jalankan di laptop
+  raspi_cli/mosquitto_decy13_windows.conf   ← Config Mosquitto Windows
+  web_hmi/index.html                        ← Buka di Chrome
+
+================================================================================
+  Proyek SP: Alat Peraga Siklotron DECY-13
+  Politeknik Teknologi Nuklir Indonesia, BRIN
+================================================================================

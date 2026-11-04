@@ -1,0 +1,804 @@
+================================================================================
+  PANDUAN LENGKAP UJI RASPBERRY PI 3B+ — PROYEK DECY-13
+  Dari Laptop → RPi Hardware → HMI Demo
+  
+  STATUS SAAT INI : Anda memegang RPi 3B+, masih di laptop Windows
+  TUJUAN AKHIR   : Semua hardware terverifikasi + Web HMI terhubung live
+================================================================================
+
+  BACAAN WAJIB SEBELUM MULAI
+  -----------------------------------------------------------------
+  Raspberry Pi 3 Model B+ memiliki 40 pin GPIO.
+  Semua nomor GPIO di kode ini menggunakan sistem BCM (Broadcom),
+  BUKAN nomor fisik pin.
+
+  Contoh:
+    GPIO 18 = Pin Fisik 12  (BERBEDA!)
+    GPIO 21 = Pin Fisik 40
+    GPIO 17 = Pin Fisik 11
+    GPIO 22 = Pin Fisik 15
+
+  Selalu periksa 2x sebelum menyambung kabel!
+
+================================================================================
+  FASE 0 : PERSIAPAN DI LAPTOP WINDOWS (SEBELUM PEGANG RPi)
+================================================================================
+
+  LANGKAH 0.1 — Install PuTTY (SSH ke RPi dari Laptop)
+  -----------------------------------------------------------------
+  Download PuTTY dari: https://www.putty.org/
+  Install seperti biasa (Next > Next > Finish).
+  PuTTY digunakan untuk mengetik perintah di RPi dari laptop.
+
+  LANGKAH 0.2 — Install WinSCP (Transfer File dari Laptop ke RPi)
+  -----------------------------------------------------------------
+  Download WinSCP dari: https://winscp.net/eng/download.php
+  Install seperti biasa.
+  WinSCP digunakan untuk menyalin file Python & konfigurasi ke RPi.
+
+  LANGKAH 0.3 — Siapkan MicroSD Card RPi (jika belum ada OS)
+  -----------------------------------------------------------------
+  Jika RPi belum punya OS:
+  a) Download Raspberry Pi Imager: https://www.raspberrypi.com/software/
+  b) Flash "Raspberry Pi OS Lite (64-bit)" ke MicroSD Card
+  c) Saat flash, klik ikon GEAR/Settings dan atur:
+     - Enable SSH: CENTANG
+     - Username: pi
+     - Password: (pilih password Anda, catat!)
+     - WiFi SSID & Password: isi jaringan WiFi Anda
+  d) Flash ke MicroSD, pasang ke RPi, nyalakan
+
+  LANGKAH 0.4 — Temukan IP Address RPi di Jaringan
+  -----------------------------------------------------------------
+  Cara 1 (Router): Buka halaman admin router (192.168.1.1 atau 192.168.137.1)
+                   Lihat daftar perangkat → cari "raspberrypi"
+  
+  Cara 2 (Laptop): Buka Command Prompt (Win+R, ketik cmd, Enter)
+                   Ketik: ping raspberrypi.local
+                   Lihat IP yang muncul (mis: 192.168.137.xxx)
+
+  Cara 3 (App):    Install "Advanced IP Scanner" di laptop, scan jaringan
+
+  >>> CATAT IP ADDRESS RPi ANDA: ___________________________ <<<
+
+  LANGKAH 0.5 — Sambungkan SSH via PuTTY
+  -----------------------------------------------------------------
+  a) Buka PuTTY
+  b) Host Name: [IP Address RPi dari langkah 0.4]
+  c) Port: 22, Connection Type: SSH
+  d) Klik Open
+  e) Login: pi
+  f) Password: [password yang diatur saat flash]
+  
+  Jika berhasil, terminal RPi akan terbuka di laptop!
+  Prompt akan terlihat seperti: pi@raspberrypi:~$
+
+================================================================================
+  FASE 1 : KONFIGURASI DASAR RASPBERRY PI 3B+
+================================================================================
+
+  Semua perintah diketik di terminal PuTTY (bukan Command Prompt Windows!)
+
+  LANGKAH 1.1 — Update Sistem
+  -----------------------------------------------------------------
+  Ketik di PuTTY (satu per satu, tunggu selesai):
+
+    sudo apt update
+    sudo apt upgrade -y
+
+  Waktu: 5-15 menit tergantung kecepatan internet.
+
+  LANGKAH 1.2 — Aktifkan SPI dan Matikan Audio (WAJIB!)
+  -----------------------------------------------------------------
+  MENGAPA:
+  - SPI harus aktif agar LCD TFT ILI9341 bisa berkomunikasi
+  - Audio HARUS dimatikan agar GPIO 18 bisa dipakai LED WS2812B via DMA
+    (jika audio ON, GPIO 18 dipakai sistem audio dan LED tidak akan menyala!)
+
+  Ketik:
+    sudo raspi-config
+
+  Di menu yang muncul:
+  a) Pilih "3 Interface Options" → Enter
+  b) Pilih "I4 SPI" → Enter
+  c) Pilih "Yes" → Enter → "OK"
+  d) Kembali ke menu utama
+  e) Pilih "Finish" → "Yes" (reboot)
+
+  ATAU cara cepat (tanpa menu):
+    sudo sed -i 's/^dtparam=audio=on/dtparam=audio=off/' /boot/config.txt
+    grep -qxF 'dtparam=spi=on' /boot/config.txt || echo 'dtparam=spi=on' | sudo tee -a /boot/config.txt
+    sudo reboot
+
+  Tunggu RPi reboot (~30 detik), lalu SSH lagi via PuTTY.
+
+  LANGKAH 1.3 — Verifikasi SPI Aktif
+  -----------------------------------------------------------------
+  Ketik:
+    ls /dev/spi*
+
+  Hasil yang benar: /dev/spidev0.0  /dev/spidev0.1
+  Jika tidak muncul → ulangi langkah 1.2
+
+  LANGKAH 1.4 — Install Mosquitto MQTT Broker
+  -----------------------------------------------------------------
+  Ketik:
+    sudo apt install -y mosquitto mosquitto-clients
+
+  Buat konfigurasi khusus DECY-13:
+    sudo nano /etc/mosquitto/conf.d/decy13.conf
+
+  Isi dengan teks berikut (salin persis):
+  ---
+  listener 1883
+  protocol mqtt
+  allow_anonymous true
+
+  listener 9001
+  protocol websockets
+  allow_anonymous true
+  ---
+
+  Simpan: Ctrl+O → Enter → Ctrl+X
+
+  Aktifkan dan restart:
+    sudo systemctl enable mosquitto
+    sudo systemctl restart mosquitto
+
+  Verifikasi berjalan:
+    sudo systemctl status mosquitto
+  
+  Harus ada tulisan "active (running)" berwarna hijau.
+
+  LANGKAH 1.5 — Install Dependensi Python
+  -----------------------------------------------------------------
+  Ketik:
+    sudo apt install -y python3-pip python3-pil git
+    sudo pip3 install paho-mqtt RPi.GPIO rpi-ws281x luma.lcd Pillow spidev --break-system-packages
+
+  Waktu: 3-10 menit.
+
+  LANGKAH 1.6 — Buat Folder Proyek & Transfer File
+  -----------------------------------------------------------------
+  Di PuTTY, buat folder:
+    mkdir -p /home/pi/decy13/raspi_cli
+
+  Di Laptop, buka WinSCP:
+  a) File protocol: SFTP
+  b) Host name: [IP RPi]
+  c) Username: pi
+  d) Password: [password]
+  e) Klik Login
+  f) Di panel kiri (laptop): navigasi ke folder raspi_cli
+  g) Di panel kanan (RPi): navigasi ke /home/pi/decy13/raspi_cli/
+  h) Salin semua file:
+     - config_hardware.json
+     - 01_test_relay_buzzer.py
+     - 02_test_lcd_ili9341.py
+     - 03_test_led_pixel_finder.py
+     - 04_decy13_mqtt_daemon.py
+     - mosquitto_decy13.conf (sudah dikerjakan di langkah 1.4)
+
+  Verifikasi file tersalin (di PuTTY):
+    ls -la /home/pi/decy13/raspi_cli/
+  
+  Harus muncul daftar file di atas.
+
+================================================================================
+  FASE 2 : WIRING HARDWARE (SAMBUNGAN KABEL)
+================================================================================
+
+  PERHATIAN: RPi harus dalam keadaan MATI saat menyambung kabel!
+  Cabut kabel power RPi terlebih dahulu!
+
+  ─────────────────────────────────────────────────────────────────
+  PETA PIN RASPBERRY PI 3B+ (40-PIN HEADER)
+  Dilihat dari atas dengan port USB di bawah
+  ─────────────────────────────────────────────────────────────────
+
+         [LUAR]          [DALAM]
+   3.3V ─[ 01 ]─[ 02 ]─ 5V
+   SDA1 ─[ 03 ]─[ 04 ]─ 5V
+   SCL1 ─[ 05 ]─[ 06 ]─ GND  ◄── GND utama
+  GPIO4 ─[ 07 ]─[ 08 ]─ TXD
+    GND ─[ 09 ]─[ 10 ]─ RXD
+ GPIO17 ─[ 11 ]─[ 12 ]─ GPIO18  ◄── LED WS2812B DIN
+ GPIO27 ─[ 13 ]─[ 14 ]─ GND
+ GPIO22 ─[ 15 ]─[ 16 ]─ GPIO23
+   3.3V ─[ 17 ]─[ 18 ]─ GPIO24  ◄── LCD DC
+  MOSI  ─[ 19 ]─[ 20 ]─ GND
+  MISO  ─[ 21 ]─[ 22 ]─ GPIO25  ◄── LCD RST
+  SCLK  ─[ 23 ]─[ 24 ]─ GPIO8   ◄── LCD CS (CE0)
+    GND ─[ 25 ]─[ 26 ]─ GPIO7
+  ID_SD ─[ 27 ]─[ 28 ]─ ID_SC
+  GPIO5 ─[ 29 ]─[ 30 ]─ GND
+  GPIO6 ─[ 31 ]─[ 32 ]─ GPIO12
+ GPIO13 ─[ 33 ]─[ 34 ]─ GND
+ GPIO19 ─[ 35 ]─[ 36 ]─ GPIO16
+ GPIO26 ─[ 37 ]─[ 38 ]─ GPIO20
+    GND ─[ 39 ]─[ 40 ]─ GPIO21  ◄── RELAY KIPAS VAKUM
+
+  Pin 11 = GPIO 17 ◄── BUZZER SFM-27
+  Pin 15 = GPIO 22 ◄── TOMBOL E-STOP (Input Pull-Up)
+
+  ─────────────────────────────────────────────────────────────────
+  WIRING 1: BUZZER (Uji Tahap 1)
+  ─────────────────────────────────────────────────────────────────
+
+  Buzzer Aktif 5V:
+  ┌─────────────────────────────────────────────────────┐
+  │  Buzzer (+) ──── Pin 11 (GPIO 17)                   │
+  │  Buzzer (-) ──── Pin 14 atau Pin 6 (GND)            │
+  └─────────────────────────────────────────────────────┘
+
+  Buzzer Pasif atau Arus > 16mA (pakai transistor NPN BC547):
+  ┌─────────────────────────────────────────────────────┐
+  │  Pin 11 (GPIO 17) ──[R 1kΩ]── Basis BC547           │
+  │  Kolektor BC547 ──── Buzzer (+)                     │
+  │  Buzzer (-) ──── Emiter BC547 ──── GND              │
+  │  (Gunakan catu daya 5V atau 12V untuk buzzer besar) │
+  └─────────────────────────────────────────────────────┘
+
+  ─────────────────────────────────────────────────────────────────
+  WIRING 2: MODUL RELAY KIPAS 12V (Uji Tahap 1)
+  ─────────────────────────────────────────────────────────────────
+
+  Modul Relay 1-Channel ke RPi:
+  ┌─────────────────────────────────────────────────────┐
+  │  Relay VCC ──── Pin 2  (5V RPi)                     │
+  │  Relay GND ──── Pin 6  (GND RPi)                    │
+  │  Relay IN  ──── Pin 40 (GPIO 21)                    │
+  └─────────────────────────────────────────────────────┘
+
+  Kipas DC 12V ke Relay:
+  ┌─────────────────────────────────────────────────────┐
+  │  Relay COM ──── [+12V dari adaptor]                 │
+  │  Relay NO  ──── Kabel Merah (+) Kipas               │
+  │  Kabel Hitam (-) Kipas ──── GND adaptor             │
+  │  GND adaptor ──── GND Pin 6 RPi (WAJIB dishare!)    │
+  └─────────────────────────────────────────────────────┘
+
+  LOGIKA ACTIVE-LOW:
+    GPIO 21 = 0 (LOW)  → Relay ON  → Kipas BERPUTAR
+    GPIO 21 = 1 (HIGH) → Relay OFF → Kipas MATI
+
+  ─────────────────────────────────────────────────────────────────
+  WIRING 3: TOMBOL E-STOP (Uji Tahap 1)
+  ─────────────────────────────────────────────────────────────────
+
+  Tombol NC (Normally-Closed):
+  ┌─────────────────────────────────────────────────────┐
+  │  Pin 15 (GPIO 22) ──── Kaki NC Tombol               │
+  │  Pin 14 (GND)     ──── Kaki COM Tombol              │
+  └─────────────────────────────────────────────────────┘
+
+  Internal Pull-Up diaktifkan di kode → GPIO 22 normaly HIGH.
+  Saat tombol ditekan (NC terbuka) → GPIO 22 = HIGH → ESTOP.
+  Saat normal (NC terhubung) → GPIO 22 = LOW → AMAN.
+
+  Catatan: Jika Anda belum punya tombol, SKIP dulu.
+  Tes buzzer & relay cukup tanpa tombol E-Stop.
+
+  ─────────────────────────────────────────────────────────────────
+  WIRING 4: LCD TFT 2.4/2.8 inch SPI ILI9341 (Uji Tahap 2)
+  ─────────────────────────────────────────────────────────────────
+
+  ┌──────────────────────────────────────────────────────────┐
+  │  LCD Pin     │ RPi Pin          │ GPIO  │ Keterangan     │
+  ├──────────────┼──────────────────┼───────┼────────────────┤
+  │  VCC         │ Pin 17 (3.3V)   │  -    │ Power 3.3V     │
+  │              │ [atau Pin 2 5V   │       │ cek datasheet] │
+  │  GND         │ Pin 6  (GND)    │  -    │ Ground         │
+  │  CS  (CE0)   │ Pin 24          │ GPIO8 │ SPI0 Chip Sel  │
+  │  RESET       │ Pin 22          │ GPIO25│ Reset LCD      │
+  │  DC (A0/RS)  │ Pin 18          │ GPIO24│ Data/Command   │
+  │  SDI (MOSI)  │ Pin 19          │ GPIO10│ SPI0 Data Out  │
+  │  SCK         │ Pin 23          │ GPIO11│ SPI0 Clock     │
+  │  LED         │ Pin 17 (3.3V)   │  -    │ Backlight      │
+  │              │ via R 100Ω      │       │                │
+  └──────────────────────────────────────────────────────────┘
+
+  TIPS: Jika LCD punya pin MISO/SDO, bisa dihubungkan ke Pin 21
+        (GPIO 9, MISO SPI0), tapi biasanya tidak diperlukan.
+
+  ─────────────────────────────────────────────────────────────────
+  WIRING 5: LED STRIP WS2812B 5V (Uji Tahap 3)
+  ─────────────────────────────────────────────────────────────────
+
+  PERHATIAN PENTING:
+  - GPIO 18 menggunakan DMA (akses memori langsung)
+  - AUDIO HARUS sudah dimatikan di /boot/config.txt (langkah 1.2)
+  - Skrip WS2812B WAJIB dijalankan dengan sudo
+
+  Sambungan Dasar (Strip < 10 LED, catu daya dari RPi):
+  ┌─────────────────────────────────────────────────────┐
+  │  LED VCC (Merah)  ──── Pin 2  (5V RPi)              │
+  │  LED GND (Hitam)  ──── Pin 6  (GND RPi)             │
+  │  LED DIN (Kuning) ──[R 330Ω]── Pin 12 (GPIO 18)     │
+  └─────────────────────────────────────────────────────┘
+
+  Sambungan dengan Power Supply Eksternal (Strip 64 LED):
+  ┌─────────────────────────────────────────────────────┐
+  │  PS Eksternal 5V (+) ──── LED VCC                   │
+  │  PS Eksternal 5V (-) ──── LED GND                   │
+  │  LED GND             ──── Pin 6 GND RPi (WAJIB!)    │
+  │  LED DIN             ──[R 330Ω]── Pin 12 (GPIO 18)  │
+  └─────────────────────────────────────────────────────┘
+
+  MENGAPA RESISTOR 330 OHM:
+  Melindungi dari sinyal noise dan mencegah kerusakan LED pertama.
+  Pasang resistor SEDEKAT mungkin dengan DIN LED.
+
+================================================================================
+  FASE 3 : PENGUJIAN TAHAP 1 — RELAY KIPAS & BUZZER
+================================================================================
+
+  HARDWARE YANG DIBUTUHKAN UNTUK FASE INI:
+  □ RPi 3B+ (sudah di-setup Fase 1 & 2)
+  □ Modul Relay 1-Channel 5V
+  □ Kipas DC 12V + Adaptor 12V
+  □ Buzzer Aktif (3.3V atau 5V)
+  □ Resistor 1kΩ (jika buzzer 5V via transistor)
+  □ Kabel jumper male-female
+  □ Breadboard (opsional, memudahkan)
+
+  LANGKAH 3.1 — Pastikan RPi MATI, sambungkan kabel
+  -----------------------------------------------------------------
+  Sambungkan sesuai WIRING 1 (Buzzer) dan WIRING 2 (Relay Kipas).
+  Belum perlu sambung LED Strip dan LCD dulu.
+
+  LANGKAH 3.2 — Nyalakan RPi, SSH via PuTTY
+  -----------------------------------------------------------------
+  Pasang kabel power RPi.
+  Tunggu 30-60 detik sampai RPi boot.
+  Buka PuTTY → SSH ke IP RPi.
+
+  LANGKAH 3.3 — Masuk ke folder proyek
+  -----------------------------------------------------------------
+    cd /home/pi/decy13/raspi_cli
+
+  LANGKAH 3.4 — Jalankan skrip uji
+  -----------------------------------------------------------------
+    python3 01_test_relay_buzzer.py
+
+  Anda akan melihat output:
+    === UJI ISOLASI RELAY KIPAS VAKUM & BUZZER DECY-13 ===
+    Pin Relay Kipas (BCM): GPIO 21 (Active-Low=True)
+    Pin Buzzer      (BCM): GPIO 17
+    Ketik perintah: [1] Buzzer 1s  [2] Kipas ON  [3] Kipas OFF  [q] Keluar
+    CLI >
+
+  LANGKAH 3.5 — Lakukan pengujian
+  -----------------------------------------------------------------
+  Ketik "1" lalu Enter → Buzzer harus berbunyi 1 detik
+  Ketik "2" lalu Enter → Kipas harus mulai berputar
+  Ketik "3" lalu Enter → Kipas harus berhenti
+  Ketik "q" lalu Enter → Keluar (relay & buzzer dimatikan otomatis)
+
+  HASIL YANG DIHARAPKAN:
+  ✓ Buzzer berbunyi tepat 1 detik saat ketik "1"
+  ✓ Kipas berputar saat ketik "2"
+  ✓ Kipas berhenti saat ketik "3"
+  ✓ Tidak ada error Python di terminal
+
+  TROUBLESHOOTING TAHAP 1:
+  ─────────────────────────────────────────────────────────────────
+  Buzzer tidak bunyi:
+    → Cek polaritas (+) ke GPIO 17, (-) ke GND
+    → Cek apakah buzzer aktif atau pasif (buzzer pasif butuh sinyal)
+    → Ukur tegangan Pin 11 saat aktif: harus ~3.3V
+
+  Kipas tidak berputar:
+    → Cek LED indikator modul relay (harus nyala saat aktif)
+    → Cek tegangan VCC relay: harus 5V (ukur dengan multimeter)
+    → Cek adaptor 12V terhubung dan GND dishare ke RPi
+    → Periksa apakah relay NO (Normally Open) atau NC yang disambung
+
+  Error "RuntimeError: No access to /dev/mem":
+    → Jalankan dengan sudo: sudo python3 01_test_relay_buzzer.py
+    → Atau tambahkan user pi ke grup gpio: sudo usermod -a -G gpio pi
+
+  >>> CENTANG JIKA TAHAP 1 BERHASIL: [ ] <<<
+
+================================================================================
+  FASE 4 : PENGUJIAN TAHAP 2 — LCD TFT SPI ILI9341
+================================================================================
+
+  HARDWARE YANG DIBUTUHKAN:
+  □ LCD TFT 2.4/2.8 inch SPI (Driver ILI9341)
+  □ Kabel jumper (8 kabel)
+
+  LANGKAH 4.1 — Matikan RPi, sambungkan LCD
+  -----------------------------------------------------------------
+    sudo shutdown -h now
+
+  Tunggu lampu hijau berhenti berkedip (RPi aman dimatikan).
+  Sambungkan LCD sesuai WIRING 4 di atas.
+  Nyalakan RPi kembali, SSH lagi.
+
+  LANGKAH 4.2 — Verifikasi SPI terdeteksi
+  -----------------------------------------------------------------
+    ls /dev/spidev*
+
+  Harus ada: /dev/spidev0.0
+
+  LANGKAH 4.3 — Jalankan skrip uji LCD
+  -----------------------------------------------------------------
+    cd /home/pi/decy13/raspi_cli
+    python3 02_test_lcd_ili9341.py
+
+  Program akan menampilkan 4 slide ke LCD (3 detik per slide):
+    Slide 1: TAHAP 1 — INISIASI SISTEM (biru cyan)
+    Slide 2: TAHAP 4 — POMPA VAKUM (biru langit)
+    Slide 3: TAHAP 6 — AKSELERASI SPIRAL (hijau)
+    Slide 4: TAHAP 7 — SHOOT EXPOSURE! (oranye)
+
+  HASIL YANG DIHARAPKAN:
+  ✓ Layar LCD menyala (backlight ON)
+  ✓ 4 slide muncul bergantian dengan warna berbeda
+  ✓ Teks terbaca dengan jelas
+
+  TROUBLESHOOTING TAHAP 2:
+  ─────────────────────────────────────────────────────────────────
+  LCD blank/hitam saja:
+    → Cek pin DC (GPIO 24, Pin 18) dan RST (GPIO 25, Pin 22)
+    → Cek VCC: beberapa modul LCD butuh 5V, bukan 3.3V
+    → Cek backlight: LED pin harus ke 3.3V via R 100Ω
+
+  Error "No module named 'luma'":
+    → Install ulang: sudo pip3 install luma.lcd --break-system-packages
+
+  Error "SPI device not found":
+    → SPI belum aktif: sudo raspi-config → Interface → SPI → Enable
+
+  Gambar terbalik/miring:
+    → Ubah parameter rotate di kode: rotate=1 atau rotate=2 atau rotate=3
+
+  >>> CENTANG JIKA TAHAP 2 BERHASIL: [ ] <<<
+
+================================================================================
+  FASE 5 : PENGUJIAN TAHAP 3 — LED STRIP WS2812B
+================================================================================
+
+  HARDWARE YANG DIBUTUHKAN:
+  □ LED Strip WS2812B (64 piksel atau lebih)
+  □ Power Supply 5V 3A (untuk 64 LED)
+  □ Resistor 330 Ohm (1 buah)
+  □ Kabel
+
+  LANGKAH 5.1 — Verifikasi audio sudah OFF
+  -----------------------------------------------------------------
+    cat /boot/config.txt | grep audio
+
+  Harus ada: dtparam=audio=off
+  Jika masih "on" → ulangi langkah 1.2 dan reboot!
+
+  LANGKAH 5.2 — Matikan RPi, sambungkan LED Strip
+  -----------------------------------------------------------------
+  Sambungkan sesuai WIRING 5.
+  PENTING: Pasang resistor 330Ω di jalur DIN!
+
+  LANGKAH 5.3 — Jalankan skrip pixel finder (WAJIB sudo!)
+  -----------------------------------------------------------------
+    cd /home/pi/decy13/raspi_cli
+    sudo python3 03_test_led_pixel_finder.py
+
+  LANGKAH 5.4 — Petakan fisik piksel ke indeks
+  -----------------------------------------------------------------
+  Program akan menyalakan satu piksel berwarna CYAN sekaligus.
+  
+  Gunakan menu:
+    [Enter]  → Maju 1 piksel (LED cyan berpindah ke piksel berikutnya)
+    [angka]  → Lompat ke indeks tertentu (mis: ketik "5" lalu Enter)
+    [s]      → Jalankan simulasi spiral penuh (indeks 0 → 63)
+    [q]      → Keluar
+
+  YANG HARUS DICATAT:
+  Sambil tekan Enter berulang kali, amati LED mana yang menyala:
+  
+  a) Catat piksel PERTAMA yang ada di TITIK TENGAH spiral (dalam Dee)
+     → Ini adalah spiral_start_idx (default: 0)
+  
+  b) Catat piksel TERAKHIR yang ada di UJUNG LUAR spiral
+     → Ini adalah spiral_end_idx (default: 47)
+  
+  c) Tekan Enter lagi setelah piksel 47 → sekarang masuk segmen SHOOT
+     Catat piksel PERTAMA di jalur lurus beamline
+     → Ini adalah shoot_start_idx (default: 48)
+  
+  d) Catat piksel TERAKHIR di jalur shoot (dekat target)
+     → Ini adalah shoot_end_idx (default: 63)
+
+  JIKA INDEKS BERBEDA DARI DEFAULT:
+  Edit file config_hardware.json:
+    nano /home/pi/decy13/raspi_cli/config_hardware.json
+
+  Ubah bagian led_mapping:
+    "spiral_start_idx": [ANGKA ANDA],
+    "spiral_end_idx": [ANGKA ANDA],
+    "shoot_start_idx": [ANGKA ANDA],
+    "shoot_end_idx": [ANGKA ANDA]
+
+  Simpan: Ctrl+O → Enter → Ctrl+X
+
+  HASIL YANG DIHARAPKAN:
+  ✓ LED menyala satu per satu saat tekan Enter
+  ✓ Posisi LED sesuai mapping (spiral di Dee, shoot di beamline)
+  ✓ Simulasi [s] menunjukkan efek percepatan (makin cepat ke luar)
+
+  CATATAN INDEKS HASIL UJI ANDA:
+    spiral_start_idx : _______
+    spiral_end_idx   : _______
+    shoot_start_idx  : _______
+    shoot_end_idx    : _______
+
+  >>> CENTANG JIKA TAHAP 3 BERHASIL: [ ] <<<
+
+================================================================================
+  FASE 6 : PENGUJIAN TAHAP 4 — DAEMON MQTT UTAMA
+================================================================================
+
+  PRASYARAT: Tahap 1, 2, 3 sudah berhasil!
+  
+  Ini adalah program utama yang mengintegrasikan SEMUA hardware:
+  Relay Kipas + Buzzer + LCD TFT + LED WS2812B + MQTT
+
+  LANGKAH 6.1 — Verifikasi Mosquitto berjalan
+  -----------------------------------------------------------------
+    sudo systemctl status mosquitto
+
+  Harus ada "active (running)".
+  Jika tidak: sudo systemctl start mosquitto
+
+  LANGKAH 6.2 — Jalankan Daemon (WAJIB sudo untuk WS2812B!)
+  -----------------------------------------------------------------
+    cd /home/pi/decy13/raspi_cli
+    sudo python3 04_decy13_mqtt_daemon.py
+
+  Output yang diharapkan:
+    Terhubung ke MQTT Broker (192.168.137.1:1883) rc=0
+    Daemon Hardware DECY-13 berjalan. Tekan Ctrl+C untuk keluar.
+
+  Daemon sekarang PUBLISH state ke decy13/rpi/state tiap 200ms!
+
+  LANGKAH 6.3 — Monitor telemetri dari laptop (terminal baru)
+  -----------------------------------------------------------------
+  Buka PuTTY KEDUA (jangan tutup yang pertama!), SSH lagi ke RPi.
+  Ketik:
+    mosquitto_sub -h localhost -t "decy13/rpi/state" -v
+
+  Setiap 200ms akan muncul JSON state RPi. Contoh:
+  decy13/rpi/state {"power": false, "vacuum": false, "pressure": 1013.0, ...}
+
+  LANGKAH 6.4 — Kirim perintah manual (uji MQTT publish)
+  -----------------------------------------------------------------
+  Di terminal KEDUA, ketik:
+
+  a) Power ON:
+     mosquitto_pub -h localhost -t "decy13/hmi/cmd" -m '{"cmd":"TOGGLE_POWER"}'
+     
+     Hasil: Buzzer RPi harus bunyi 5 detik!
+            LCD harus menampilkan "TAHAP 1-3: INISIASI & HMI"
+
+  b) Vakum ON:
+     mosquitto_pub -h localhost -t "decy13/hmi/cmd" -m '{"cmd":"TOGGLE_VACUUM"}'
+     
+     Hasil: Kipas harus mulai berputar!
+            LCD harus tampilkan "TAHAP 4: POMPA VAKUM AKTIF"
+
+  c) Tunggu tekanan turun (monitor di terminal 1, lihat nilai pressure)
+     Setelah pressure < 1e-3, kirim:
+     mosquitto_pub -h localhost -t "decy13/hmi/cmd" -m '{"cmd":"TOGGLE_INTERLOCK"}'
+
+  d) Start Beam:
+     mosquitto_pub -h localhost -t "decy13/hmi/cmd" -m '{"cmd":"START_BEAM"}'
+     
+     Hasil: LED Spiral harus mulai berputar!
+            LCD: "TAHAP 6: SPIRAL & RF"
+
+  e) Shoot Exposure:
+     mosquitto_pub -h localhost -t "decy13/hmi/cmd" -m '{"cmd":"SHOOT"}'
+     
+     Hasil: LED Beamline shoot harus menyala!
+            Buzzer beep setiap detik!
+
+  f) Emergency Stop:
+     mosquitto_pub -h localhost -t "decy13/hmi/cmd" -m '{"cmd":"EMERGENCY_STOP"}'
+     
+     Hasil: SEMUA LED merah berkedip, buzzer alarm, semua sistem mati!
+
+  LANGKAH 6.5 — Hentikan Daemon
+  -----------------------------------------------------------------
+  Ke terminal pertama, tekan Ctrl+C.
+  Daemon akan cleanup GPIO secara otomatis.
+
+  HASIL YANG DIHARAPKAN:
+  ✓ Daemon terhubung ke Mosquitto tanpa error
+  ✓ JSON state ter-publish tiap 200ms
+  ✓ Semua perintah MQTT merespons hardware dengan benar
+  ✓ Cascading interlock bekerja (beam drop saat vacuum mati)
+
+  >>> CENTANG JIKA TAHAP 4 BERHASIL: [ ] <<<
+
+================================================================================
+  FASE 7 : PERSIAPAN WEB HMI DI MINI PC
+================================================================================
+
+  LANGKAH 7.1 — Sambungkan Mini PC & RPi ke jaringan yang sama
+  -----------------------------------------------------------------
+  Opsi A (Kabel LAN): Hubungkan RPi dan Mini PC ke switch/router yang sama.
+  
+  Opsi B (WiFi Hotspot RPi):
+    Di PuTTY RPi, buat hotspot:
+    sudo nmcli device wifi hotspot ssid "DECY13_AP" password "decy13pass" ifname wlan0
+    Mini PC koneksi ke WiFi "DECY13_AP" dengan password "decy13pass"
+
+  Opsi C (Windows Internet Sharing):
+    Laptop Windows yang share internet via WiFi ke RPi.
+
+  LANGKAH 7.2 — Pastikan IP RPi adalah 192.168.137.1
+  -----------------------------------------------------------------
+  Cek IP RPi saat ini:
+    hostname -I
+
+  Jika IP berbeda dari 192.168.137.1:
+  
+  Di file web_hmi/index.html (di laptop), cari teks:
+    ws://192.168.137.1:9001
+  
+  Ganti dengan IP RPi yang benar. Simpan file.
+
+  LANGKAH 7.3 — Salin web_hmi ke Mini PC
+  -----------------------------------------------------------------
+  Cara 1: USB Flashdrive
+    - Di laptop, salin seluruh folder web_hmi/ ke USB
+    - Tancapkan ke Mini PC, buka index.html dengan Chrome
+
+  Cara 2: Python HTTP Server (lebih mudah, tidak perlu salin)
+    Di PuTTY RPi, jalankan:
+    cd /home/pi/decy13 && python3 -m http.server 8080 &
+    
+    Di Mini PC, buka Chrome, ketik:
+    http://[IP-RPi]:8080/web_hmi/index.html
+
+  LANGKAH 7.4 — Test Koneksi MQTT dari Mini PC ke RPi
+  -----------------------------------------------------------------
+  Buka index.html di Chrome Mini PC.
+  Klik tab "Konfigurasi Broker MQTT" di navigasi atas.
+  
+  Pastikan URL endpoint: ws://192.168.137.1:9001
+  (atau sesuai IP RPi Anda)
+  
+  Klik "Hubungkan ke Raspberry Pi"
+  
+  Hasil yang diharapkan:
+  - Indikator di header berubah dari AMBER ke HIJAU
+  - Tulisan "MQTT TERHUBUNG - RPi 3B+"
+  - Log bawah menampilkan "MQTT TERHUBUNG ke Mosquitto"
+
+  LANGKAH 7.5 — Test Kontrol Full dari Web HMI
+  -----------------------------------------------------------------
+  Pastikan daemon masih berjalan di RPi:
+    sudo python3 04_decy13_mqtt_daemon.py
+
+  Di Web HMI (Mini PC Chrome):
+  1. Klik saklar POWER → Buzzer RPi harus bunyi 5 detik
+  2. Klik saklar VACUUM → Kipas RPi harus berputar
+  3. Tunggu indikator tekanan turun di HMI
+  4. Klik INTERLOCK → Status LCD RPi berubah
+  5. Klik START BEAM → LED Spiral RPi mulai berputar
+     (animasi di HMI mengikuti posisi activeLedIdx dari RPi!)
+  6. Klik SHOOT EXPOSURE → LED Beamline menyala + buzzer beep
+
+  HASIL YANG DIHARAPKAN (DEMO FINAL):
+  ✓ Semua kontrol di Web HMI menggerakkan hardware RPi nyata
+  ✓ Animasi di Web HMI 100% sinkron dengan LED fisik di RPi
+  ✓ Grafik tekanan & arus di HMI mencerminkan nilai fisika daemon
+  ✓ LCD TFT di RPi menampilkan status yang sama dengan HMI
+  ✓ Emergency Stop dari HMI membunyikan alarm & mematikan semua sistem
+
+================================================================================
+  FASE 8 : MENJALANKAN DAEMON OTOMATIS SAAT RPi BOOT
+================================================================================
+
+  (Opsional — untuk demo tanpa harus SSH setiap kali)
+
+  LANGKAH 8.1 — Buat service systemd
+  -----------------------------------------------------------------
+    sudo nano /etc/systemd/system/decy13.service
+
+  Isi dengan:
+  ---
+  [Unit]
+  Description=DECY-13 Cyclotron MQTT Hardware Daemon
+  After=network.target mosquitto.service
+  Requires=mosquitto.service
+
+  [Service]
+  ExecStart=/usr/bin/sudo /usr/bin/python3 /home/pi/decy13/raspi_cli/04_decy13_mqtt_daemon.py
+  WorkingDirectory=/home/pi/decy13/raspi_cli
+  Restart=always
+  RestartSec=5
+  User=root
+
+  [Install]
+  WantedBy=multi-user.target
+  ---
+
+  Simpan: Ctrl+O → Enter → Ctrl+X
+
+  LANGKAH 8.2 — Aktifkan service
+  -----------------------------------------------------------------
+    sudo systemctl daemon-reload
+    sudo systemctl enable decy13.service
+    sudo systemctl start decy13.service
+
+  Verifikasi:
+    sudo systemctl status decy13.service
+
+  Sekarang daemon otomatis berjalan saat RPi dinyalakan!
+
+================================================================================
+  CHECKLIST FINAL SEBELUM DEMO
+================================================================================
+
+  Hardware:
+  [ ] Semua kabel tersambung dengan benar
+  [ ] Power Supply 5V untuk LED Strip (jika 64 LED)
+  [ ] Adaptor 12V untuk Kipas tersedia
+  [ ] Tombol E-Stop terpasang dan berfungsi
+
+  Software RPi:
+  [ ] Mosquitto berjalan (sudo systemctl status mosquitto)
+  [ ] Daemon DECY-13 berjalan (sudo systemctl status decy13.service)
+  [ ] IP RPi: _________________________
+
+  Jaringan:
+  [ ] Mini PC terhubung ke jaringan yang sama dengan RPi
+  [ ] Ping RPi dari Mini PC berhasil
+
+  Web HMI Mini PC:
+  [ ] index.html terbuka di Chrome/Edge
+  [ ] Indikator HIJAU "MQTT TERHUBUNG"
+  [ ] Test Power → Buzzer berbunyi 5 detik
+
+  Demo Sequence:
+  [ ] 1. Power ON (Buzzer 5s)
+  [ ] 2. Vacuum ON (Kipas berputar)
+  [ ] 3. Tunggu vakum < 1e-3 mbar
+  [ ] 4. Interlock LOCKED
+  [ ] 5. Start Beam (LED Spiral berputar)
+  [ ] 6. Shoot Exposure (LED Beamline + Buzzer Beep)
+  [ ] 7. Emergency Stop (Alarm + Semua Mati)
+
+================================================================================
+  CATATAN TROUBLESHOOTING CEPAT
+================================================================================
+
+  RPi tidak bisa di-ping / SSH gagal:
+    → Cek kabel LAN atau WiFi aktif
+    → Cek IP dengan scan atau lihat di router
+    → Tunggu 60 detik penuh setelah boot
+
+  Daemon error "Address already in use":
+    → Port 1883 sudah dipakai: sudo pkill -f mosquitto && sudo systemctl start mosquitto
+
+  LED tidak menyala setelah daemon jalan:
+    → Cek audio sudah OFF di /boot/config.txt
+    → Pastikan sudo digunakan
+
+  Web HMI tidak bisa connect MQTT:
+    → Buka F12 di Chrome → Console → lihat error detail
+    → Pastikan IP di URL benar
+    → Pastikan port 9001 ada di mosquitto config
+    → Cek firewall: sudo ufw allow 9001
+
+  Animasi HMI tidak sinkron dengan LED fisik:
+    → applyRpiState() sudah berjalan? Cek console browser
+    → Pastikan subscription topic benar: decy13/rpi/state
+
+================================================================================
+  Dibuat untuk Proyek SP: Alat Peraga Siklotron DECY-13
+  Politeknik Teknologi Nuklir Indonesia, BRIN
+  Versi: 1.0 | Tanggal: 2 November 2026
+================================================================================

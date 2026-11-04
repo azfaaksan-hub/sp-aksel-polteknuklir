@@ -1,0 +1,42 @@
+{
+  "mqtt": {
+    "broker_host": "192.168.137.1",
+    "broker_port_tcp": 1883,
+    "broker_port_mqtt_web": 9001,
+    "topic_cmd": "decy13/hmi/cmd",
+    "topic_state": "decy13/rpi/state",
+    "publish_interval_sec": 0.2
+  },
+  "pins_bcm": {
+    "led_ws2812b": 18,
+    "relay_vacuum_fan": 21,
+    "relay_vacuum_active_low": true,
+    "buzzer": 17,
+    "estop_button": 22,
+    "lcd_spi_port": 0,
+    "lcd_spi_device_ce": 0,
+    "lcd_dc": 24,
+    "lcd_rst": 25
+  },
+  "led_mapping": {
+    "total_leds": 64,
+    "brightness": 110,
+    "spiral_start_idx": 0,
+    "spiral_end_idx": 47,
+    "rf_gap_indices": [
+      11,
+      23,
+      35,
+      47
+    ],
+    "shoot_start_idx": 48,
+    "shoot_end_idx": 63
+  },
+  "physics_defaults": {
+    "magnet_current_a": 1450.0,
+    "rf_freq_mhz": 22.5,
+    "rf_voltage_kv": 45.0,
+    "max_energy_mev": 13.0,
+    "vacuum_pump_time_sec": 5.0
+  }
+}

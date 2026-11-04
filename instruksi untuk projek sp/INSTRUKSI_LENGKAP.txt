@@ -1,0 +1,500 @@
+================================================================================
+  INSTRUKSI LENGKAP PROYEK ALAT PERAGA SIKLOTRON DECY-13 (13 MeV H-)
+  Politeknik Teknologi Nuklir Indonesia (BRIN)
+  Arsitektur: Raspberry Pi 3B+ (Hardware) + Mini PC (Web HMI) via MQTT
+================================================================================
+
+  File ini berisi SEMUA yang perlu Anda siapkan, instal, dan sambungkan
+  agar sistem dapat berjalan sepenuhnya — dari awal hingga demo final.
+
+================================================================================
+  BAGIAN A : GAMBARAN UMUM SISTEM
+================================================================================
+
+  [MINI PC] ----(WiFi/LAN)----> [Mosquitto Broker di RPi] <---- [RPi 3B+]
+      |                                                               |
+  Web HMI                                              Hardware GPIO/SPI/DMA
+  (index.html)                                         - LED WS2812B (GPIO 18)
+  MQTT.js                                              - Relay Kipas (GPIO 21)
+  ws://192.168.137.1:9001                              - Buzzer (GPIO 17)
+                                                       - LCD ILI9341 (SPI0)
+                                                       - E-Stop (GPIO 22)
+
+  Alur Data:
+  1. Tombol di Web HMI diklik
+  2. MQTT Publish ke topic: decy13/hmi/cmd  (format JSON)
+  3. Daemon Python di RPi 3B+ menerima perintah
+  4. RPi menggerakkan hardware nyata (LED, Kipas, Buzzer, LCD)
+  5. RPi Publish keadaan nyata ke: decy13/rpi/state (tiap 200ms)
+  6. Web HMI menerima telemetri & semua animasi mengikuti data RPi
+
+================================================================================
+  BAGIAN B : WIRING (SAMBUNGAN KABEL)
+================================================================================
+
+  --- B1. LED STRIP WS2812B 5V (64 Piksel, Seri dari Spiral ke Shoot) ---
+
+  WS2812B             Raspberry Pi 3B+
+  ----------          ----------------
+  5V  (Merah)   -->  Pin 2 (5V Power) atau sumber 5V eksternal
+  GND (Hitam)   -->  Pin 6 (GND)          ** GND harus sama/common **
+  DIN (Kuning)  -->  Pin 12 = GPIO 18     ** Data DMA PWM0 **
+
+  PENTING:
+  - Gunakan RESISTOR 300-470 Ohm di jalur DIN (dari GPIO 18 ke LED)
+  - Jika panjang strip > 1 meter, gunakan power supply 5V TERPISAH
+    (bukan dari RPi) agar arus tidak drop. GND tetap dishare ke RPi.
+  - Jika pakai power supply eksternal:
+      PS_EXT 5V  --> VCC Strip
+      PS_EXT GND --> GND Strip + GND Pin 6 RPi (titik ground bersama)
+
+  Urutan Piksel:
+  - Piksel #0  - #47  = Segmen Spiral (di dalam area elektroda Dee)
+  - Piksel #48 - #63  = Segmen Lurus Beamline (tembak ke Target)
+
+  --- B2. MODUL RELAY KIPAS DC 12V (Active-LOW) ---
+
+  Modul Relay 1 Channel     Raspberry Pi 3B+
+  ----------------------    ----------------
+  VCC   (Merah)       -->  Pin 2 (5V)
+  GND   (Hitam)       -->  Pin 6 (GND)
+  IN    (Kuning)      -->  Pin 40 = GPIO 21
+
+  Sambungan Kipas 12V ke Relay:
+  - COM  --> Kabel + Kipas DC 12V
+  - NO   --> Sumber +12V (dari adaptor 12V)
+  - (NC dibiarkan tidak terhubung)
+
+  Logika Active-LOW:
+  - GPIO 21 = LOW  (0V)  --> Relay ON  --> Kipas BERPUTAR
+  - GPIO 21 = HIGH (3.3V) -> Relay OFF --> Kipas MATI
+
+  --- B3. BUZZER SFM-27 (atau Buzzer Pasif) ---
+
+  Buzzer              Raspberry Pi 3B+
+  ------              ----------------
+  + (Merah)     -->  TRANSISTOR NPN (mis. BC547) -- Kolektor
+                     GPIO 17 (Pin 11) --> Basis via R 1k Ohm
+                     Emiter --> GND
+  - (Hitam)     -->  GND
+
+  Atau (buzzer aktif 3.3V langsung):
+  + (Merah)     -->  Pin 11 = GPIO 17  (arus max 16 mA)
+  - (Hitam)     -->  Pin 6  (GND)
+
+  --- B4. LCD TFT 2.4/2.8 inch SPI (Driver ILI9341, 320x240) ---
+
+  LCD Module Pin      Raspberry Pi 3B+ (SPI0 Hardware)
+  --------------      --------------------------------
+  VCC               -->  Pin 17 (3.3V) ATAU Pin 2 (5V sesuai modul)
+  GND               -->  Pin 6  (GND)
+  CS  (CE0)         -->  Pin 24 = GPIO 8   (SPI0 CE0)
+  RESET             -->  Pin 22 = GPIO 25  (RST dikontrol luma.lcd)
+  DC  (A0/RS)       -->  Pin 18 = GPIO 24  (Data/Command select)
+  SDI (MOSI)        -->  Pin 19 = GPIO 10  (SPI0 MOSI)
+  SCK (SCLK)        -->  Pin 23 = GPIO 11  (SPI0 SCLK)
+  LED (Backlight)   -->  Pin 17 (3.3V) via R 47-100 Ohm, atau langsung 3.3V
+  MISO (SDO)        -->  Pin 21 = GPIO 9   (SPI0 MISO, kadang tidak perlu)
+
+  --- B5. TOMBOL FISIK EMERGENCY STOP (Normally-Closed ke GND) ---
+
+  Tombol NC           Raspberry Pi 3B+
+  ----------          ----------------
+  Salah satu kaki --> Pin 15 = GPIO 22  (Input Pull-Up internal diaktifkan)
+  Kaki lain       --> Pin 14 (GND)
+
+  Logika:
+  - Normal (NC terhubung): GPIO 22 = LOW  (0V)  --> AMAN
+  - Tombol Ditekan (NC terputus): GPIO 22 = HIGH (3.3V) --> EMERGENCY STOP
+  CATATAN: Kode daemon mendeteksi transisi LOW saat E-Stop ditekan.
+  Periksa kembali: kode menggunakan PUD_UP + baca LOW=ESTOP.
+
+================================================================================
+  BAGIAN C : PERSIAPAN RASPBERRY PI 3 MODEL B+
+================================================================================
+
+  --- C1. Aktivasi SPI & Nonaktifkan Audio (WAJIB untuk WS2812B DMA) ---
+
+  Jalankan di terminal RPi:
+
+    sudo nano /boot/config.txt
+
+  Cari baris:
+    dtparam=audio=on
+  Ganti menjadi:
+    dtparam=audio=off
+
+  Tambahkan di bagian bawah (jika belum ada):
+    dtparam=spi=on
+
+  Simpan (Ctrl+O, Enter, Ctrl+X), lalu reboot:
+    sudo reboot
+
+  Alternatif cepat via CLI:
+    sudo sed -i 's/^dtparam=audio=on/dtparam=audio=off/' /boot/config.txt
+    grep -qxF 'dtparam=spi=on' /boot/config.txt || echo 'dtparam=spi=on' | sudo tee -a /boot/config.txt
+    sudo reboot
+
+  --- C2. Install Mosquitto Broker MQTT ---
+
+    sudo apt update && sudo apt install -y mosquitto mosquitto-clients
+
+  Buat konfigurasi Mosquitto untuk DECY-13:
+
+    sudo nano /etc/mosquitto/conf.d/decy13.conf
+
+  Isi file tersebut dengan:
+  ---
+    listener 1883
+    protocol mqtt
+    allow_anonymous true
+
+    listener 9001
+    protocol websockets
+    allow_anonymous true
+  ---
+
+  Restart Mosquitto:
+    sudo systemctl restart mosquitto
+    sudo systemctl enable mosquitto
+
+  Verifikasi berjalan:
+    sudo systemctl status mosquitto
+
+  --- C3. Install Dependensi Python ---
+
+    sudo apt install -y python3-pip python3-pil
+    sudo pip3 install paho-mqtt>=1.6.1 RPi.GPIO rpi-ws281x luma.lcd Pillow spidev --break-system-packages
+
+  Atau gunakan file requirements.txt:
+    sudo pip3 install -r raspi_cli/requirements.txt --break-system-packages
+
+  --- C4. Transfer File ke Raspberry Pi ---
+
+  Dari komputer Anda (di Windows PowerShell), gunakan SCP:
+
+    scp -r "C:\Users\ucing\agy_vscode\decy13_cyclotron_mqtt_cli_kit\decy13_mqtt_kit\raspi_cli" pi@192.168.137.1:/home/pi/decy13/
+
+  Atau gunakan WinSCP (GUI) / FileZilla dengan protokol SFTP ke IP 192.168.137.1.
+
+  File yang perlu ditransfer ke RPi di folder /home/pi/decy13/raspi_cli/:
+    - config_hardware.json
+    - 01_test_relay_buzzer.py
+    - 02_test_lcd_ili9341.py
+    - 03_test_led_pixel_finder.py
+    - 04_decy13_mqtt_daemon.py
+
+================================================================================
+  BAGIAN D : PERSIAPAN MINI PC (Web HMI)
+================================================================================
+
+  --- D1. Software yang Diperlukan di Mini PC ---
+
+  Mini PC hanya memerlukan BROWSER MODERN. TIDAK perlu install Python,
+  MQTT broker, atau software tambahan khusus.
+
+  Software yang dibutuhkan:
+  1. Browser modern (Google Chrome v90+, Firefox v85+, atau Edge v90+)
+     --> Chrome/Edge direkomendasikan (dukungan WebSocket & Canvas terbaik)
+
+  2. File web_hmi/index.html (sudah ada, perlu PERBAIKAN koneksi MQTT)
+     --> File ini adalah 1 file HTML tunggal, tidak perlu server web lokal
+     --> Cukup buka langsung via: File > Open > index.html
+     --> ATAU salin ke Mini PC via USB flashdrive
+
+  3. Koneksi Jaringan ke Raspberry Pi:
+     --> Sambungkan Mini PC & RPi ke jaringan yang sama (WiFi hotspot RPi,
+         atau keduanya ke router LAN yang sama)
+     --> IP Raspberry Pi harus 192.168.137.1 (atau sesuaikan di index.html)
+
+  --- D2. Cara Membuka Web HMI ---
+
+  Opsi A (Langsung dari file):
+    - Salin seluruh folder web_hmi/ ke Mini PC
+    - Buka Google Chrome
+    - Tekan Ctrl+O atau File > Open File
+    - Pilih index.html
+
+  Opsi B (Dari jaringan lokal dengan Python HTTP Server di RPi):
+    Di RPi: python3 -m http.server 8080 --directory /home/pi/decy13/web_hmi/
+    Di Mini PC browser: buka http://192.168.137.1:8080
+
+  --- D3. Status Web HMI Saat Ini & Yang Perlu Diperbaiki ---
+
+  KONDISI SAAT INI (PERLU DIPERBAIKI):
+  - Web HMI sudah memiliki library mqtt.js (dari CDN unpkg.com)
+  - Namun fungsi broadcastToRaspberryPi() masih menggunakan WebSocket biasa
+  - Loop simulasi fisika (vakum, energi, LED) masih berjalan mandiri di browser
+
+  YANG PERLU DILAKUKAN (lihat Bagian E):
+  - Aktifkan koneksi MQTT.js ke ws://192.168.137.1:9001
+  - Subscribe topic decy13/rpi/state
+  - Publish perintah ke decy13/hmi/cmd saat tombol diklik
+  - Nonaktifkan/hapus loop simulasi mandiri di browser
+
+  CATATAN SEMENTARA:
+  Untuk demo/presentasi SEBELUM perbaikan selesai, Web HMI masih bisa
+  dioperasikan dalam "Mode Simulasi" (berjalan mandiri tanpa RPi).
+  Namun animasi tidak akan sinkron dengan hardware nyata.
+
+================================================================================
+  BAGIAN E : PERBAIKAN WEB HMI (MQTT STATE-DRIVEN MURNI)
+================================================================================
+
+  Perubahan yang diperlukan di web_hmi/index.html:
+
+  --- E1. Tambahkan Koneksi MQTT.js (sudah ada CDN-nya) ---
+
+  Cari baris di bagian JAVASCRIPT (sekitar baris 893):
+    const state = {
+      ...
+      wsClient: null,
+      wsConnected: false,
+      ...
+    };
+
+  Tambahkan variabel MQTT:
+    mqttClient: null,
+    mqttConnected: false,
+
+  --- E2. Fungsi Koneksi MQTT ---
+
+  Tambahkan fungsi ini di awal JavaScript (sebelum simulationStep):
+
+    function connectMQTT() {
+      const brokerUrl = 'ws://192.168.137.1:9001';
+      const options = {
+        clientId: 'hmi_decy13_' + Math.random().toString(16).substr(2, 8),
+        keepalive: 30,
+        clean: true,
+      };
+      state.mqttClient = mqtt.connect(brokerUrl, options);
+
+      state.mqttClient.on('connect', () => {
+        state.mqttConnected = true;
+        state.mqttClient.subscribe('decy13/rpi/state');
+        appendCommLog('INFO', 'MQTT TERHUBUNG ke Mosquitto ws://192.168.137.1:9001');
+        document.getElementById('connDot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+        document.getElementById('connText').textContent = 'MQTT TERHUBUNG - RPi 3B+';
+      });
+
+      state.mqttClient.on('message', (topic, payload) => {
+        if (topic === 'decy13/rpi/state') {
+          try {
+            const rpiState = JSON.parse(payload.toString());
+            applyRpiState(rpiState);  // Fungsi update UI dari data RPi
+          } catch(e) { console.error('Parse error:', e); }
+        }
+      });
+
+      state.mqttClient.on('error', (err) => {
+        appendCommLog('ERR', 'MQTT Error: ' + err.message);
+      });
+
+      state.mqttClient.on('close', () => {
+        state.mqttConnected = false;
+        appendCommLog('INFO', 'MQTT terputus. Reconnect otomatis...');
+      });
+    }
+
+  --- E3. Fungsi Publish Perintah ke RPi ---
+
+  Ganti fungsi broadcastToRaspberryPi() yang lama dengan:
+
+    function publishCommand(cmdObj) {
+      if (state.mqttClient && state.mqttConnected) {
+        state.mqttClient.publish('decy13/hmi/cmd', JSON.stringify(cmdObj));
+        appendCommLog('TX', 'CMD: ' + JSON.stringify(cmdObj));
+      } else {
+        appendCommLog('WARN', 'MQTT belum terhubung. Perintah tidak dikirim.');
+      }
+    }
+
+  Contoh pemanggilan di event listener tombol:
+    Power ON:      publishCommand({ cmd: 'TOGGLE_POWER' })
+    Vacuum:        publishCommand({ cmd: 'TOGGLE_VACUUM' })
+    Set Params:    publishCommand({ cmd: 'SET_PARAMS', magnet_a: 1450, rf_mhz: 22.5, rf_kv: 45, beam_ua: 8.4 })
+    Interlock:     publishCommand({ cmd: 'TOGGLE_INTERLOCK' })
+    Start Beam:    publishCommand({ cmd: 'START_BEAM' })
+    Shoot:         publishCommand({ cmd: 'SHOOT' })
+    Emergency:     publishCommand({ cmd: 'EMERGENCY_STOP' })
+
+  --- E4. Fungsi applyRpiState() — Update UI dari Data RPi ---
+
+  Tambahkan fungsi ini yang mengupdate state & UI dari telemetri RPi:
+
+    function applyRpiState(rpi) {
+      // Sinkronisasi state lokal dari data RPi
+      state.power     = rpi.power;
+      state.vacuum    = rpi.vacuum;
+      state.rf        = rpi.rf;
+      state.interlock = rpi.interlocks;
+      state.beam      = rpi.beam;
+      state.shooting  = rpi.exposureActive;
+      state.estop     = rpi.emergency;
+
+      // Sinkronisasi indeks LED (KUNCI: dari RPi, bukan dihitung lokal)
+      state.activeLedIndex  = rpi.activeLedIdx >= 0 ? rpi.activeLedIdx : 0;
+      state.shootLedIndex   = rpi.shootLedIdx;
+
+      // Sinkronisasi nilai fisika
+      state.vacPressureMbar  = rpi.pressure;
+      state.beamEnergyMev    = rpi.beamEnergy;
+      state.actualBeamUa     = rpi.beamCurrent;
+      state.targetCurrentUa  = rpi.targetCurrent;
+      state.exposureSeconds  = rpi.exposureSeconds;
+
+      // Update teks LCD di Web HMI dari RPi
+      if (document.getElementById('lcdLine1')) {
+        document.getElementById('lcdLine1').textContent = rpi.lcd_line1 || '';
+        document.getElementById('lcdLine2').textContent = rpi.lcd_line2 || '';
+        document.getElementById('lcdLine3').textContent = rpi.lcd_line3 || '';
+        document.getElementById('lcdLine4').textContent = rpi.lcd_line4 || '';
+      }
+
+      // Update log dari RPi
+      if (rpi.logs && rpi.logs.length) {
+        rpi.logs.forEach(l => appendCommLog('RX', l));
+      }
+
+      syncUiFromState();
+    }
+
+  --- E5. Panggil connectMQTT() saat halaman dimuat ---
+
+  Di bagian paling bawah script (sebelum closing baris requestAnimationFrame):
+    connectMQTT();  // Tambahkan ini
+
+================================================================================
+  BAGIAN F : URUTAN PENGUJIAN TRY-AND-ERROR
+================================================================================
+
+  TAHAP 1 — Uji Relay Kipas & Buzzer (di RPi)
+  -----------------------------------------------
+  Prasyarat : Hardware tersambung (wiring B2, B3)
+  Perintah  : python3 /home/pi/decy13/raspi_cli/01_test_relay_buzzer.py
+  Tanpa sudo: YA (tidak perlu sudo)
+  Hasil OK  : Kipas berputar saat ketik "2", berhenti saat "3", buzzer bunyi 1s saat "1"
+
+  TAHAP 2 — Uji LCD TFT SPI ILI9341 (di RPi)
+  ---------------------------------------------
+  Prasyarat : Hardware tersambung (wiring B4), SPI diaktifkan (langkah C1)
+  Perintah  : python3 /home/pi/decy13/raspi_cli/02_test_lcd_ili9341.py
+  Tanpa sudo: YA
+  Hasil OK  : Layar LCD menampilkan 4 slide tahapan dengan warna berbeda
+
+  TAHAP 3 — Cari Indeks Piksel LED WS2812B (di RPi)
+  ---------------------------------------------------
+  Prasyarat : Hardware tersambung (wiring B1), audio NONAKTIF (langkah C1)
+  Perintah  : sudo python3 /home/pi/decy13/raspi_cli/03_test_led_pixel_finder.py
+  WAJIB sudo: YA (DMA akses memori langsung)
+  Yang harus dilakukan:
+    - Tekan Enter untuk maju 1 piksel, catat piksel mana yang ada di titik
+      PUSAT SPIRAL (idealnya indeks 0) dan UJUNG SPIRAL (idealnya indeks 47)
+    - Tekan "s" untuk cek animasi percepatan spiral
+    - Catat indeks piksel pertama beamline shoot (setelah segmen spiral)
+    - Update config_hardware.json jika indeks berbeda dari default
+
+  TAHAP 4 — Jalankan Daemon MQTT Utama (di RPi)
+  -----------------------------------------------
+  Prasyarat : Mosquitto berjalan (langkah C2), semua hardware tersambung
+  Perintah  : sudo python3 /home/pi/decy13/raspi_cli/04_decy13_mqtt_daemon.py
+  WAJIB sudo: YA (WS2812B DMA)
+  Hasil OK  : Terminal menampilkan "Terhubung ke MQTT Broker..." dan
+              publish state tiap 200ms
+
+  VERIFIKASI di komputer lain (monitoring MQTT):
+    mosquitto_sub -h 192.168.137.1 -t "decy13/rpi/state" -v
+    (Harus muncul JSON state tiap 200ms)
+
+  KIRIM PERINTAH MANUAL dari komputer (uji):
+    mosquitto_pub -h 192.168.137.1 -t "decy13/hmi/cmd" -m '{"cmd":"TOGGLE_POWER"}'
+    mosquitto_pub -h 192.168.137.1 -t "decy13/hmi/cmd" -m '{"cmd":"TOGGLE_VACUUM"}'
+
+  TAHAP 5 — Buka Web HMI di Mini PC (setelah Tahap 4 berjalan)
+  --------------------------------------------------------------
+  1. Salin folder web_hmi/ ke Mini PC (USB/SCP/jaringan)
+  2. Buka index.html di Chrome/Edge
+  3. Klik tab "WebSocket / MQTT Bridge"
+  4. Pastikan URL: ws://192.168.137.1:9001
+  5. Klik "Hubungkan ke Raspberry Pi"
+  6. Periksa log: harus muncul "MQTT TERHUBUNG"
+  7. Klik tombol POWER di HMI — cek apakah hardware RPi merespons
+
+================================================================================
+  BAGIAN G : TROUBLESHOOTING UMUM
+================================================================================
+
+  MASALAH: LED WS2812B tidak menyala
+  SOLUSI:  - Pastikan audio di /boot/config.txt sudah OFF
+           - Pastikan jalankan dengan sudo
+           - Cek resistor 300-470 Ohm di jalur DIN
+           - Cek tegangan: 5V harus stabil (ukur dengan multimeter)
+
+  MASALAH: LCD tidak menampilkan gambar
+  SOLUSI:  - Jalankan: ls /dev/spidev* (harus ada /dev/spidev0.0)
+           - Cek wiring DC (GPIO 24) dan RST (GPIO 25)
+           - Cek backlight: LED pin LCD terhubung ke 3.3V via R 100 Ohm
+
+  MASALAH: MQTT tidak terhubung dari Web HMI
+  SOLUSI:  - Pastikan Mosquitto berjalan: sudo systemctl status mosquitto
+           - Pastikan port 9001 (WebSocket) ada di config Mosquitto
+           - Pastikan Mini PC & RPi di jaringan yang SAMA
+           - Di Chrome, buka Developer Tools (F12) > Console untuk cek error
+           - Jika buka via file://, beberapa browser blokir WebSocket — 
+             gunakan python3 -m http.server untuk serve via http://
+
+  MASALAH: Relay tidak merespons
+  SOLUSI:  - Cek tegangan VCC relay module: harus 5V
+           - Cek LED indikator di modul relay (harus nyala saat aktif)
+           - Cek apakah modul Active-LOW atau Active-HIGH, sesuaikan kode
+
+  MASALAH: E-Stop tidak bekerja
+  SOLUSI:  - Cek konfigurasi PIN 22 (harus INPUT dengan PULL_UP internal)
+           - Cek sambungan tombol NC ke GND
+           - Uji manual: short GPIO 22 ke GND dengan kabel, daemon harus STOP
+
+================================================================================
+  BAGIAN H : RINGKASAN TOPIK MQTT
+================================================================================
+
+  Topic Perintah (Mini PC --> RPi):   decy13/hmi/cmd
+  Topic Telemetri (RPi --> Mini PC):  decy13/rpi/state
+  Broker IP:                          192.168.137.1
+  Port TCP (Python daemon):           1883
+  Port WebSocket (Browser MQTT.js):   9001
+  Publish interval:                   200 ms (5 Hz)
+
+  Contoh Payload JSON Perintah:
+    { "cmd": "TOGGLE_POWER" }
+    { "cmd": "TOGGLE_VACUUM" }
+    { "cmd": "TOGGLE_INTERLOCK" }
+    { "cmd": "SET_PARAMS", "magnet_a": 1450, "rf_mhz": 22.5, "rf_kv": 45, "beam_ua": 8.4 }
+    { "cmd": "START_BEAM" }
+    { "cmd": "SHOOT" }
+    { "cmd": "EMERGENCY_STOP" }
+
+================================================================================
+  BAGIAN I : DAFTAR FILE PROYEK
+================================================================================
+
+  decy13_mqtt_kit/
+  ├── raspi_cli/
+  │   ├── config_hardware.json           <- Konfigurasi pin & MQTT
+  │   ├── 01_test_relay_buzzer.py        <- Uji Relay + Buzzer (python3)
+  │   ├── 02_test_lcd_ili9341.py         <- Uji LCD TFT SPI (python3)
+  │   ├── 03_test_led_pixel_finder.py    <- Cari indeks piksel (sudo python3)
+  │   ├── 04_decy13_mqtt_daemon.py       <- Daemon MQTT utama (sudo python3)
+  │   └── requirements.txt              <- Dependensi Python
+  ├── web_hmi/
+  │   └── index.html                    <- Web HMI SCADA (buka di browser)
+  ├── nodered/
+  │   └── flows_mqtt_decy13.json        <- Import ke Node-RED (opsional)
+  └── instruksi untuk projek sp/
+      └── INSTRUKSI_LENGKAP.txt         <- File ini
+
+================================================================================
+  Dibuat oleh: Senior Embedded Systems & Nuclear Instrumentation Engineer
+  Proyek: Alat Peraga Akselerator Siklotron DECY-13 (13 MeV H-)
+  Institusi: Politeknik Teknologi Nuklir Indonesia, BRIN
+================================================================================

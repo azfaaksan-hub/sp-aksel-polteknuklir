@@ -1,0 +1,2649 @@
+<!doctype html>
+<html lang="id" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DECY-13 Cyclotron Control Center — Web HMI & Simulator Terpadu</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg-main: #111625;
+    --bg-console: #151b2e;
+    --bg-panel: #1a223a;
+    --bg-card: #202946;
+    --blue-accent: #3b82f6;
+    --cyan-accent: #38bdf8;
+    --purple-accent: #8b5cf6;
+    --pink-accent: #f43f5e;
+    --green-ok: #10b981;
+    --amber-warn: #f59e0b;
+    --red-danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0f1422;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #111625; }
+  ::-webkit-scrollbar-thumb { background: #283556; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+  /* Main Gaming Console Chassis (Exact match with uploaded reference image) */
+  .console-shell {
+    background: #151b2e;
+    border: 1px solid rgba(56, 189, 248, 0.15);
+    border-radius: 28px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.85);
+  }
+  .console-card {
+    background: #1c243d;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 22px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    transition: all 0.25s ease;
+  }
+  .console-card:hover {
+    border-color: rgba(56, 189, 248, 0.25);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .scada-card {
+    background: #1c243d;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+  }
+  .status-tile {
+    background: #171e33;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+
+  /* 3 Vibrant 3D Action Cards (Blue, Purple, Pink) */
+  .card-3d-blue {
+    background: linear-gradient(145deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    border-radius: 22px;
+    transition: all 0.2s ease;
+  }
+  .card-3d-blue:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.55);
+  }
+  .card-3d-purple {
+    background: linear-gradient(145deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(192, 132, 252, 0.4);
+    border-radius: 22px;
+    transition: all 0.2s ease;
+  }
+  .card-3d-purple:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(139, 92, 246, 0.55);
+  }
+  .card-3d-pink {
+    background: linear-gradient(145deg, #f43f5e 0%, #e11d48 100%);
+    box-shadow: 0 10px 25px rgba(244, 63, 94, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(251, 113, 133, 0.4);
+    border-radius: 22px;
+    transition: all 0.2s ease;
+  }
+  .card-3d-pink:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(244, 63, 94, 0.55);
+  }
+
+  /* Modern Toggle Switch */
+  .iot-switch {
+    position: relative;
+    width: 46px;
+    height: 24px;
+    background: #252e4a;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease;
+    border: 1px solid #3b4870;
+  }
+  .iot-switch.active {
+    background: #3b82f6;
+    border-color: #60a5fa;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+  }
+  .iot-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: #f8fafc;
+    border-radius: 50%;
+    transition: transform 0.25s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .iot-switch.active::after {
+    transform: translateX(22px);
+    background: #ffffff;
+  }
+
+  @keyframes spinFan {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .fan-spinning {
+    animation: spinFan var(--fan-speed, 1.2s) linear infinite;
+  }
+  input[type=range] {
+    accent-color: #38bdf8;
+    cursor: pointer;
+  }
+
+  /* Educational Tour Highlight */
+  .guide-highlight {
+    outline: 3px solid #38bdf8 !important;
+    outline-offset: 4px !important;
+    box-shadow: 0 0 28px rgba(56, 189, 248, 0.9), inset 0 0 12px rgba(56, 189, 248, 0.4) !important;
+    border-radius: 12px !important;
+    animation: guidePulse 1.3s infinite alternate ease-in-out !important;
+    z-index: 40 !important;
+  }
+  @keyframes guidePulse {
+    0% { transform: scale(1); box-shadow: 0 0 14px rgba(56, 189, 248, 0.5); }
+    100% { transform: scale(1.02); box-shadow: 0 0 32px rgba(56, 189, 248, 0.98); }
+  }
+  @keyframes bounceSlow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+  .animate-bounce-slow {
+    animation: bounceSlow 1.1s infinite ease-in-out;
+  }
+</style>
+</head>
+<body class="min-h-screen bg-[#0e1320] text-slate-100 p-2 sm:p-4 flex flex-col items-center justify-center font-sans antialiased">
+
+<!-- ==================== MAIN CONSOLE CONTAINER (MATCHING EXACT REFERENCE IMAGE) ==================== -->
+<div class="console-shell w-full max-w-[1720px] min-h-[92vh] flex flex-col overflow-hidden relative shadow-2xl p-4 sm:p-6 gap-4">
+
+  <!-- TOP HEADER NAV BAR (MATCHING REFERENCE HEADER) -->
+  <header class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-white/5">
+    <!-- Left: Brand / Notification / Sound Icons -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 p-[1.5px] shadow-[0_0_15px_rgba(56,189,248,0.4)] flex items-center justify-center">
+        <div class="w-full h-full bg-[#151b2e] rounded-2xl flex items-center justify-center text-cyan-300 font-extrabold text-xl">
+          ⚛️
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black uppercase tracking-wider text-cyan-400">DECY-13 CYCLOTRON</span>
+          <span class="text-[10px] font-bold bg-blue-950/80 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full">13 MeV H⁻</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Web HMI State-Driven MQTT — Mini PC ⇄ Broker ⇄ Raspberry Pi 3B+</p>
+      </div>
+    </div>
+
+    <!-- Center: Telemetry Pills & Mode Switcher -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-2 bg-[#1c243d] border border-white/5 px-3 py-1.5 rounded-full text-xs">
+        <span class="text-slate-400">Mode:</span>
+        <button id="btnModeToggle" class="font-bold text-cyan-300 hover:text-white transition">
+          <span id="txtModeToggle">🎮 Mode: Edukasi</span>
+        </button>
+      </div>
+
+      <div id="connBadge" class="flex items-center gap-2 bg-[#1c243d] border border-white/5 px-3 py-1.5 rounded-full text-xs">
+        <span id="connDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="connText" class="mono text-[11px] text-amber-200">MQTT LOOPBACK</span>
+      </div>
+
+      <button id="soundToggleBtn" class="px-3 py-1.5 rounded-full bg-[#1c243d] hover:bg-[#252f4e] border border-white/5 text-xs text-slate-300 transition flex items-center gap-1.5">
+        <span id="soundIcon">🔊</span>
+        <span>Audio</span>
+      </button>
+
+      <button id="autoSequenceBtn" class="px-3 py-1.5 rounded-full bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-xs font-semibold text-cyan-300 transition flex items-center gap-1">
+        <span>⚡ Auto-Init</span>
+      </button>
+
+      <button id="btnKidsTour" class="px-3 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-xs font-semibold text-amber-300 transition flex items-center gap-1 animate-bounce-slow">
+        <span>🤖 Panduan</span>
+      </button>
+
+      <button id="btnStoryModal" class="px-3 py-1.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-xs font-semibold text-purple-300 transition flex items-center gap-1">
+        <span>📖 Cerita</span>
+      </button>
+    </div>
+
+    <!-- Right: Integrated DEVELOPER MENU POP-UP BUTTON -->
+    <div class="flex items-center gap-2.5">
+      <button id="btnDevMenu" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-900/40 flex items-center gap-2 transition active:scale-95 border border-blue-400/30">
+        <span class="text-base">🛠️</span>
+        <span>Developer Menu</span>
+        <span class="w-2 h-2 rounded-full bg-cyan-300 animate-ping"></span>
+      </button>
+      <div class="w-9 h-9 rounded-full bg-[#1c243d] border border-white/10 flex items-center justify-center text-sm font-bold text-cyan-300" title="Operator Station">
+        OP
+      </div>
+    </div>
+  </header>
+
+  <!-- 3-COLUMN INDUSTRIAL DASHBOARD (EXACT LAYOUT OF REFERENCE IMAGE) -->
+  <main id="viewScada" class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+
+    <!-- ==================== LEFT COLUMN (3 COLS): CURVE, PRESETS, EXPOSURE & MINI GAUGES ==================== -->
+    <div class="lg:col-span-3 flex flex-col gap-4">
+
+      <!-- 1. Acceleration / RF Curve Card (Matching Top Left Graph Card in Reference Image) -->
+      <div class="console-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/5">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">TRAJEKTORI &amp; RF CURVE</span>
+          <span class="text-xs font-extrabold mono text-cyan-300" id="indPeakEnergy">13.0 MeV</span>
+        </div>
+        <div class="relative h-28 bg-[#151c30] rounded-xl border border-white/5 overflow-hidden">
+          <canvas id="rfWaveCanvas" class="w-full h-full block"></canvas>
+          <div class="absolute top-2 left-2 text-[10px] mono text-slate-400">f_RF = 22.11 MHz</div>
+          <div class="absolute bottom-2 right-2 text-xs font-bold mono text-cyan-300" id="valRfFreq">22.11 MHz</div>
+        </div>
+
+        <!-- 4 Multiplier Preset Pills (Matching 1.45x, 3.42x, 5.22x, 1.20x in reference) -->
+        <div class="grid grid-cols-4 gap-1.5 mt-2.5">
+          <button class="preset-pill px-1.5 py-1 rounded-xl bg-[#151c30] hover:bg-blue-600/30 text-[10px] mono font-bold text-center text-cyan-300 border border-white/5 transition" onclick="document.getElementById('inpParticle').value='p'; document.getElementById('inpParticle').dispatchEvent(new Event('change'));">
+            13 MeV
+          </button>
+          <button class="preset-pill px-1.5 py-1 rounded-xl bg-[#151c30] hover:bg-blue-600/30 text-[10px] mono font-bold text-center text-slate-300 border border-white/5 transition" onclick="document.getElementById('inpParticle').value='d'; document.getElementById('inpParticle').dispatchEvent(new Event('change'));">
+            6.5 MeV
+          </button>
+          <button class="preset-pill px-1.5 py-1 rounded-xl bg-[#151c30] hover:bg-blue-600/30 text-[10px] mono font-bold text-center text-slate-300 border border-white/5 transition" onclick="document.getElementById('inpParticle').value='a'; document.getElementById('inpParticle').dispatchEvent(new Event('change'));">
+            26 MeV
+          </button>
+          <button class="preset-pill px-1.5 py-1 rounded-xl bg-[#151c30] hover:bg-blue-600/30 text-[10px] mono font-bold text-center text-amber-300 border border-white/5 transition" onclick="document.getElementById('btnResetParams').click();">
+            45 kV
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Exposure Timer & Passes Card (Matching Middle Box in Reference) -->
+      <div class="console-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 border-b border-white/5">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">WAKTU PAPARAN BERKAS</span>
+          <span class="text-[10px] mono font-bold text-cyan-400" id="indReady">Not Ready</span>
+        </div>
+        <div class="text-center my-2">
+          <strong id="valExposureTimer" class="text-3xl font-black mono tracking-wider text-white block drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">00:00:00</strong>
+          <span class="text-[11px] text-slate-400 mt-0.5 block" id="valPassesCount">Lintasan Dee: 0 putaran</span>
+        </div>
+        <div class="flex items-center justify-between pt-2 border-t border-white/5 text-[10px]">
+          <span class="text-slate-400" id="orbitRadiusSub">r = 0.0 cm</span>
+          <button id="btnResetTimer" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Reset Timer</button>
+        </div>
+      </div>
+
+      <!-- 3. Mini SVG Gauges Grid (Matching Bottom Items in Reference Image) -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <!-- Tile 1: Magnet System -->
+        <div class="status-tile flex flex-col justify-between">
+          <div class="flex justify-between items-center text-[10px] text-slate-400">
+            <span>Magnet B</span>
+            <span class="mono text-cyan-300 font-bold" id="magFieldSub">1.45 T</span>
+          </div>
+          <div class="text-center my-1">
+            <strong class="text-sm font-bold mono text-white" id="valMagCurrent">1450.0 A</strong>
+          </div>
+          <div class="h-10 flex items-center justify-center">
+            <svg viewBox="0 0 140 80" class="w-20 h-10 overflow-visible">
+              <path d="M 15 70 A 55 55 0 0 1 125 70" fill="none" stroke="#252e4a" stroke-width="12" stroke-linecap="round"/>
+              <path id="arcMagCurrent" d="M 15 70 A 55 55 0 0 1 125 70" fill="none" stroke="#3b82f6" stroke-width="12" stroke-linecap="round" stroke-dasharray="173" stroke-dashoffset="60"/>
+              <text id="svgMagCurrentTxt" x="70" y="62" text-anchor="middle" fill="#e2e8f0" class="mono text-[10px] font-bold">1450 A</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Tile 2: RF Dee Power -->
+        <div class="status-tile flex flex-col justify-between">
+          <div class="flex justify-between items-center text-[10px] text-slate-400">
+            <span>RF Dee</span>
+            <span class="mono text-cyan-300 font-bold" id="rfSyncBadge">22.1 MHz</span>
+          </div>
+          <div class="text-center my-1">
+            <strong class="text-sm font-bold mono text-white" id="valRfPower">0.0 kW</strong>
+          </div>
+          <div class="h-10 flex items-center justify-center">
+            <svg viewBox="0 0 120 120" class="w-10 h-10">
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#252e4a" stroke-width="12"/>
+              <circle id="ringRfPower" cx="60" cy="60" r="44" fill="none" stroke="#8b5cf6" stroke-width="12" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="276" stroke-dashoffset="240"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Tile 3: Vacuum Pressure -->
+        <div class="status-tile flex flex-col justify-between">
+          <div class="flex justify-between items-center text-[10px] text-slate-400">
+            <span>Vakum Pipa</span>
+            <span class="mono text-sky-400" id="vacStageBadge">Atmosfer</span>
+          </div>
+          <div class="text-center my-1">
+            <strong class="text-xs font-bold mono text-white block truncate" id="valVacPressure">1.0e+3 mbar</strong>
+          </div>
+          <div class="h-8 bg-[#151c30] rounded border border-white/5 overflow-hidden">
+            <canvas id="vacTrendCanvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+
+        <!-- Tile 4: Beam Current -->
+        <div class="status-tile flex flex-col justify-between">
+          <div class="flex justify-between items-center text-[10px] text-slate-400">
+            <span>Arus Berkas</span>
+            <span class="mono text-emerald-400">µA</span>
+          </div>
+          <div class="text-center my-1">
+            <strong class="text-sm font-bold mono text-white" id="valBeamCurrent">0.0 µA</strong>
+          </div>
+          <div class="h-10 flex items-center justify-center">
+            <svg viewBox="0 0 120 120" class="w-10 h-10">
+              <circle cx="60" cy="60" r="44" fill="none" stroke="#252e4a" stroke-width="12"/>
+              <circle id="ringBeamCurrent" cx="60" cy="60" r="44" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="276" stroke-dashoffset="260"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== CENTER COLUMN (6 COLS): LIVE AKSEL SIMULATOR, 3D CARDS & OPERATION CONTROLS ==================== -->
+    <div class="lg:col-span-6 flex flex-col gap-4">
+
+      <!-- 1. LIVE AKSEL SIMULATOR (Matching Weapon Showcase with Circular Chamber in Reference Image) -->
+      <div class="console-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600/30 border border-blue-500/50 text-cyan-300">
+              ● LIVE AKSEL SIMULATOR
+            </span>
+            <span class="text-xs font-bold text-white uppercase tracking-wider">Lintasan Partikel 2D Dee &amp; WS2812B</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] mono bg-[#151c30] border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-lg">MEDAN B ⊗ 1.45 T</span>
+            <span class="text-xs font-extrabold mono text-white bg-blue-600 px-2 py-0.5 rounded-lg" id="valBeamEnergy">0.0 MeV</span>
+          </div>
+        </div>
+
+        <!-- 2D Cyclotron Canvas Chamber -->
+        <div class="relative w-full h-[330px] bg-[#0c101d] rounded-2xl border border-white/5 overflow-hidden shadow-inner flex items-center justify-center">
+          <canvas id="cyclotronCanvas" class="w-full h-full block"></canvas>
+          <div class="pointer-events-none absolute top-2.5 left-3 text-[10px] mono text-sky-400">
+            DEE A (GPIO 14 WS2812B)
+          </div>
+          <div class="pointer-events-none absolute top-2.5 right-3 text-[10px] mono text-purple-400">
+            DEE B &amp; TARGET BEAMLINE (GPIO 5)
+          </div>
+          <div class="pointer-events-none absolute bottom-2.5 left-3 right-3 flex justify-between text-[10px] mono text-slate-400">
+            <span id="canvasStatusOverlay">Status: Menunggu Inisiasi Vakum &amp; Magnet</span>
+            <span id="canvasLedOverlay">LED Aktif: Spiral #0 / 48</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 3 VIBRANT 3D ACTION CARDS (Blue, Purple, Pink Matching Reference Image) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Card A (Blue): START BEAM -->
+        <button id="btnStartBeam" class="card-3d-blue p-3.5 flex flex-col justify-between text-left cursor-pointer group active:scale-[0.98]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-2xl drop-shadow">⚡</span>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded-full">AKSELERASI</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider group-hover:translate-x-0.5 transition">[START BEAM]</h3>
+            <p class="text-[11px] text-blue-100 leading-tight mt-1 opacity-90">Injeksi ion &amp; pacu spiral 13 MeV.</p>
+          </div>
+        </button>
+
+        <!-- Card B (Purple): SHOOT EXPOSURE -->
+        <button id="btnShootExposure" class="card-3d-purple p-3.5 flex flex-col justify-between text-left cursor-pointer group active:scale-[0.98]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-2xl drop-shadow">🎯</span>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded-full">TARGET</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider group-hover:translate-x-0.5 transition">[SHOOT EXPOSURE]</h3>
+            <p class="text-[11px] text-purple-100 leading-tight mt-1 opacity-90">Tembak target sintesis isotop.</p>
+          </div>
+        </button>
+
+        <!-- Card C (Pink/Red): EMERGENCY STOP -->
+        <button id="btnEmergencyStop" class="card-3d-pink p-3.5 flex flex-col justify-between text-left cursor-pointer group active:scale-[0.98]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-2xl drop-shadow">🛑</span>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded-full">INTERRUPT</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider group-hover:translate-x-0.5 transition">[EMERGENCY STOP]</h3>
+            <p class="text-[11px] text-rose-100 leading-tight mt-1 opacity-90">Putus daya &amp; trip hardware.</p>
+          </div>
+        </button>
+      </div>
+
+      <!-- 3. REMOTE OPERATION CONTROLS / SWITCHES TABLE (Matching "Statistic" List in Reference) -->
+      <div class="console-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">REMOTE OPERATION CONTROLS (IOT SWITCHES)</span>
+          <span class="text-[10px] mono text-cyan-400">Node-Red &amp; MQTT Protocol</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+          <!-- Switch 1: Power -->
+          <div class="bg-[#151c30] border border-white/5 rounded-2xl p-2.5 flex items-center justify-between">
+            <span class="font-medium flex items-center gap-1.5"><span class="text-cyan-400">⏻</span> Power</span>
+            <div class="flex items-center gap-1.5">
+              <button id="swPower" class="iot-switch" role="switch" aria-checked="false"></button>
+              <span id="lblPower" class="mono text-[11px] text-slate-400 w-8 text-right">Off</span>
+            </div>
+          </div>
+
+          <!-- Switch 2: Vacuum -->
+          <div class="bg-[#151c30] border border-white/5 rounded-2xl p-2.5 flex items-center justify-between">
+            <span class="font-medium flex items-center gap-1.5"><span class="text-sky-400">♨</span> Vakum</span>
+            <div class="flex items-center gap-1.5">
+              <button id="swVacuum" class="iot-switch" role="switch" aria-checked="false"></button>
+              <span id="lblVacuum" class="mono text-[11px] text-slate-400 w-8 text-right">Off</span>
+            </div>
+          </div>
+
+          <!-- Switch 3: RF System -->
+          <div class="bg-[#151c30] border border-white/5 rounded-2xl p-2.5 flex items-center justify-between">
+            <span class="font-medium flex items-center gap-1.5"><span class="text-amber-400">⚡</span> RF</span>
+            <div class="flex items-center gap-1.5">
+              <button id="swRf" class="iot-switch" role="switch" aria-checked="false"></button>
+              <span id="lblRf" class="mono text-[11px] text-slate-400 w-8 text-right">Idle</span>
+            </div>
+          </div>
+
+          <!-- Switch 4: Magnet -->
+          <div class="bg-[#151c30] border border-white/5 rounded-2xl p-2.5 flex items-center justify-between">
+            <span class="font-medium flex items-center gap-1.5"><span class="text-rose-400">🧲</span> Magnet</span>
+            <div class="flex items-center gap-1.5">
+              <button id="swMagnet" class="iot-switch active" role="switch" aria-checked="true"></button>
+              <span id="lblMagnet" class="mono text-[11px] text-emerald-400 w-8 text-right">Stable</span>
+            </div>
+          </div>
+
+          <!-- Switch 5: Interlock -->
+          <div class="bg-[#151c30] border border-white/5 rounded-2xl p-2.5 flex items-center justify-between">
+            <span class="font-medium flex items-center gap-1.5"><span class="text-emerald-400">✓</span> Interlock</span>
+            <div class="flex items-center gap-1.5">
+              <button id="swInterlock" class="iot-switch" role="switch" aria-checked="false"></button>
+              <span id="lblInterlock" class="mono text-[11px] text-slate-400 w-8 text-right">Not Set</span>
+            </div>
+          </div>
+
+          <!-- Switch 6: Beam -->
+          <div class="bg-[#151c30] border border-white/5 rounded-2xl p-2.5 flex items-center justify-between">
+            <span class="font-medium flex items-center gap-1.5"><span class="text-orange-400">☢</span> Beam</span>
+            <div class="flex items-center gap-1.5">
+              <button id="swBeam" class="iot-switch" role="switch" aria-checked="false"></button>
+              <span id="lblBeam" class="mono text-[11px] text-slate-400 w-8 text-right">Off</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== RIGHT COLUMN (3 COLS): DIGITAL TWIN HARDWARE & SEQUENCER ==================== -->
+    <div class="lg:col-span-3 flex flex-col gap-4">
+
+      <!-- 1. Authentic 4-Line Matrix-Green LCD Display -->
+      <div class="console-card p-4 flex flex-col justify-between bg-[#081510] border border-emerald-500/30">
+        <div class="flex items-center justify-between text-[10px] mono text-emerald-400/80 border-b border-emerald-800/40 pb-1.5 mb-2">
+          <span>📟 LCD ILI9341 / I2C</span>
+          <span id="lcdBacklightBadge" class="font-bold">BACKLIGHT: ON</span>
+        </div>
+        <div class="mono text-xs leading-relaxed text-emerald-300 font-semibold space-y-1 my-1">
+          <div id="lcdLine1">[DECY-13 CYCLOTRON]   MODE: STANDBY</div>
+          <div id="lcdLine2">VAC: 1.0e+3 mbar      FAN : OFF (0%)</div>
+          <div id="lcdLine3">MAG: 1450 A (1.45 T)  RF  : IDLE</div>
+          <div id="lcdLine4">MSG: Siap menerima perintah HMI</div>
+        </div>
+      </div>
+
+      <!-- 2. Kipas Vakum 12V DC Digital Twin & Buzzer Alarm -->
+      <div class="console-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/5">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">KIPAS VAKUM &amp; BUZZER</span>
+          <span class="text-[10px] text-cyan-400 mono">RPi Pin 13 &amp; 26</span>
+        </div>
+        <div class="flex items-center justify-between gap-3 my-1">
+          <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+            <svg id="fanSvgIcon" viewBox="0 0 100 100" class="w-11 h-11 text-cyan-400" fill="currentColor">
+              <circle cx="50" cy="50" r="14" fill="#38bdf8"/>
+              <path d="M50 36 C50 16 68 18 64 36 Z M64 50 C84 50 82 68 64 64 Z M50 64 C50 84 32 82 36 64 Z M36 50 C16 50 18 32 36 36 Z" fill="#38bdf8" opacity="0.85"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <span id="hwFanState" class="text-xs font-bold text-slate-300 block truncate">KIPAS: OFF (0 RPM)</span>
+            <span id="hwFanPwmTxt" class="text-[10px] mono text-slate-400 block truncate">PWM: 0/255</span>
+            <span id="hwBuzzerState" class="text-[10px] font-bold text-slate-400 block truncate">BUZZER: SILENT</span>
+            <span id="hwInterruptTxt" class="text-[9px] mono text-emerald-400 block truncate">ISR D2: HIGH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Linear 16-Segment WS2812B Beamline Shoot Strip -->
+      <div class="console-card p-4">
+        <div class="flex items-center justify-between text-xs font-bold mb-2">
+          <span class="uppercase tracking-wider text-slate-200">BEAMLINE 16-LED STRIP</span>
+          <span id="targetShootBadge" class="mono text-cyan-300 text-[10px]">Siap</span>
+        </div>
+        <div id="ledStripLinearBar" class="grid grid-cols-16 gap-1 h-3.5 bg-[#12182a] p-1 rounded-xl border border-white/5">
+          <!-- 16 pixels inserted via JS -->
+        </div>
+      </div>
+
+      <!-- 4. Sequencer 7-Stage Timeline Activity Feed -->
+      <div class="console-card p-4 flex flex-col justify-between flex-1">
+        <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/5">
+          <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">SEKUENS INSTRUMEN</span>
+          <span class="mono text-[10px] text-slate-400" id="seqClockOut">CYCLE: 0 ms</span>
+        </div>
+        <div class="text-[11px] text-slate-300 mb-2 truncate" id="seqCurrentStepText">
+          Tahap 0 — Menunggu Inisiasi Daya Utama
+        </div>
+        <div class="grid grid-cols-1 gap-1 text-[10px]" id="pipelineStepsContainer">
+          <div data-step="1" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">1</span>
+            <span class="text-slate-300 truncate">Inisiasi Sistem &amp; Self-Check</span>
+          </div>
+          <div data-step="2" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">2</span>
+            <span class="text-slate-300 truncate">Input HMI Setpoint &amp; Interlock</span>
+          </div>
+          <div data-step="3" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">3</span>
+            <span class="text-slate-300 truncate">Broker MQTT Komunikasi</span>
+          </div>
+          <div data-step="4" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">4</span>
+            <span class="text-slate-300 truncate">Vakum Kipas Pompa Udara</span>
+          </div>
+          <div data-step="5" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">5</span>
+            <span class="text-slate-300 truncate">Sistem LCD Status Ready</span>
+          </div>
+          <div data-step="6" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">6</span>
+            <span class="text-slate-300 truncate">Akselerasi Spiral 48-LED</span>
+          </div>
+          <div data-step="7" class="seq-step rounded-xl border border-white/5 bg-[#151c30] px-2.5 py-1.5 flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[9px]">7</span>
+            <span class="text-slate-300 truncate">Ekstraksi &amp; Shoot Target 13 MeV</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div><!-- End of Console Shell -->
+
+<!-- ==================== INTEGRATED DEVELOPER MENU POP-UP MODAL ==================== -->
+<div id="modalDevSettings" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
+  <div class="relative bg-gradient-to-b from-[#192138] to-[#101627] border-2 border-cyan-400/50 rounded-3xl max-w-5xl w-full p-5 sm:p-6 shadow-2xl text-slate-100 max-h-[92vh] flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-3 mb-4 border-b border-cyan-500/30 shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-xl">
+          🛠️
+        </div>
+        <div>
+          <h3 class="text-base sm:text-lg font-black uppercase text-cyan-300 tracking-wide">Developer &amp; System Configuration Center</h3>
+          <p class="text-xs text-slate-400">Pusat Pengaturan MQTT Broker, Parameter Slider HMI, Kode Daemon RPi, &amp; Diagnostik Telemetri</p>
+        </div>
+      </div>
+      <button id="modalDevCloseBtn" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg transition">✕</button>
+    </div>
+
+    <!-- Dev Modal Navigation Tabs -->
+    <div class="flex flex-wrap items-center gap-2 pb-3 mb-3 border-b border-white/5 text-xs font-bold shrink-0">
+      <button id="tabDevMqtt" class="px-3.5 py-1.5 rounded-xl bg-cyan-500 text-slate-950 shadow transition">1. 🌐 Broker MQTT &amp; Komunikasi</button>
+      <button id="tabDevParams" class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition">2. 🎛️ Kalibrasi Slider Parameter</button>
+      <button id="tabDevCode" class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition">3. 💻 Kode Daemon RPi 3B+ &amp; Firmware</button>
+      <button id="tabDevDiag" class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition">4. 📊 Diagnostik Osiloskop</button>
+    </div>
+
+    <!-- Dev Modal Tab Content (Scrollable) -->
+    <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+
+      <!-- PANE 1: BROKER MQTT & JARINGAN -->
+      <div id="paneDevMqtt" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 space-y-3">
+            <h4 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Koneksi Broker Mosquitto (WebSocket Port 9001)</h4>
+            <div>
+              <label class="text-[11px] text-slate-400 block mb-1">WebSocket URL Endpoint</label>
+              <input id="commEndpoint" type="text" value="ws://127.0.0.1:9001" class="w-full bg-[#0d1222] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white mono">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">Publish Topic</label>
+                <input id="mqttTopicPub" type="text" value="decy13/hmi/cmd" class="w-full bg-[#0d1222] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white mono">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">Subscribe Topic</label>
+                <input id="mqttTopicSub" type="text" value="decy13/rpi/state" class="w-full bg-[#0d1222] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white mono">
+              </div>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button id="btnConnectBridge" class="flex-1 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition">Hubungkan MQTT</button>
+              <button id="btnDisconnectBridge" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">Putus</button>
+              <button id="btnSendTestPacket" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition">Test Paket</button>
+            </div>
+          </div>
+
+          <!-- JSON TX Preview -->
+          <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Live JSON TX Telemetri</span>
+              <button id="btnCopyJsonPayload" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Salin JSON</button>
+            </div>
+            <pre id="jsonTxPreview" class="h-36 bg-[#0a0f1d] p-2.5 rounded-xl border border-slate-800 text-[10px] mono text-cyan-300 overflow-y-auto leading-tight"></pre>
+          </div>
+        </div>
+
+        <!-- Communication Logs -->
+        <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Log Komunikasi &amp; Transmisi Paket MQTT</span>
+            <span class="text-[10px] mono text-slate-400">Terminal Telemetri HMI</span>
+          </div>
+          <div id="commLogContainer" class="h-36 bg-[#0a0f1d] p-2.5 rounded-xl border border-slate-800 text-[11px] mono text-emerald-400 overflow-y-auto space-y-1">
+            <div>[INIT] Menghubungkan ke broker MQTT port 9001...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 2: KALIBRASI SLIDER PARAMETER (HMI INPUT) -->
+      <div id="paneDevParams" class="hidden space-y-4">
+        <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 space-y-4 text-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-white/5">
+            <div>
+              <h4 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Kalibrasi Setpoint Fisika Siklotron</h4>
+              <p class="text-[11px] text-slate-400">Nilai slider langsung disinkronkan ke state lokal &amp; dikirim ke RPi via MQTT</p>
+            </div>
+            <div class="flex gap-2">
+              <button id="btnResetParams" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition">Reset Standar DECY-13</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Partikel Select -->
+            <div>
+              <label for="inpParticle" class="flex justify-between font-semibold text-slate-300 mb-1">
+                <span>Jenis Partikel Ion</span>
+                <span class="text-cyan-400 mono" id="outParticleTag">H⁻ (Proton)</span>
+              </label>
+              <select id="inpParticle" class="w-full bg-[#0d1222] border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100">
+                <option value="p">Ion H⁻ / Proton (DECY-13 · 13 MeV)</option>
+                <option value="d">Deuteron (²H⁺ · 6.5 MeV)</option>
+                <option value="a">Partikel Alfa (⁴He²⁺ · 26 MeV)</option>
+              </select>
+            </div>
+
+            <!-- Arus Magnet -->
+            <div>
+              <div class="flex justify-between font-semibold text-slate-300">
+                <label for="inpMagCurrent">Arus Magnet Bending (I_mag)</label>
+                <output id="outMagCurrent" class="mono text-cyan-300">1450.0 A (1.45 T)</output>
+              </div>
+              <input id="inpMagCurrent" type="range" min="400" max="2200" step="10" value="1450" class="w-full mt-1.5">
+              <div class="flex justify-between text-[10px] text-slate-500"><span>400 A (0.4 T)</span><span>DECY: 1450 A</span><span>2200 A (2.2 T)</span></div>
+            </div>
+
+            <!-- Tegangan RF Dee -->
+            <div>
+              <div class="flex justify-between font-semibold text-slate-300">
+                <label for="inpRfVolt">Tegangan Celah RF Dee (V_dee)</label>
+                <output id="outRfVolt" class="mono text-cyan-300">45 kV (12.5 kW)</output>
+              </div>
+              <input id="inpRfVolt" type="range" min="0" max="120" step="1" value="45" class="w-full mt-1.5">
+              <div class="flex justify-between text-[10px] text-slate-500"><span>0 kV</span><span>Nominal: 45 kV</span><span>120 kV</span></div>
+            </div>
+
+            <!-- RF Detune -->
+            <div>
+              <div class="flex justify-between font-semibold text-slate-300">
+                <label for="inpRfDetune">Tuning Frekuensi RF (Δf_RF)</label>
+                <output id="outRfDetune" class="mono text-emerald-400">0.0% (Resonan)</output>
+              </div>
+              <input id="inpRfDetune" type="range" min="-8" max="8" step="0.2" value="0" class="w-full mt-1.5">
+              <div class="flex justify-between text-[10px] text-slate-500"><span>-8% (Slip)</span><span>0% (Sinkron)</span><span>+8% (Slip)</span></div>
+            </div>
+
+            <!-- Target Arus Berkas -->
+            <div>
+              <div class="flex justify-between font-semibold text-slate-300">
+                <label for="inpTargetCurrent">Setpoint Arus Berkas (I_beam)</label>
+                <output id="outTargetCurrent" class="mono text-cyan-300">25.0 µA</output>
+              </div>
+              <input id="inpTargetCurrent" type="range" min="1" max="100" step="1" value="25" class="w-full mt-1.5">
+              <div class="flex justify-between text-[10px] text-slate-500"><span>1 µA</span><span>DECY: 10–50 µA</span><span>100 µA</span></div>
+            </div>
+
+            <!-- PWM Kipas -->
+            <div>
+              <div class="flex justify-between font-semibold text-slate-300">
+                <label for="inpFanPwm">PWM Kipas Simulasi Vakum</label>
+                <output id="outFanPwm" class="mono text-sky-300">85% (217/255)</output>
+              </div>
+              <input id="inpFanPwm" type="range" min="20" max="100" step="5" value="85" class="w-full mt-1.5">
+              <div class="flex justify-between text-[10px] text-slate-500"><span>20% (Lambat)</span><span>85% (High Vac)</span><span>100% (Turbo)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 3: KODE DAEMON RPI 3B+ & FIRMWARE -->
+      <div id="paneDevCode" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Python Daemon (RPi 3B+)</span>
+              <button id="btnCopyRpiCode" class="text-[10px] px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">Salin Kode Python</button>
+            </div>
+            <pre id="codeRpiBlock" class="h-64 bg-[#0a0f1d] p-3 rounded-xl border border-slate-800 text-[10px] mono text-slate-300 overflow-y-auto leading-relaxed">import time
+import paho.mqtt.client as mqtt
+
+# Pin Mappings RPi 3B+
+PIN_FAN_RELAY = 13
+PIN_BUZZER    = 26
+PIN_WS2812B   = 14
+PIN_TARGET    = 5
+
+print("DECY-13 MQTT Daemon Active on Raspberry Pi 3B+")</pre>
+          </div>
+
+          <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Arduino / ESP32 Firmware</span>
+              <button id="btnCopyInoCode" class="text-[10px] px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">Salin Firmware</button>
+            </div>
+            <pre id="codeInoBlock" class="h-64 bg-[#0a0f1d] p-3 rounded-xl border border-slate-800 text-[10px] mono text-slate-300 overflow-y-auto leading-relaxed">#include &lt;FastLED.h&gt;
+#define NUM_SPIRAL 48
+#define LED_PIN 14
+CRGB ledsSpiral[NUM_SPIRAL];
+
+void setup() {
+  FastLED.addLeds&lt;WS2812B, LED_PIN, GRB&gt;(ledsSpiral, NUM_SPIRAL);
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 4: DIAGNOSTIK OSILOSKOP & HISTORI -->
+      <div id="paneDevDiag" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Beam Profile 2D</span>
+              <span id="beamFwhmTxt" class="text-[10px] mono text-amber-300">FWHM: 0.0 mm</span>
+            </div>
+            <div class="h-36 bg-[#0a0f1d] rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center">
+              <canvas id="beamProfileCanvas" width="144" height="144" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Beam Current Trend</span>
+              <span id="diagTargetCurrentTxt" class="text-[10px] mono text-cyan-400">Target Current: 0.0 µA</span>
+            </div>
+            <div class="h-36 bg-[#0a0f1d] rounded-xl border border-slate-800 overflow-hidden">
+              <canvas id="trendChartCanvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center text-[10px] mono text-slate-400 bg-[#13192c] p-3 rounded-xl border border-white/5">
+          <span id="hwLedFreqTxt">FastLED SPI @ 800 kHz</span>
+          <span id="valMagPower">Daya Magnet: 85.2 kW</span>
+          <span id="ringBeamEnergy" class="hidden"></span>
+          <span id="svgMagPowerTxt" class="hidden"></span>
+          <span id="arcMagPower" class="hidden"></span>
+          <canvas id="diagChartCanvas" class="hidden"></canvas>
+          <div id="tileMode" class="hidden"><span id="indMode">Standby</span></div>
+          <div id="tileBeamStatus" class="hidden"><span id="indBeamStatus">Beam Off</span></div>
+          <div id="tileExposure" class="hidden"><span id="indExposure">Inactive</span></div>
+          <div id="tileInterlock" class="hidden"><span id="indInterlock">Interlock Off</span></div>
+          <div id="tilePeakEnergy" class="hidden"></div>
+          <div id="tileReady" class="hidden"></div>
+          <div id="tabBtnScada" class="hidden"></div>
+          <div id="tabBtnComm" class="hidden"></div>
+          <div id="tabBtnCode" class="hidden"></div>
+          <div id="btnRemoteEstop" class="hidden"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<div id="toastBox" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 border border-teal-400 text-teal-200 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium"></div>
+
+<!-- ==================== FLOATING TOUR POP-UP (KIDS GUIDE) ==================== -->
+<div id="decyGuideTooltip" class="fixed z-50 hidden transition-all duration-200 pointer-events-auto" style="width: 360px;">
+  <div class="relative bg-gradient-to-br from-[#121e36] via-[#0d1627] to-[#080d19] border-2 border-cyan-400 rounded-2xl p-4 shadow-[0_12px_45px_rgba(0,0,0,0.9)] text-slate-100">
+    <!-- Header with Mascot & Close -->
+    <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-cyan-500/30">
+      <div class="flex items-center gap-2.5">
+        <span class="text-2xl" id="guideMascotIcon">⚡</span>
+        <div>
+          <h4 class="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+            <span>Panduan Instrumen DECY-13</span>
+            <span class="text-[10px] bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 px-1.5 py-0.2 rounded font-mono" id="guideStepPill">Langkah 1/5</span>
+          </h4>
+          <span class="text-[10px] text-slate-400 block" id="guideStepSubtitle">Petualangan Meluncurkan Partikel!</span>
+        </div>
+      </div>
+      <button id="guideBtnClose" class="text-slate-400 hover:text-white text-base font-bold p-1 leading-none rounded hover:bg-slate-800 transition" title="Tutup Panduan">✕</button>
+    </div>
+
+    <!-- PENCET AKU Bouncing Badge -->
+    <div class="mb-2">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-950 font-black text-[11px] uppercase tracking-wider shadow-md animate-bounce-slow">
+        <span id="guideBadgeIcon">👇</span>
+        <span id="guideBadgeText">TEKAN AKU SEKARANG!</span>
+      </div>
+    </div>
+
+    <!-- Friendly Persuasive Message -->
+    <p id="guideMessageText" class="text-xs text-slate-200 leading-relaxed font-medium mb-3">
+      Halo Petualang Cilik! Mesin raksasa kita masih tertidur nih. Yuk, tekan saklar POWER ini untuk menyalakan seluruh listriknya!
+    </p>
+
+    <!-- Did You Know / Misi Anak -->
+    <div class="bg-blue-950/40 border border-cyan-500/30 rounded-lg p-2.5 mb-3 text-[11px] text-cyan-200/90 flex items-start gap-2">
+      <span class="text-base shrink-0">💡</span>
+      <span id="guideFunFact">Misi: Begitu listrik menyala, proton kecil di tengah bersiap untuk meluncur!</span>
+    </div>
+
+    <!-- Navigation Footer -->
+    <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
+      <button id="guideBtnPrev" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 disabled:opacity-40 transition">
+        « Mundur
+      </button>
+      <div class="flex gap-2">
+        <button id="guideBtnSkip" class="px-2.5 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition">
+          Selesai
+        </button>
+        <button id="guideBtnNext" class="px-4 py-1.5 rounded-lg font-bold bg-cyan-400 hover:bg-cyan-300 text-slate-950 shadow transition flex items-center gap-1">
+          <span>Lanjut »</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: CERITA SAINS SIKLOTRON ==================== -->
+<div id="modalStoryCyclotron" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="relative bg-gradient-to-b from-[#142332] to-[#0c1622] border-2 border-teal-400/60 rounded-2xl max-w-2xl w-full p-6 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-teal-500/30 pb-3 mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400 flex items-center justify-center text-2xl">
+          ⚛️
+        </div>
+        <div>
+          <h3 class="text-base sm:text-lg font-black uppercase text-teal-300 tracking-wide">Rahasia Petualangan Partikel Siklotron</h3>
+          <p class="text-xs text-slate-400">Bagaimana proton bisa terbang berputar hingga 13 Juta Volt?</p>
+        </div>
+      </div>
+      <button id="modalStoryCloseBtn" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg">✕</button>
+    </div>
+
+    <!-- 3 Cartoon Steps -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-5 text-xs">
+      <div class="bg-slate-900/90 border border-teal-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="text-3xl mb-2">1️⃣ 🧪</div>
+          <h4 class="font-bold text-teal-300 text-sm mb-1">Kelahiran Proton</h4>
+          <p class="text-slate-300 leading-relaxed">
+            Dari sedikit gas hidrogen di tengah kamar Dee, partikel proton mungil dilepaskan. Ia siap bertualang melintasi lintasan spiral!
+          </p>
+        </div>
+        <div class="mt-3 text-[10px] text-teal-400 font-mono">Tahap 1: Ion Source</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-teal-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="text-3xl mb-2">2️⃣ ⚡🌀</div>
+          <h4 class="font-bold text-teal-300 text-sm mb-1">Tendangan Listrik &amp; Belokan Magnet</h4>
+          <p class="text-slate-300 leading-relaxed">
+            Dua pelat raksasa (Dee A dan Dee B) menendang proton dengan listrik bolak-balik jutaan kali per detik. Magnet raksasa membelokkannya sehingga berputar semakin lebar dan cepat!
+          </p>
+        </div>
+        <div class="mt-3 text-[10px] text-teal-400 font-mono">Tahap 2: RF &amp; B-Field</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-teal-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+        <div>
+          <div class="text-3xl mb-2">3️⃣ 🎯 🏥</div>
+          <h4 class="font-bold text-teal-300 text-sm mb-1">Tembak Sasaran Medis!</h4>
+          <p class="text-slate-300 leading-relaxed">
+            Saat mencapai 13 Juta Volt, proton keluar menabrak target untuk memproduksi isotop Fluor-18 (obat scan kanker untuk menyelamatkan pasien di rumah sakit).
+          </p>
+        </div>
+        <div class="mt-3 text-[10px] text-teal-400 font-mono">Tahap 3: Target Station</div>
+      </div>
+    </div>
+
+    <!-- Fun Facts Section -->
+    <div class="bg-teal-950/40 border border-teal-500/30 rounded-xl p-3.5 mb-5 flex items-start gap-3 text-xs">
+      <span class="text-2xl">🚀</span>
+      <div class="leading-relaxed text-slate-300">
+        <strong class="text-teal-300 block mb-0.5">Tahukah Kamu?</strong>
+        Di dalam Siklotron DECY-13 buatan BRIN ini, partikel proton dipacu hingga kecepatannya menembus <strong>40.000 kilometer per detik</strong>! Itu cukup untuk mengelilingi Bumi hanya dalam waktu 1 detik!
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2.5">
+      <button id="modalStoryStartGuideBtn" class="py-2.5 px-5 rounded-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-950 shadow-lg text-xs flex items-center gap-2 transition">
+        <span>🤖 Mulai Panduan Langkah Demi Langkah!</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ==================== CONSTANTS & PHYSICS PRESETS ====================
+  const E_CHARGE = 1.602176634e-19;
+  const PARTICLES = {
+    p: { name: 'H⁻ / Proton', m: 1.6726219e-27, z: 1, maxMeV: 13.0 },
+    d: { name: 'Deuteron (²H⁺)', m: 3.3435838e-27, z: 1, maxMeV: 6.5 },
+    a: { name: 'Alfa (⁴He²⁺)', m: 6.6446572e-27, z: 2, maxMeV: 26.0 }
+  };
+
+  // ==================== APPLICATION STATE ====================
+  const state = {
+    // Switches
+    power: false,
+    vacuum: false,
+    rf: false,
+    magnet: true,
+    interlock: false,
+    beam: false,
+    shooting: false,
+    estop: false,
+
+    // Configurable HMI Inputs
+    particleKey: 'p',
+    magCurrentA: 1450.0,   // 1450 A -> 1.45 T nominal
+    rfVoltKv: 45.0,        // 45 kV Dee voltage
+    rfDetunePct: 0.0,      // % detune
+    targetBeamUa: 25.0,    // Setpoint uA
+    fanPwmPct: 85,         // 85% PWM
+
+    // Computed Physics & Telemetry
+    magFieldT: 1.45,
+    magPowerKw: 85.2,
+    fcMhz: 22.11,
+    frfMhz: 22.11,
+    rfPowerKw: 0.0,
+    vacPressureMbar: 1000.0, // Starts at 1.0e+3 mbar (atmosphere)
+    actualBeamUa: 0.0,
+    targetCurrentUa: 0.0,
+    beamEnergyMev: 0.0,
+    orbitRadiusCm: 0.0,
+    passesCount: 0,
+    exposureSeconds: 0,
+
+    // Animation & Hardware Twin
+    ledSpiralCount: 48,
+    ledShootCount: 16,
+    activeLedIndex: 0,
+    shootLedIndex: -1,
+    orbitSegments: [],
+    simProgress: 0,
+    soundEnabled: true,
+    wsClient: null,
+    wsConnected: false,
+
+    // MQTT Client (MQTT.js via WebSocket ke Mosquitto port 9001)
+    mqttClient: null,
+    mqttConnected: false,
+
+    // Historical Trend Buffers
+    vacHistory: Array(50).fill(3.0), // log10(mbar)
+    beamHistory: Array(60).fill(0),
+    targetHistory: Array(60).fill(0)
+  };
+
+  // ==================== DOM ELEMENTS ====================
+  const $ = (id) => document.getElementById(id);
+
+  // Initialize 16-segment linear LED bar preview in DOM
+  const ledBar = $('ledStripLinearBar');
+  const ledCells = [];
+  for (let i = 0; i < 16; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'rounded-sm bg-slate-800 transition-colors duration-75';
+    ledBar.appendChild(cell);
+    ledCells.push(cell);
+  }
+
+  // ==================== WEB AUDIO SYNTHESIZER (SAFE FAN & BUZZER) ====================
+  let audioCtx = null;
+  function playBeep(freq = 880, durationMs = 120, type = 'sine') {
+    if (!state.soundEnabled) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + durationMs / 1000);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + durationMs / 1000);
+    } catch (err) {
+      // Ignore audio block before gesture
+    }
+  }
+
+  function showToast(msg) {
+    const box = $('toastBox');
+    box.textContent = msg;
+    box.classList.remove('hidden');
+    clearTimeout(box._timer);
+    box._timer = setTimeout(() => box.classList.add('hidden'), 2800);
+  }
+
+  // ==================== ORBIT REBUILD (MERGED FROM CYCLOLAB) ====================
+  function rebuildOrbitSegments() {
+    const part = PARTICLES[state.particleKey];
+    const q = part.z * E_CHARGE;
+    const B = Math.max(0.2, state.magCurrentA / 1000); // 1450 A -> 1.45 T
+    const V = state.rfVoltKv * 1000 * 4; // Scaled for educational visual steps
+    const Rmax = 0.40; // 40 cm DECY-13 extraction radius
+    const detune = state.rfDetunePct / 100;
+
+    state.magFieldT = B;
+    state.fcMhz = (q * B) / (2 * Math.PI * part.m) / 1e6;
+    state.frfMhz = state.fcMhz * (1 + detune);
+
+    const segs = [];
+    let K = 15000 * E_CHARGE;
+    let y0 = 0;
+
+    if (state.magnet && state.power) {
+      for (let n = 0; n < 96; n++) {
+        const r = Math.sqrt(2 * part.m * K) / (q * B);
+        const clampedR = Math.min(r, Rmax);
+        const sign = n % 2 === 0 ? 1 : -1;
+        const pts = [];
+        for (let k = 0; k <= 20; k++) {
+          const th = (Math.PI * k) / 20;
+          pts.push({
+            x: sign * clampedR * Math.sin(th),
+            y: y0 + sign * clampedR * (1 - Math.cos(th)) * 0.12
+          });
+        }
+        segs.push({ pts, r: clampedR, K, n });
+        y0 = pts[pts.length - 1].y;
+        if (r >= Rmax) break;
+        if (state.rf && V > 0) {
+          const gain = q * V * Math.cos((n + 1) * Math.PI * detune);
+          K = Math.max(10000 * E_CHARGE, K + gain);
+        }
+      }
+    }
+    state.orbitSegments = segs;
+  }
+
+  // ==================== TELEMETRY & SEQUENCER COMPUTATION ====================
+  function computeCurrentStep() {
+    if (state.estop) return { step: 0, text: 'DARURAT: Emergency Stop Aktif — Interupsi Hardware Memutus Daya!' };
+    if (!state.power) return { step: 1, text: 'Tahap 1 — Inisiasi: Aktifkan saklar [Power] pada System Status' };
+    if (!state.vacuum) return { step: 2, text: 'Tahap 2 — Input HMI: Nyalakan [Vacuum (Fan)] untuk memompa ruang hampa' };
+    if (state.vacPressureMbar > 1e-3) return { step: 4, text: 'Tahap 4 — Kipas Vakum Berputar: Menurunkan tekanan menuju < 10⁻⁴ mbar...' };
+    if (!state.magnet || !state.rf || !state.interlock) {
+      return { step: 5, text: 'Tahap 5 — Sistem LCD Aktif: Aktifkan [Magnet], [RF System], dan [Interlocks]' };
+    }
+    if (!state.beam) return { step: 6, text: 'Tahap 6 — BEAM READY: Klik tombol hijau [START BEAM] untuk akselerasi spiral LED' };
+    if (!state.shooting) return { step: 6, text: 'Tahap 6 — Akselerasi Spiral WS2812B Berjalan: Klik [SHOOT EXPOSURE] untuk menembak target' };
+    return { step: 7, text: 'Tahap 7 — EKSTRAKSI & SHOOT EXPOSURE: Berkas 13 MeV mengenai target!' };
+  }
+
+  function syncUiFromState() {
+    // Update Switches
+    const setSwitch = (id, lblId, on, onTxt, offTxt, onColor = 'text-emerald-400') => {
+      const btn = $(id);
+      const lbl = $(lblId);
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-checked', String(on));
+      lbl.textContent = on ? onTxt : offTxt;
+      lbl.className = `mono w-14 text-right ${on ? onColor : 'text-slate-400'}`;
+    };
+
+    setSwitch('swPower', 'lblPower', state.power, 'On', 'Off');
+    setSwitch('swVacuum', 'lblVacuum', state.vacuum, 'Active', 'Off', 'text-sky-400');
+    setSwitch('swRf', 'lblRf', state.rf, 'Active', 'Idle', 'text-amber-300');
+    setSwitch('swMagnet', 'lblMagnet', state.magnet, 'Stable', 'Off');
+    setSwitch('swInterlock', 'lblInterlock', state.interlock, 'Locked', 'Not Set');
+    setSwitch('swBeam', 'lblBeam', state.beam, 'On', 'Off', 'text-orange-400');
+
+    // Update Input Outputs
+    const part = PARTICLES[state.particleKey];
+    $('outParticleTag').textContent = part.name;
+    $('outMagCurrent').textContent = `${state.magCurrentA.toFixed(1)} A (${(state.magCurrentA / 1000).toFixed(2)} T)`;
+    const estRfKw = ((state.rfVoltKv / 45) * 12.5).toFixed(1);
+    $('outRfVolt').textContent = `${state.rfVoltKv.toFixed(0)} kV (${estRfKw} kW)`;
+    const detuneSign = state.rfDetunePct > 0 ? '+' : '';
+    $('outRfDetune').textContent = `${detuneSign}${state.rfDetunePct.toFixed(1)}% (${Math.abs(state.rfDetunePct) <= 1.0 ? 'Resonan' : 'Slip Fase'})`;
+    $('outRfDetune').className = `mono ${Math.abs(state.rfDetunePct) <= 1.0 ? 'text-emerald-400' : 'text-amber-400'}`;
+    $('outTargetCurrent').textContent = `${state.targetBeamUa.toFixed(1)} µA`;
+    const pwm255 = Math.round((state.fanPwmPct / 100) * 255);
+    $('outFanPwm').textContent = `${state.fanPwmPct}% (${pwm255}/255)`;
+
+    //Beam Ready Logic
+    const vacReady = state.vacuum && state.vacPressureMbar <= 1e-3;
+    const beamReady = state.power && vacReady && state.magnet && state.rf && state.interlock && !state.estop;
+
+    // 6 Top Status Indicator Cards
+    let modeStr = 'Standby';
+    if (state.estop) modeStr = 'EMERGENCY STOP';
+    else if (!state.power) modeStr = 'Power Off';
+    else if (state.shooting && state.beam) modeStr = 'Target Exposure';
+    else if (state.beam) modeStr = 'Accelerating';
+    else if (state.vacuum && !vacReady) modeStr = 'Vacuum Pumping';
+    else if (beamReady) modeStr = 'Ready to Beam';
+
+    $('indMode').textContent = modeStr;
+    $('indReady').textContent = beamReady ? 'Ready' : 'Not Ready';
+    $('indReady').className = `text-base sm:text-lg font-extrabold mt-0.5 block truncate ${beamReady ? 'text-emerald-400' : 'text-amber-300'}`;
+    $('indBeamStatus').textContent = state.shooting ? 'Extracted' : (state.beam ? 'Beam On' : 'Beam Off');
+    $('indExposure').textContent = state.shooting ? 'Active Shoot' : 'Inactive';
+    $('indInterlock').textContent = state.estop ? 'TRIPPED!' : (state.interlock ? 'Interlock OK' : 'Interlock Off');
+    $('indPeakEnergy').textContent = `${state.beamEnergyMev.toFixed(1)} MeV`;
+
+    // 8 Gauge Values
+    state.magPowerKw = state.power && state.magnet ? +(state.magCurrentA * 0.05875).toFixed(1) : 0.0;
+    state.rfPowerKw = state.power && state.rf ? +((state.rfVoltKv / 45) * 12.5).toFixed(1) : 0.0;
+
+    $('valMagCurrent').innerHTML = `${(state.power && state.magnet ? state.magCurrentA : 0).toFixed(1)} <small class="text-xs font-normal text-slate-400">A</small>`;
+    $('magFieldSub').textContent = `B = ${(state.power && state.magnet ? state.magFieldT : 0).toFixed(2)} T`;
+    $('svgMagCurrentTxt').textContent = `${Math.round(state.power && state.magnet ? state.magCurrentA : 0)} A`;
+    const magFrac = state.power && state.magnet ? Math.min(1, state.magCurrentA / 2200) : 0;
+    $('arcMagCurrent').setAttribute('stroke-dashoffset', String(Math.round(173 * (1 - magFrac))));
+
+    $('valRfFreq').innerHTML = `${state.frfMhz.toFixed(2)} <small class="text-xs font-normal text-slate-400">MHz</small>`;
+    $('rfSyncBadge').textContent = `f_c = ${state.fcMhz.toFixed(2)} MHz`;
+
+    $('valRfPower').textContent = state.rfPowerKw.toFixed(1);
+    const rfFrac = Math.min(1, state.rfPowerKw / 35);
+    $('ringRfPower').setAttribute('stroke-dashoffset', String(Math.round(276 * (1 - rfFrac))));
+
+    $('valVacPressure').innerHTML = `${state.vacPressureMbar.toExponential(1)} <small class="text-xs font-normal text-slate-400">mbar</small>`;
+    $('vacStageBadge').textContent = state.vacPressureMbar <= 1e-4 ? 'High Vacuum OK' : (state.vacuum ? 'Pumping Down...' : 'Atmosfer');
+
+    $('valMagPower').innerHTML = `${state.magPowerKw.toFixed(1)} <small class="text-xs font-normal text-slate-400">kW</small>`;
+    $('svgMagPowerTxt').textContent = `${state.magPowerKw.toFixed(1)} kW`;
+    const mpFrac = Math.min(1, state.magPowerKw / 130);
+    $('arcMagPower').setAttribute('stroke-dashoffset', String(Math.round(173 * (1 - mpFrac))));
+
+    $('valBeamCurrent').textContent = state.actualBeamUa.toFixed(1);
+    const bcFrac = Math.min(1, state.actualBeamUa / 100);
+    $('ringBeamCurrent').setAttribute('stroke-dashoffset', String(Math.round(276 * (1 - bcFrac))));
+
+    $('valBeamEnergy').textContent = state.beamEnergyMev.toFixed(1);
+    $('orbitRadiusSub').textContent = `r = ${state.orbitRadiusCm.toFixed(1)} cm`;
+    const beFrac = Math.min(1, state.beamEnergyMev / part.maxMeV);
+    $('ringBeamEnergy').setAttribute('stroke-dashoffset', String(Math.round(276 * (1 - beFrac))));
+
+    $('diagTargetCurrentTxt').textContent = `Target Current: ${state.targetCurrentUa.toFixed(1)} µA`;
+    $('beamFwhmTxt').textContent = state.beam ? `FWHM: ${(4.2 + (1 - beFrac) * 6).toFixed(1)} mm` : 'FWHM: 0.0 mm';
+
+    // Hardware Digital Twin (Fan, LCD, Buzzer)
+    const fanIcon = $('fanSvgIcon');
+    if (state.power && state.vacuum && !state.estop) {
+      const rpm = Math.round((state.fanPwmPct / 100) * 2800);
+      const speedSec = (1.6 - (state.fanPwmPct / 100) * 1.35).toFixed(2);
+      fanIcon.style.setProperty('--fan-speed', `${speedSec}s`);
+      fanIcon.classList.add('fan-spinning');
+      $('hwFanState').textContent = `AKTIF (${rpm} RPM)`;
+      $('hwFanState').className = 'text-xs font-bold text-sky-400 block truncate';
+      $('hwFanPwmTxt').textContent = `Relay vac_pin: 0 (ON) | PWM: ${pwm255}/255`;
+    } else {
+      fanIcon.classList.remove('fan-spinning');
+      $('hwFanState').textContent = 'MATI (0 RPM)';
+      $('hwFanState').className = 'text-xs font-bold text-slate-400 block truncate';
+      $('hwFanPwmTxt').textContent = 'Relay vac_pin: 1 (OFF) | PWM: 0/255';
+    }
+
+    if (state.estop) {
+      $('hwBuzzerState').textContent = 'ALARM DARURAT!';
+      $('hwBuzzerState').className = 'text-xs font-bold text-red-400 animate-pulse block truncate';
+      $('hwInterruptTxt').textContent = 'ISR Pin D2: LOW (TRIP)';
+      $('hwInterruptTxt').className = 'text-[10px] mono text-red-400';
+    } else if (state.shooting) {
+      $('hwBuzzerState').textContent = 'BEEP RADIASI AKTIF';
+      $('hwBuzzerState').className = 'text-xs font-bold text-amber-300 block truncate';
+      $('hwInterruptTxt').textContent = 'ISR Pin D2: HIGH (AMAN)';
+      $('hwInterruptTxt').className = 'text-[10px] mono text-emerald-400';
+    } else {
+      $('hwBuzzerState').textContent = 'SILENT / AMAN';
+      $('hwBuzzerState').className = 'text-xs font-bold text-slate-300 block truncate';
+      $('hwInterruptTxt').textContent = 'ISR Pin D2: HIGH (NC)';
+      $('hwInterruptTxt').className = 'text-[10px] mono text-emerald-400';
+    }
+
+    // Sequencer Step Highlight
+    const seq = computeCurrentStep();
+    $('seqCurrentStepText').textContent = seq.text;
+    document.querySelectorAll('.seq-step').forEach((el) => {
+      const s = Number(el.dataset.step);
+      const badge = el.querySelector('span');
+      if (s === seq.step) {
+        el.className = 'seq-step rounded border border-teal-400 bg-teal-950/60 px-2.5 py-1.5 flex items-center gap-2 shadow';
+        badge.className = 'w-5 h-5 rounded-full bg-teal-400 text-slate-950 font-bold flex items-center justify-center text-[10px]';
+      } else if (s < seq.step) {
+        el.className = 'seq-step rounded border border-emerald-700/60 bg-emerald-950/30 px-2.5 py-1.5 flex items-center gap-2';
+        badge.className = 'w-5 h-5 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px]';
+      } else {
+        el.className = 'seq-step rounded border border-slate-700 bg-slate-900/80 px-2.5 py-1.5 flex items-center gap-2 opacity-75';
+        badge.className = 'w-5 h-5 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[10px]';
+      }
+    });
+
+    // Update 4-Line Hardware LCD Display
+    $('lcdLine1').textContent = `[DECY-13 CYCLOTRON]   MODE: ${modeStr.toUpperCase().slice(0, 12)}`;
+    $('lcdLine2').textContent = `VAC: ${state.vacPressureMbar.toExponential(1)} mbar   FAN : ${state.vacuum && state.power ? state.fanPwmPct + '%' : 'OFF'}`;
+    $('lcdLine3').textContent = `MAG: ${state.magCurrentA.toFixed(0)}A (${state.magFieldT.toFixed(2)}T)  RF  : ${state.rf ? state.frfMhz.toFixed(1) + 'MHz' : 'IDLE'}`;
+    $('lcdLine4').textContent = `MSG: ${seq.text.replace(/^Tahap \d+ — /, '').slice(0, 38)}`;
+
+    if ($('canvasStatusOverlay')) {
+      $('canvasStatusOverlay').textContent = `Status: ${modeStr} (${seq.text.replace(/^Tahap \d+ — /, '').slice(0, 34)})`;
+    }
+
+    // Update JSON TX Preview
+    updateJsonPayloadView();
+
+    // Notify Decy Kids Interactive Guide Manager
+    if (window.decyKidsGuide && typeof window.decyKidsGuide.onStateUpdate === 'function') {
+      window.decyKidsGuide.onStateUpdate(state);
+    }
+  }
+
+  // ==================== JSON PAYLOAD & MQTT TRANSMISSION ====================
+  function buildPayloadObject() {
+    return {
+      timestamp: new Date().toISOString(),
+      instrument: 'DECY-13_EDUCATIONAL_CYCLOTRON',
+      topic: $('mqttTopicPub') ? $('mqttTopicPub').value : 'decy13/hmi/cmd',
+      power: state.power,
+      vacuum: state.vacuum,
+      rf: state.rf,
+      magnet: state.magnet,
+      interlock: state.interlock,
+      beam: state.beam,
+      shoot: state.shooting,
+      estop: state.estop,
+      mag_a: state.magCurrentA,
+      rf_kv: state.rfVoltKv,
+      rf_detune_pct: state.rfDetunePct,
+      target_setpoint_ua: state.targetBeamUa,
+      fan_pwm: Math.round((state.fanPwmPct / 100) * 255),
+      telemetry: {
+        vac_mbar: +state.vacPressureMbar.toExponential(2),
+        energy_mev: +state.beamEnergyMev.toFixed(2),
+        beam_ua: +state.actualBeamUa.toFixed(2),
+        target_ua: +state.targetCurrentUa.toFixed(2),
+        led_pixel: state.activeLedIndex
+      }
+    };
+  }
+
+  function appendCommLog(dir, text) {
+    const box = $('commLogContainer');
+    if (!box) return;
+    const row = document.createElement('div');
+    const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    const badgeColor = dir === 'TX' ? 'text-teal-400' : (dir === 'RX' ? 'text-amber-300' : dir === 'ERR' ? 'text-red-400' : 'text-sky-400');
+    row.innerHTML = `<span class="text-slate-500">[${time}]</span> <b class="${badgeColor}">${dir}</b> ${text}`;
+    box.prepend(row);
+    while (box.children.length > 40) box.removeChild(box.lastChild);
+  }
+
+  function updateJsonPayloadView() {
+    const payload = buildPayloadObject();
+    const pre = $('jsonTxPreview');
+    if (pre) pre.textContent = JSON.stringify(payload, null, 2);
+  }
+
+  // ==================== MQTT PUBLISH (GANTI broadcastToRaspberryPi) ====================
+  // Petakan nama event lama ke cmd baru sesuai protokol daemon RPi
+  const CMD_MAP = {
+    'TOGGLE_POWER':        { cmd: 'TOGGLE_POWER' },
+    'TOGGLE_VACUUM_FAN':   { cmd: 'TOGGLE_VACUUM' },
+    'TOGGLE_RF':           null,   // RF dikontrol otomatis oleh daemon saat beam ON
+    'TOGGLE_MAGNET':       null,   // Magnet dikontrol otomatis oleh daemon
+    'TOGGLE_INTERLOCK':    { cmd: 'TOGGLE_INTERLOCK' },
+    'TOGGLE_BEAM':         { cmd: 'START_BEAM' },
+    'CMD_START_BEAM':      { cmd: 'START_BEAM' },
+    'CMD_SHOOT_EXPOSURE':  { cmd: 'SHOOT' },
+    'HARDWARE_ISR_EMERGENCY_STOP': { cmd: 'EMERGENCY_STOP' },
+    'AUTO_INIT_READY':     null,   // Kirim SET_PARAMS + urutan otomatis
+    'PARAM_MAGNET_A':      null,   // Akan dikirim via SET_PARAMS
+    'PARAM_RF_KV':         null,
+    'PARAM_RF_DETUNE':     null,
+    'PARAM_BEAM_UA':       null,
+    'PARAM_FAN_PWM':       null,
+    'PARAM_PARTICLE':      null,
+    'PRESET_DECY13':       null,
+    'MANUAL_TEST_PACKET':  null,
+    'INITIAL_HANDSHAKE':   null,
+  };
+
+  function publishCommand(cmdObj) {
+    if (!cmdObj) return;
+    updateJsonPayloadView();
+    const topicCmd = $('mqttTopicPub') ? $('mqttTopicPub').value : 'decy13/hmi/cmd';
+    const payloadStr = JSON.stringify(cmdObj);
+    if (state.mqttClient && state.mqttConnected) {
+      state.mqttClient.publish(topicCmd, payloadStr);
+      appendCommLog('TX', `MQTT → ${topicCmd}: <code>${payloadStr}</code>`);
+    } else {
+      appendCommLog('INFO', `[Mode Simulasi] MQTT belum terhubung. Cmd: <code>${payloadStr}</code>`);
+    }
+  }
+
+  function broadcastToRaspberryPi(reason = 'HMI_UPDATE') {
+    const mapped = CMD_MAP[reason];
+    // Selalu kirim SET_PARAMS saat ada perubahan parameter input
+    const paramReasons = ['PARAM_MAGNET_A','PARAM_RF_KV','PARAM_RF_DETUNE','PARAM_BEAM_UA','PARAM_FAN_PWM','PARAM_PARTICLE','PRESET_DECY13'];
+    if (paramReasons.includes(reason)) {
+      publishCommand({
+        cmd: 'SET_PARAMS',
+        magnet_a: state.magCurrentA,
+        rf_mhz: state.frfMhz || 22.5,
+        rf_kv: state.rfVoltKv,
+        beam_ua: state.targetBeamUa
+      });
+      return;
+    }
+    if (reason === 'AUTO_INIT_READY') {
+      // Kirim SET_PARAMS lalu AUTO_INIT agar Power, Vakum, dan Interlock langsung siap di daemon
+      publishCommand({ cmd: 'SET_PARAMS', magnet_a: state.magCurrentA, rf_mhz: 22.5, rf_kv: state.rfVoltKv, beam_ua: state.targetBeamUa });
+      setTimeout(() => publishCommand({ cmd: 'AUTO_INIT' }), 200);
+      return;
+    }
+    if (mapped) {
+      publishCommand(mapped);
+    } else {
+      appendCommLog('INFO', `[${reason}] tidak dikirim ke RPi (dikontrol otomatis oleh daemon)`);
+    }
+  }
+
+  // ==================== MQTT CONNECTION (MQTT.js via WebSocket port 9001) ====================
+  function connectMQTT() {
+    const brokerUrl = ($('commEndpoint') ? $('commEndpoint').value.trim() : null) || 'ws://192.168.137.1:9001';
+    if (!brokerUrl.startsWith('ws://') && !brokerUrl.startsWith('wss://')) {
+      appendCommLog('ERR', 'URL harus diawali ws:// atau wss://');
+      return;
+    }
+    if (state.mqttClient) { state.mqttClient.end(true); }
+
+    appendCommLog('INFO', `Menghubungkan MQTT ke ${brokerUrl} ...`);
+    const clientId = 'hmi_decy13_' + Math.random().toString(16).substr(2, 8);
+    const mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, reconnectPeriod: 3000 });
+    state.mqttClient = mqttClient;
+
+    mqttClient.on('connect', () => {
+      state.mqttConnected = true;
+      const topicSub = $('mqttTopicSub') ? $('mqttTopicSub').value : 'decy13/rpi/state';
+      mqttClient.subscribe(topicSub, { qos: 0 });
+      $('connDot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+      $('connText').textContent = 'MQTT TERHUBUNG - RPi 3B+';
+      $('connText').className = 'mono text-[11px] text-emerald-300';
+      appendCommLog('INFO', `✅ MQTT TERHUBUNG ke Mosquitto (${brokerUrl}). Subscribe: ${topicSub}`);
+      showToast('MQTT terhubung ke Raspberry Pi 3B+! Animasi mengikuti hardware nyata.');
+      // Kirim SET_PARAMS awal
+      setTimeout(() => publishCommand({
+        cmd: 'SET_PARAMS',
+        magnet_a: state.magCurrentA,
+        rf_mhz: 22.5,
+        rf_kv: state.rfVoltKv,
+        beam_ua: state.targetBeamUa
+      }), 500);
+    });
+
+    mqttClient.on('message', (topic, payload) => {
+      const topicSub = $('mqttTopicSub') ? $('mqttTopicSub').value : 'decy13/rpi/state';
+      if (topic === topicSub) {
+        try {
+          const rpiState = JSON.parse(payload.toString());
+          applyRpiState(rpiState);
+        } catch (e) {
+          appendCommLog('ERR', 'Gagal parse payload RPi: ' + e.message);
+        }
+      }
+    });
+
+    mqttClient.on('error', (err) => {
+      appendCommLog('ERR', 'MQTT Error: ' + err.message);
+    });
+
+    mqttClient.on('reconnect', () => {
+      state.mqttConnected = false;
+      $('connDot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+      $('connText').textContent = 'MQTT Reconnecting...';
+      $('connText').className = 'mono text-[11px] text-amber-200';
+      appendCommLog('INFO', 'MQTT terputus — mencoba reconnect...');
+    });
+
+    mqttClient.on('close', () => {
+      state.mqttConnected = false;
+      $('connDot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+      $('connText').textContent = 'MQTT LOOPBACK (STATE-DRIVEN)';
+      $('connText').className = 'mono text-[11px] text-amber-200';
+    });
+  }
+
+  // ==================== APPLY RPi STATE (INTI STATE-DRIVEN) ====================
+  // Fungsi ini menerima JSON dari topic decy13/rpi/state dan meng-update
+  // SEMUA state & animasi Web HMI agar sinkron dengan hardware nyata.
+  function applyRpiState(rpi) {
+    // 1. Sinkronisasi state boolean dari RPi (sumber kebenaran)
+    state.power    = !!rpi.power;
+    state.vacuum   = !!rpi.vacuum;
+    state.rf       = !!rpi.rf;
+    state.magnet   = rpi.magnet !== undefined ? !!rpi.magnet : state.magnet;
+    state.interlock = !!rpi.interlocks;
+    state.beam     = !!rpi.beam;
+    state.shooting = !!rpi.exposureActive;
+    state.estop    = !!rpi.emergency;
+
+    // 2. Sinkronisasi nilai fisika real-time dari RPi
+    if (rpi.pressure       !== undefined) state.vacPressureMbar = rpi.pressure;
+    if (rpi.beamEnergy     !== undefined) state.beamEnergyMev   = rpi.beamEnergy;
+    if (rpi.beamCurrent    !== undefined) state.actualBeamUa    = rpi.beamCurrent;
+    if (rpi.targetCurrent  !== undefined) state.targetCurrentUa = rpi.targetCurrent;
+    if (rpi.exposureSeconds !== undefined) state.exposureSeconds = rpi.exposureSeconds;
+    if (rpi.rfPower        !== undefined) state.rfPowerKw       = rpi.rfPower / 1000;
+    if (rpi.magnetCurrent  !== undefined) state.magCurrentA     = rpi.magnetCurrent;
+    if (rpi.frequency      !== undefined) state.frfMhz          = rpi.frequency;
+    if (rpi.magnetPower    !== undefined) state.magPowerKw       = rpi.magnetPower;
+
+    // 3. KUNCI STATE-DRIVEN: Sinkronisasi indeks LED dari RPi
+    //    Browser TIDAK menghitung posisi LED sendiri — mengikuti RPi
+    if (rpi.activeLedIdx !== undefined && rpi.activeLedIdx >= 0) {
+      state.activeLedIndex = rpi.activeLedIdx % state.ledSpiralCount;
+    }
+    if (rpi.shootLedIdx !== undefined) {
+      state.shootLedIndex = rpi.shootLedIdx >= 0
+        ? (rpi.shootLedIdx - 48) % 16   // konversi dari indeks absolut ke relatif 0-15
+        : -1;
+    }
+
+    // 4. Update teks LCD 4-baris dari data LCD RPi (bukan dihitung ulang di browser)
+    if (rpi.lcd_line1 && $('lcdLine1')) $('lcdLine1').textContent = rpi.lcd_line1;
+    if (rpi.lcd_line2 && $('lcdLine2')) $('lcdLine2').textContent = rpi.lcd_line2;
+    if (rpi.lcd_line3 && $('lcdLine3')) $('lcdLine3').textContent = rpi.lcd_line3;
+    if (rpi.lcd_line4 && $('lcdLine4')) $('lcdLine4').textContent = rpi.lcd_line4;
+
+    // 5. Update log dari RPi ke panel log Web HMI
+    if (Array.isArray(rpi.logs) && rpi.logs.length > 0) {
+      const lastLog = rpi.logs[0];
+      if (lastLog && lastLog !== applyRpiState._lastLog) {
+        appendCommLog('RX', `RPi: ${lastLog}`);
+        applyRpiState._lastLog = lastLog;
+      }
+    }
+
+    // 6. Update exposure timer dari RPi (sumber kebenaran waktu iradiasi)
+    if (rpi.exposureSeconds !== undefined && $('valExposureTimer')) {
+      const s = Math.floor(rpi.exposureSeconds);
+      const hrs  = String(Math.floor(s / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const secs = String(s % 60).padStart(2, '0');
+      $('valExposureTimer').textContent = `${hrs}:${mins}:${secs}`;
+    }
+
+    // 7. Rebuild orbit segments jika beam baru aktif
+    rebuildOrbitSegments();
+
+    // 8. Sinkronisasi UI
+    syncUiFromState();
+  }
+  applyRpiState._lastLog = '';
+
+  // ==================== CANVAS RENDERERS ====================
+  function resizeCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(80, Math.round(rect.width * dpr));
+    const h = Math.max(60, Math.round(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: rect.width, h: rect.height };
+  }
+
+  // 1. Draw 2D Cyclotron Dees + Spiral Orbit + WS2812B LEDs + Extraction Target
+  function drawCyclotronSimulator(nowMs) {
+    const canvas = $('cyclotronCanvas');
+    if (!canvas || !canvas.clientWidth) return;
+    const { ctx, w, h } = resizeCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w * 0.42;
+    const cy = h * 0.52;
+    const R = Math.min(w * 0.34, h * 0.41);
+
+    // Background Radial Grid
+    ctx.strokeStyle = '#142234';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 4; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, (R * i) / 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx - R * 1.15, cy);
+    ctx.lineTo(cx + R * 1.65, cy);
+    ctx.moveTo(cx, cy - R * 1.1);
+    ctx.lineTo(cx, cy + R * 1.1);
+    ctx.stroke();
+
+    // RF Alternating Potential Glow on Dees
+    const rfPhase = state.rf && state.power ? Math.sin(nowMs * 0.012) : 0;
+    const deeAlphaA = 0.12 + (rfPhase > 0 ? rfPhase * 0.12 : 0);
+    const deeAlphaB = 0.12 + (rfPhase < 0 ? -rfPhase * 0.12 : 0);
+
+    // Left Semicircle (DEE A)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx - 5, cy, R, Math.PI / 2, (3 * Math.PI) / 2, false);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(14, 165, 233, ${deeAlphaA.toFixed(3)})`;
+    ctx.fill();
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Right Semicircle (DEE B)
+    ctx.beginPath();
+    ctx.arc(cx + 5, cy, R, -Math.PI / 2, Math.PI / 2, false);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(20, 184, 166, ${deeAlphaB.toFixed(3)})`;
+    ctx.fill();
+    ctx.strokeStyle = '#0d9488';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // RF Acceleration Gap (Central Vertical Gap)
+    ctx.save();
+    ctx.strokeStyle = state.rf && state.power ? '#f59e0b' : '#475569';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - R);
+    ctx.lineTo(cx, cy + R);
+    ctx.stroke();
+    ctx.restore();
+
+    // Extraction Port & Beamline to Target (Right side of Dee B)
+    const targetX = Math.min(w - 38, cx + R * 1.48);
+    const targetY = cy - R * 0.55;
+    const extractStartX = cx + R * 0.82;
+    const extractStartY = cy - R * 0.55;
+
+    // Beamline Pipe
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(extractStartX, extractStartY);
+    ctx.lineTo(targetX, targetY);
+    ctx.stroke();
+
+    // Target Station Box
+    ctx.fillStyle = state.shooting && state.beam ? '#ea580c' : '#1e293b';
+    ctx.strokeStyle = state.shooting && state.beam ? '#fdba74' : '#64748b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(targetX - 14, targetY - 22, 28, 44, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TARGET', targetX, targetY - 27);
+
+    // Draw 48 Spiral LEDs (WS2812B Representation inside Dees)
+    const totalSpiral = state.ledSpiralCount;
+    for (let i = 0; i < totalSpiral; i++) {
+      const frac = (i + 1) / totalSpiral;
+      const angle = i * 0.65;
+      const rad = frac * (R * 0.9);
+      const lx = cx + rad * Math.cos(angle);
+      const ly = cy - rad * Math.sin(angle);
+
+      const isActive = state.beam && !state.estop && i === state.activeLedIndex;
+      const isTrail = state.beam && !state.estop && i < state.activeLedIndex && (state.activeLedIndex - i) <= 6;
+
+      ctx.beginPath();
+      ctx.arc(lx, ly, isActive ? 5.2 : 2.8, 0, Math.PI * 2);
+      if (isActive) {
+        ctx.fillStyle = '#fef08a';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 14;
+      } else if (isTrail) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+        ctx.shadowBlur = 0;
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // Draw Continuous Physics Spiral Path when Beam is On
+    if (state.beam && state.magnet && !state.estop) {
+      ctx.save();
+      ctx.beginPath();
+      const maxIdx = Math.max(1, state.activeLedIndex);
+      for (let step = 0; step <= maxIdx * 8; step++) {
+        const f = step / (totalSpiral * 8);
+        const a = step * (0.65 / 8);
+        const r = f * (R * 0.9);
+        const px = cx + r * Math.cos(a);
+        const py = cy - r * Math.sin(a);
+        if (step === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw 8 Shoot Beamline LEDs (GPIO 5) when SHOOT EXPOSURE is active
+    for (let j = 0; j < 8; j++) {
+      const t = j / 7;
+      const bx = extractStartX + t * (targetX - 18 - extractStartX);
+      const by = extractStartY;
+      const isShootLit = state.shooting && state.beam && !state.estop && (j === state.shootLedIndex || j === state.shootLedIndex - 1);
+      ctx.beginPath();
+      ctx.arc(bx, by, isShootLit ? 4.8 : 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = isShootLit ? '#fb923c' : 'rgba(148, 163, 184, 0.28)';
+      if (isShootLit) {
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 12;
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // Target Impact Glow when shooting
+    if (state.shooting && state.beam && !state.estop) {
+      const pulse = 10 + 6 * Math.sin(nowMs * 0.025);
+      const grad = ctx.createRadialGradient(targetX - 10, targetY, 2, targetX - 10, targetY, pulse * 2);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      grad.addColorStop(0.4, 'rgba(251, 146, 60, 0.8)');
+      grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(targetX - 10, targetY, pulse * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2. Draw RF Waveform Canvas
+  function drawRfWaveform(nowMs) {
+    const canvas = $('rfWaveCanvas');
+    if (!canvas || !canvas.clientWidth) return;
+    const { ctx, w, h } = resizeCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+
+    // Grid
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = state.rf && state.power ? '#f59e0b' : '#475569';
+    ctx.lineWidth = 1.6;
+    const amp = state.rf && state.power ? Math.min(h * 0.42, (state.rfVoltKv / 120) * h * 0.42 + 6) : 2;
+    const freq = (state.frfMhz / 22.5) * 0.18;
+    for (let x = 0; x < w; x++) {
+      const mod = Math.sin(x * 0.04 + nowMs * 0.005);
+      const y = h / 2 + Math.sin(x * freq - nowMs * 0.015) * amp * mod;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // 3. Draw Generic Line Chart (Vacuum, Diagnostics, Trend)
+  function drawLineChart(canvasId, dataArr, minVal, maxVal, strokeColor, fillColor) {
+    const canvas = $(canvasId);
+    if (!canvas || !canvas.clientWidth) return;
+    const { ctx, w, h } = resizeCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+
+    // Horizontal grid lines
+    ctx.strokeStyle = '#172536';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      const gy = (h * i) / 4;
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(w, gy);
+      ctx.stroke();
+    }
+
+    if (!dataArr.length) return;
+    ctx.beginPath();
+    for (let i = 0; i < dataArr.length; i++) {
+      const x = (i / (dataArr.length - 1)) * w;
+      const norm = (dataArr[i] - minVal) / Math.max(1e-6, maxVal - minVal);
+      const y = h - Math.max(0.05, Math.min(0.95, norm)) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+  }
+
+  // 4. Draw 2D Beam Profile Heatmap (Matching UIWEB.jpeg bottom center)
+  function drawBeamProfile(nowMs) {
+    const canvas = $('beamProfileCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const intensity = state.beam && !state.estop ? Math.min(1, state.actualBeamUa / Math.max(10, state.targetBeamUa)) : 0.08;
+    const jitter = state.beam ? Math.sin(nowMs * 0.02) * 2 : 0;
+    const maxR = (w * 0.44) * (0.45 + 0.55 * intensity) + jitter;
+
+    const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, maxR);
+    if (state.beam && !state.estop) {
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.18, '#fde047');
+      grad.addColorStop(0.45, '#f97316');
+      grad.addColorStop(0.75, '#1d4ed8');
+      grad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+    } else {
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
+      grad.addColorStop(0.6, 'rgba(30, 58, 138, 0.12)');
+      grad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+    }
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Crosshair
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
+    ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+    ctx.stroke();
+  }
+
+  // ==================== SIMULATION LOOP (20 FPS TELEMETRY & 60 FPS CANVAS) ====================
+  // Saat MQTT TERHUBUNG ke RPi: fisika vakum & energi dari applyRpiState(), loop ini
+  //   hanya menjalankan chart history, canvas render, dan LED bar refresh.
+  // Saat OFFLINE (Mode Simulasi): loop ini menghitung fisika lokal sebagai fallback demo.
+  let lastTickMs = performance.now();
+  let lastLedStepMs = performance.now();
+  let lastSecondMs = performance.now();
+
+  function simulationStep(nowMs) {
+    const dt = (nowMs - lastTickMs) / 1000;
+    if (dt >= 0.12) {
+      lastTickMs = nowMs;
+
+      // 1. Vacuum Pressure Simulation — hanya di mode OFFLINE
+      if (!state.mqttConnected) {
+        if (state.power && state.vacuum && !state.estop) {
+          const pumpFactor = 0.65 + (state.fanPwmPct / 100) * 0.25;
+          state.vacPressureMbar = Math.max(1.2e-6, state.vacPressureMbar * pumpFactor);
+        } else {
+          state.vacPressureMbar = Math.min(1000.0, state.vacPressureMbar * 1.45 + 0.05);
+        }
+      }
+      state.vacHistory.push(Math.log10(Math.max(1e-7, state.vacPressureMbar)));
+      state.vacHistory.shift();
+
+      // 2. Beam Energy & Current Calculation — hanya di mode OFFLINE
+      const part = PARTICLES[state.particleKey];
+      const detunePenalty = Math.max(0, Math.cos((state.rfDetunePct / 10) * (Math.PI / 2)));
+      const bRatio = Math.min(1.15, (state.magCurrentA / 1450));
+      const rfRatio = Math.min(1.15, (state.rfVoltKv / 45));
+
+      if (!state.mqttConnected) {
+        if (state.power && state.beam && state.magnet && state.rf && !state.estop) {
+          const progressFrac = (state.activeLedIndex + 1) / state.ledSpiralCount;
+          state.beamEnergyMev = part.maxMeV * progressFrac * bRatio * rfRatio * detunePenalty;
+          state.orbitRadiusCm = 40.0 * Math.sqrt(progressFrac) * detunePenalty;
+          const ripple = (Math.random() - 0.5) * 0.6;
+          state.actualBeamUa = Math.max(0, state.targetBeamUa * detunePenalty + ripple);
+          state.targetCurrentUa = state.shooting ? state.actualBeamUa * 0.94 : 0.0;
+        } else {
+          state.beamEnergyMev = 0.0;
+          state.orbitRadiusCm = 0.0;
+          state.actualBeamUa = 0.0;
+          state.targetCurrentUa = 0.0;
+        }
+      } else {
+        // Saat MQTT terhubung: orbit radius dihitung dari energi yang sudah diterima dari RPi
+        const progressFrac = state.beamEnergyMev / Math.max(0.1, part.maxMeV);
+        state.orbitRadiusCm = 40.0 * Math.sqrt(Math.min(1, progressFrac));
+      }
+
+      state.beamHistory.push(state.actualBeamUa);
+      state.beamHistory.shift();
+      state.targetHistory.push(state.targetCurrentUa);
+      state.targetHistory.shift();
+
+      // Update linear 16-LED bar in Digital Twin
+      const active16 = state.beam && !state.estop ? Math.floor((state.activeLedIndex / state.ledSpiralCount) * 16) : -1;
+      for (let i = 0; i < 16; i++) {
+        if (state.estop) {
+          ledCells[i].className = 'rounded-sm bg-red-600 animate-pulse';
+        } else if (state.shooting && state.beam && i >= 12) {
+          ledCells[i].className = 'rounded-sm bg-orange-400 shadow-[0_0_8px_#fb923c]';
+        } else if (i === active16) {
+          ledCells[i].className = 'rounded-sm bg-cyan-300 shadow-[0_0_8px_#38bdf8]';
+        } else if (i < active16) {
+          ledCells[i].className = 'rounded-sm bg-sky-700/70';
+        } else {
+          ledCells[i].className = 'rounded-sm bg-slate-800';
+        }
+      }
+
+      syncUiFromState();
+      drawLineChart('vacTrendCanvas', state.vacHistory, -6.2, 3.2, '#38bdf8', 'rgba(56, 189, 248, 0.14)');
+      drawLineChart('diagChartCanvas', state.targetHistory, 0, 105, '#fb923c', 'rgba(251, 146, 60, 0.16)');
+      drawLineChart('trendChartCanvas', state.beamHistory, 0, 105, '#2dd4bf', 'rgba(45, 212, 191, 0.16)');
+    }
+
+    // Dynamic WS2812B LED Spiral Step (Animasi halus di canvas)
+    const ledDelayMs = Math.max(18, 95 - state.activeLedIndex * 1.4 - (state.rfVoltKv * 0.25));
+    if ($('hwLedFreqTxt')) {
+      $('hwLedFreqTxt').textContent = state.beam
+        ? `${state.mqttConnected ? '[MQTT]' : '[Sim]'} Delay: ${Math.round(ledDelayMs)} ms/LED`
+        : 'Delay: -- ms/LED';
+    }
+    if ($('seqClockOut')) {
+      $('seqClockOut').textContent = state.mqttConnected
+        ? `MQTT LIVE | TOPIC: decy13/rpi/state`
+        : `CYCLE: ${Math.round(ledDelayMs)} ms | MODE: SIMULASI LOKAL`;
+    }
+
+    if (nowMs - lastLedStepMs >= ledDelayMs) {
+      lastLedStepMs = nowMs;
+      if (state.power && state.beam && !state.estop) {
+        state.activeLedIndex = (state.activeLedIndex + 1) % state.ledSpiralCount;
+        if (state.activeLedIndex === 0) state.passesCount += 2;
+        if (state.shooting) {
+          state.shootLedIndex = (state.shootLedIndex + 1) % 8;
+        } else {
+          state.shootLedIndex = -1;
+        }
+      }
+    }
+    if ($('canvasLedOverlay')) {
+      $('canvasLedOverlay').textContent = `LED Aktif: Spiral #${state.activeLedIndex + 1}/48 ${state.shooting ? '| Shoot #' + (Math.max(0,state.shootLedIndex) + 1) : ''}`;
+    }
+    if ($('valPassesCount')) {
+      $('valPassesCount').textContent = `Lintasan Dee: ${state.passesCount} putaran`;
+    }
+
+    // Exposure timer: dari RPi jika terhubung (applyRpiState yg update), fallback lokal jika offline
+    if (!state.mqttConnected && nowMs - lastSecondMs >= 1000) {
+      lastSecondMs = nowMs;
+      if (state.power && state.beam && !state.estop) {
+        state.exposureSeconds++;
+        const hrs = String(Math.floor(state.exposureSeconds / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((state.exposureSeconds % 3600) / 60)).padStart(2, '0');
+        const secs = String(state.exposureSeconds % 60).padStart(2, '0');
+        if ($('valExposureTimer')) $('valExposureTimer').textContent = `${hrs}:${mins}:${secs}`;
+      }
+    }
+
+    drawCyclotronSimulator(nowMs);
+    drawRfWaveform(nowMs);
+    drawBeamProfile(nowMs);
+    requestAnimationFrame(simulationStep);
+  }
+
+  // ==================== EVENT LISTENERS ====================
+  // Navigation Tabs & Developer Shortcuts
+  $('tabBtnScada')?.addEventListener('click', () => {
+    $('modalDevSettings')?.classList.add('hidden');
+  });
+  $('tabBtnComm')?.addEventListener('click', () => {
+    $('modalDevSettings')?.classList.remove('hidden');
+    $('tabDevMqtt')?.click();
+  });
+  $('tabBtnCode')?.addEventListener('click', () => {
+    $('modalDevSettings')?.classList.remove('hidden');
+    $('tabDevCode')?.click();
+  });
+
+  // System Status Switches
+  $('swPower').addEventListener('click', () => {
+    state.estop = false;
+    state.power = !state.power;
+    if (!state.power) {
+      state.beam = false;
+      state.shooting = false;
+    }
+    playBeep(state.power ? 660 : 330, 90);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('TOGGLE_POWER');
+  });
+
+  $('swVacuum').addEventListener('click', () => {
+    if (!state.power) {
+      showToast('Aktifkan Power utama terlebih dahulu sebelum menjalankan Kipas Vakum.');
+      return;
+    }
+    state.vacuum = !state.vacuum;
+    playBeep(state.vacuum ? 520 : 280, 90);
+    syncUiFromState();
+    broadcastToRaspberryPi('TOGGLE_VACUUM_FAN');
+  });
+
+  $('swRf').addEventListener('click', () => {
+    if (!state.power) state.power = true;
+    state.rf = !state.rf;
+    playBeep(state.rf ? 740 : 350, 90);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('TOGGLE_RF');
+  });
+
+  $('swMagnet').addEventListener('click', () => {
+    state.magnet = !state.magnet;
+    playBeep(state.magnet ? 580 : 300, 90);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('TOGGLE_MAGNET');
+  });
+
+  $('swInterlock').addEventListener('click', () => {
+    if (!state.power) state.power = true;
+    state.estop = false;
+    state.interlock = !state.interlock;
+    playBeep(state.interlock ? 880 : 400, 90);
+    syncUiFromState();
+    broadcastToRaspberryPi('TOGGLE_INTERLOCK');
+  });
+
+  $('swBeam').addEventListener('click', () => {
+    if (!state.beam) {
+      // Auto-ready if user toggles Beam directly
+      state.power = true;
+      state.vacuum = true;
+      state.vacPressureMbar = 1.0e-5;
+      state.magnet = true;
+      state.rf = true;
+      state.interlock = true;
+      state.estop = false;
+      state.beam = true;
+      showToast('Berkas Ion Aktif — LED Strip Spiral WS2812B mulai berputar!');
+    } else {
+      state.beam = false;
+      state.shooting = false;
+    }
+    playBeep(state.beam ? 960 : 360, 120);
+    syncUiFromState();
+    broadcastToRaspberryPi('TOGGLE_BEAM');
+  });
+
+  // Auto-Init Button
+  $('autoSequenceBtn').addEventListener('click', () => {
+    state.estop = false;
+    state.power = true;
+    state.vacuum = true;
+    state.vacPressureMbar = 1.0e-5;
+    state.magnet = true;
+    state.rf = true;
+    state.interlock = true;
+    playBeep(880, 140);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('AUTO_INIT_READY');
+    showToast('Semua subsistem (Power, Kipas Vakum, Magnet, RF, Interlock) SIAP! Silakan klik [START BEAM].');
+  });
+
+  // 3 Main Operation Buttons
+  $('btnStartBeam').addEventListener('click', () => {
+    state.estop = false;
+    state.power = true;
+    state.vacuum = true;
+    state.vacPressureMbar = Math.min(state.vacPressureMbar, 1.0e-5);
+    state.magnet = true;
+    state.rf = true;
+    state.interlock = true;
+    state.beam = true;
+    playBeep(1046, 160);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('CMD_START_BEAM');
+    showToast('START BEAM: Partikel dipercepat secara spiral menuju 13 MeV!');
+  });
+
+  $('btnShootExposure').addEventListener('click', () => {
+    if (!state.beam) {
+      $('btnStartBeam').click();
+    }
+    state.shooting = !state.shooting;
+    playBeep(state.shooting ? 1318 : 520, 180, 'triangle');
+    syncUiFromState();
+    broadcastToRaspberryPi('CMD_SHOOT_EXPOSURE');
+    showToast(state.shooting ? 'SHOOT EXPOSURE AKTIF: Berkas ditembakkan ke sistem Target!' : 'Ekstraksi Target dihentikan.');
+  });
+
+  $('btnEmergencyStop').addEventListener('click', () => {
+    state.estop = true;
+    state.beam = false;
+    state.shooting = false;
+    state.rf = false;
+    state.vacuum = false;
+    playBeep(220, 400, 'sawtooth');
+    syncUiFromState();
+    broadcastToRaspberryPi('HARDWARE_ISR_EMERGENCY_STOP');
+    showToast('🚨 EMERGENCY STOP! Interupsi Hardware memutus RF, Beam, dan Kipas Vakum.');
+  });
+
+  // Parameter Input Listeners
+  $('inpParticle').addEventListener('change', (e) => {
+    state.particleKey = e.target.value;
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('PARAM_PARTICLE');
+  });
+
+  $('inpMagCurrent').addEventListener('input', (e) => {
+    state.magCurrentA = parseFloat(e.target.value);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('PARAM_MAGNET_A');
+  });
+
+  $('inpRfVolt').addEventListener('input', (e) => {
+    state.rfVoltKv = parseFloat(e.target.value);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('PARAM_RF_KV');
+  });
+
+  $('inpRfDetune').addEventListener('input', (e) => {
+    state.rfDetunePct = parseFloat(e.target.value);
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('PARAM_RF_DETUNE');
+  });
+
+  $('inpTargetCurrent').addEventListener('input', (e) => {
+    state.targetBeamUa = parseFloat(e.target.value);
+    syncUiFromState();
+    broadcastToRaspberryPi('PARAM_BEAM_UA');
+  });
+
+  $('inpFanPwm').addEventListener('input', (e) => {
+    state.fanPwmPct = parseInt(e.target.value, 10);
+    syncUiFromState();
+    broadcastToRaspberryPi('PARAM_FAN_PWM');
+  });
+
+  $('btnResetParams').addEventListener('click', () => {
+    state.particleKey = 'p';
+    state.magCurrentA = 1450;
+    state.rfVoltKv = 45;
+    state.rfDetunePct = 0;
+    state.targetBeamUa = 25;
+    state.fanPwmPct = 85;
+    $('inpParticle').value = 'p';
+    $('inpMagCurrent').value = '1450';
+    $('inpRfVolt').value = '45';
+    $('inpRfDetune').value = '0';
+    $('inpTargetCurrent').value = '25';
+    $('inpFanPwm').value = '85';
+    rebuildOrbitSegments();
+    syncUiFromState();
+    broadcastToRaspberryPi('PRESET_DECY13');
+    showToast('Parameter dikembalikan ke nilai standar DECY-13 (1450 A, 45 kV, 0% Detune).');
+  });
+
+  $('btnResetTimer').addEventListener('click', () => {
+    state.exposureSeconds = 0;
+    state.passesCount = 0;
+    $('valExposureTimer').textContent = '00:00:00';
+    $('valPassesCount').textContent = 'Lintasan Dee: 0 putaran';
+  });
+
+  $('soundToggleBtn').addEventListener('click', () => {
+    state.soundEnabled = !state.soundEnabled;
+    const icon = $('soundIcon');
+    if (icon) icon.textContent = state.soundEnabled ? '🔊' : '🔇';
+    showToast(state.soundEnabled ? 'Audio Suara: AKTIF' : 'Audio Suara: HENING');
+  });
+
+  $('btnRemoteEstop')?.addEventListener('click', () => {
+    $('btnEmergencyStop')?.click();
+  });
+
+  // WebSocket / MQTT Bridge Controls — Diganti ke MQTT.js (Mosquitto WebSocket port 9001)
+  $('btnConnectBridge').addEventListener('click', () => {
+    connectMQTT();
+  });
+
+  $('btnDisconnectBridge').addEventListener('click', () => {
+    if (state.mqttClient) {
+      state.mqttClient.end(true);
+      state.mqttClient = null;
+    }
+    state.mqttConnected = false;
+    $('connDot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+    $('connText').textContent = 'MQTT LOOPBACK (STATE-DRIVEN)';
+    $('connText').className = 'mono text-[11px] text-amber-200';
+    appendCommLog('INFO', 'Koneksi MQTT diputus manual. Berjalan dalam Mode Simulasi Lokal.');
+  });
+
+  $('btnSendTestPacket').addEventListener('click', () => {
+    publishCommand({ cmd: 'SET_PARAMS', magnet_a: state.magCurrentA, rf_mhz: 22.5, rf_kv: state.rfVoltKv, beam_ua: state.targetBeamUa });
+    showToast('Paket SET_PARAMS dikirim ke RPi via MQTT!');
+  });
+
+  // Copy Helpers
+  function copyTextToClipboard(text, label) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast(`${label} berhasil disalin ke clipboard!`);
+    } catch (e) {
+      showToast('Gagal menyalin teks.');
+    }
+  }
+
+  $('btnCopyJsonPayload').addEventListener('click', () => {
+    copyTextToClipboard($('jsonTxPreview').textContent, 'Payload JSON');
+  });
+  $('btnCopyRpiCode').addEventListener('click', () => {
+    copyTextToClipboard($('codeRpiBlock').textContent, 'Kode Python Raspberry Pi');
+  });
+  $('btnCopyInoCode').addEventListener('click', () => {
+    copyTextToClipboard($('codeInoBlock').textContent, 'Kode Firmware Arduino/ESP32');
+  });
+
+  // ==================== DECY KIDS GUIDE & INTERACTIVE TOUR MANAGER ====================
+  const GUIDE_STEPS = [
+    {
+      id: 'power',
+      targetId: 'swPower',
+      mascot: '⚡',
+      title: 'Langkah 1: Inisiasi Catu Daya Utama',
+      subtitle: 'Langkah 1/5: Saklar Power',
+      badgeText: 'TEKAN SAKLAR POWER!',
+      badgeIcon: '👇',
+      text: 'Untuk memulai pengoperasian siklotron DECY-13, tekan saklar POWER di remote panel untuk menyalakan catu daya utama ke seluruh subsistem!',
+      funFact: 'Telemetri: Sistem akan menyapa dengan nada aktivasi dan indikator digital twin menyala aktif!',
+      isCompleted: (s) => s.power === true
+    },
+    {
+      id: 'vacuum',
+      targetId: 'swVacuum',
+      mascot: '🌀',
+      title: 'Langkah 2: Pemompaan Ruang Hampa (Vakum)',
+      subtitle: 'Langkah 2/5: Kipas Pompa Vakum',
+      badgeText: 'AKTIFKAN POMPA VAKUM!',
+      badgeIcon: '👇',
+      text: 'Daya utama telah aktif. Sekarang aktifkan saklar KIPAS VAKUM untuk memompa ruang kamar Dee menuju tingkat vakum tinggi (< 10⁻⁴ mbar) agar partikel tidak terhambat molekul udara!',
+      funFact: 'Telemetri: Kipas pendingin DC berputar dan grafik tekanan beamline turun drastis!',
+      isCompleted: (s) => s.vacuum === true
+    },
+    {
+      id: 'interlock',
+      targetId: 'swInterlock',
+      mascot: '🛡️',
+      title: 'Langkah 3: Penguncian Sistem Keselamatan (Interlock)',
+      subtitle: 'Langkah 3/5: Safety Interlock',
+      badgeText: 'KUNCI SAFETY INTERLOCK!',
+      badgeIcon: '👇',
+      text: 'Tekanan ruang hampa sudah terpenuhi. Kunci gerbang keselamatan INTERLOCK agar sistem memvalidasi seluruh sensor aman dan siap memasuki status BEAM READY!',
+      funFact: 'Telemetri: Layar LCD matriks hijau akan langsung berganti menampilkan status BEAM READY!',
+      isCompleted: (s) => s.interlock === true
+    },
+    {
+      id: 'startBeam',
+      targetId: 'btnStartBeam',
+      mascot: '🚀',
+      title: 'Langkah 4: Akselerasi Berkas Partikel Spiral',
+      subtitle: 'Langkah 4/5: Akselerasi 13 MeV',
+      badgeText: 'TEKAN TOMBOL START BEAM!',
+      badgeIcon: '✨',
+      text: 'Semua prasyarat terpenuhi! Tekan tombol hijau [START BEAM] untuk memulai injeksi berkas partikel dan akselerasi spiral menembus 13 MeV!',
+      funFact: 'Telemetri: Amati simulasi 2D dan 48-LED strip WS2812B berputar dari titik pusat menuju radius luar Dee!',
+      isCompleted: (s) => s.beam === true
+    },
+    {
+      id: 'shootExposure',
+      targetId: 'btnShootExposure',
+      mascot: '🎯',
+      title: 'Langkah 5: Ekstraksi Berkas & Iradiasi Target',
+      subtitle: 'Langkah 5/5: Shoot Exposure Target Medis',
+      badgeText: 'TEKAN SHOOT EXPOSURE!',
+      badgeIcon: '🎯',
+      text: 'Partikel telah mencapai kecepatan puncak 13 MeV! Tekan tombol oranye [SHOOT EXPOSURE] untuk mengekstrak berkas proton menuju target station medik!',
+      funFact: 'Telemetri: Target beamline akan menyala oranye terang dan timer waktu paparan mulai berhitung!',
+      isCompleted: (s) => s.shooting === true
+    }
+  ];
+
+  function playChimeStep() {
+    playBeep(523.25, 90, 'triangle');
+    setTimeout(() => playBeep(659.25, 90, 'triangle'), 90);
+    setTimeout(() => playBeep(783.99, 140, 'triangle'), 180);
+  }
+
+  function playChimeComplete() {
+    playBeep(523.25, 100, 'sine');
+    setTimeout(() => playBeep(659.25, 100, 'sine'), 100);
+    setTimeout(() => playBeep(783.99, 100, 'sine'), 200);
+    setTimeout(() => playBeep(1046.50, 260, 'sine'), 300);
+  }
+
+  class DecyKidsGuideManager {
+    constructor() {
+      this.mode = 'edukasi'; // 'edukasi' | 'ahli'
+      this.currentStep = 0;
+      this.isActive = false;
+      this.activeElement = null;
+      this.autoAdvanceCooldown = false;
+      this.steps = GUIDE_STEPS;
+      this.initEvents();
+    }
+
+    initEvents() {
+      // Header Buttons
+      $('btnKidsTour')?.addEventListener('click', () => {
+        this.mode = 'edukasi';
+        this.updateModeUi();
+        const firstIncomplete = this.steps.findIndex(st => !st.isCompleted(state));
+        this.start(firstIncomplete !== -1 ? firstIncomplete : 0);
+      });
+
+      $('btnStoryModal')?.addEventListener('click', () => {
+        $('modalStoryCyclotron')?.classList.remove('hidden');
+      });
+
+      $('modalStoryCloseBtn')?.addEventListener('click', () => {
+        $('modalStoryCyclotron')?.classList.add('hidden');
+      });
+
+      $('modalStoryStartGuideBtn')?.addEventListener('click', () => {
+        $('modalStoryCyclotron')?.classList.add('hidden');
+        this.mode = 'edukasi';
+        this.updateModeUi();
+        this.start(0);
+      });
+
+      $('btnModeToggle')?.addEventListener('click', () => {
+        this.toggleMode();
+      });
+
+      // Tooltip Nav Buttons
+      $('guideBtnClose')?.addEventListener('click', () => {
+        this.stop();
+      });
+
+      $('guideBtnSkip')?.addEventListener('click', () => {
+        this.stop();
+        showToast('Panduan ditutup. Kamu bisa membukanya lagi kapan saja lewat tombol "🤖 Panduan Anak".');
+      });
+
+      $('guideBtnPrev')?.addEventListener('click', () => {
+        this.prev();
+      });
+
+      $('guideBtnNext')?.addEventListener('click', () => {
+        if (this.currentStep >= this.steps.length - 1) {
+          this.showCelebration();
+        } else {
+          this.next();
+        }
+      });
+
+      // If user clicks the bouncing badge directly on the tooltip, trigger the target element!
+      const badgeContainer = $('guideBadgeText')?.parentElement;
+      badgeContainer?.addEventListener('click', () => {
+        if (this.steps[this.currentStep]) {
+          const targetEl = $(this.steps[this.currentStep].targetId);
+          if (targetEl) {
+            targetEl.focus();
+            targetEl.click();
+          }
+        }
+      });
+
+      // Reposition on window resize and scroll
+      window.addEventListener('resize', () => {
+        if (this.isActive && this.activeElement) {
+          this.positionTooltip(this.activeElement);
+        }
+      });
+
+      window.addEventListener('scroll', () => {
+        if (this.isActive && this.activeElement) {
+          this.positionTooltip(this.activeElement);
+        }
+      }, { passive: true });
+    }
+
+    toggleMode() {
+      this.mode = this.mode === 'edukasi' ? 'ahli' : 'edukasi';
+      this.updateModeUi();
+      if (this.mode === 'ahli') {
+        this.stop();
+        showToast('Mode diubah: SCADA Ahli (Tampilan profesional SCADA).');
+      } else {
+        showToast('Mode diubah: Edukasi (Panduan ramah anak diaktifkan).');
+        this.start();
+      }
+    }
+
+    updateModeUi() {
+      const txt = $('txtModeToggle');
+      if (txt) {
+        txt.textContent = this.mode === 'edukasi' ? '🎮 Mode: Edukasi' : '⚙️ Mode: SCADA Ahli';
+      }
+      const btnTour = $('btnKidsTour');
+      if (btnTour) {
+        if (this.mode === 'edukasi') {
+          btnTour.classList.remove('opacity-60');
+          btnTour.classList.add('animate-bounce-slow');
+        } else {
+          btnTour.classList.add('opacity-60');
+          btnTour.classList.remove('animate-bounce-slow');
+        }
+      }
+    }
+
+    start(stepIndex = 0) {
+      if (this.mode === 'ahli') {
+        this.mode = 'edukasi';
+        this.updateModeUi();
+      }
+      this.isActive = true;
+      this.showStep(Math.max(0, Math.min(stepIndex, this.steps.length - 1)));
+    }
+
+    stop() {
+      this.isActive = false;
+      this.clearHighlight();
+      $('decyGuideTooltip')?.classList.add('hidden');
+    }
+
+    next() {
+      if (this.currentStep < this.steps.length - 1) {
+        this.showStep(this.currentStep + 1);
+      } else {
+        this.showCelebration();
+      }
+    }
+
+    prev() {
+      if (this.currentStep > 0) {
+        this.showStep(this.currentStep - 1);
+      }
+    }
+
+    clearHighlight() {
+      if (this.activeElement) {
+        this.activeElement.classList.remove('guide-highlight');
+        this.activeElement = null;
+      }
+      document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
+    }
+
+    showStep(index) {
+      this.currentStep = index;
+      const step = this.steps[index];
+      if (!step) return;
+
+      this.clearHighlight();
+
+      const targetEl = $(step.targetId);
+      if (targetEl) {
+        targetEl.classList.add('guide-highlight');
+        this.activeElement = targetEl;
+        try {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        } catch (e) {}
+      }
+
+      // Update Tooltip DOM
+      if ($('guideMascotIcon')) $('guideMascotIcon').textContent = step.mascot || '🤖';
+      if ($('guideStepPill')) $('guideStepPill').textContent = `Langkah ${index + 1}/${this.steps.length}`;
+      if ($('guideStepSubtitle')) $('guideStepSubtitle').textContent = step.subtitle || '';
+      if ($('guideBadgeIcon')) $('guideBadgeIcon').textContent = step.badgeIcon || '👇';
+      if ($('guideBadgeText')) $('guideBadgeText').textContent = step.badgeText || 'TEKAN AKU!';
+      if ($('guideMessageText')) $('guideMessageText').textContent = step.text || '';
+      if ($('guideFunFact')) $('guideFunFact').textContent = step.funFact || '';
+
+      // Update Nav buttons
+      const prevBtn = $('guideBtnPrev');
+      if (prevBtn) {
+        prevBtn.disabled = (index === 0);
+        prevBtn.classList.toggle('opacity-40', index === 0);
+      }
+
+      const nextBtn = $('guideBtnNext');
+      if (nextBtn) {
+        nextBtn.innerHTML = (index === this.steps.length - 1)
+          ? '<span>Selesai ✓</span>'
+          : '<span>Lanjut »</span>';
+      }
+
+      const tooltip = $('decyGuideTooltip');
+      if (tooltip) {
+        tooltip.classList.remove('hidden');
+        setTimeout(() => this.positionTooltip(targetEl), 80);
+      }
+    }
+
+    positionTooltip(targetEl) {
+      const tooltip = $('decyGuideTooltip');
+      if (!tooltip || tooltip.classList.contains('hidden')) return;
+
+      let left = 20;
+      let top = 100;
+
+      if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        const tooltipWidth = 360;
+        const tooltipHeight = tooltip.offsetHeight || 320;
+        const padding = 16;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        // Desktop check: right side has room
+        if (rect.right + tooltipWidth + padding < vw) {
+          left = rect.right + 20;
+          top = Math.max(70, Math.min(vh - tooltipHeight - padding, rect.top - 15));
+        }
+        // Left side has room
+        else if (rect.left - tooltipWidth - padding > 0) {
+          left = rect.left - tooltipWidth - 20;
+          top = Math.max(70, Math.min(vh - tooltipHeight - padding, rect.top - 15));
+        }
+        // Mobile / Small screen: Place below or above
+        else {
+          left = Math.max(padding, Math.min(vw - tooltipWidth - padding, rect.left));
+          if (rect.bottom + tooltipHeight + padding < vh) {
+            top = rect.bottom + 14;
+          } else {
+            top = Math.max(70, rect.top - tooltipHeight - 14);
+          }
+        }
+      }
+
+      tooltip.style.left = `${Math.round(left)}px`;
+      tooltip.style.top = `${Math.round(top)}px`;
+    }
+
+    onStateUpdate(s) {
+      if (!this.isActive || this.mode !== 'edukasi' || this.autoAdvanceCooldown) return;
+
+      const currentStepObj = this.steps[this.currentStep];
+      if (currentStepObj && currentStepObj.isCompleted(s)) {
+        this.autoAdvanceCooldown = true;
+        playChimeStep();
+
+        // Small success flash feedback on tooltip badge
+        const badge = $('guideBadgeText');
+        if (badge) {
+          const oldTxt = badge.textContent;
+          badge.textContent = 'HEBAT! BERHASIL! 🎉';
+          setTimeout(() => {
+            if (badge) badge.textContent = oldTxt;
+          }, 900);
+        }
+
+        setTimeout(() => {
+          this.autoAdvanceCooldown = false;
+          if (this.currentStep < this.steps.length - 1) {
+            this.next();
+          } else {
+            this.showCelebration();
+          }
+        }, 900);
+      }
+    }
+
+    showCelebration() {
+      this.clearHighlight();
+      playChimeComplete();
+
+      if ($('guideMascotIcon')) $('guideMascotIcon').textContent = '🏆';
+      if ($('guideStepPill')) $('guideStepPill').textContent = 'Sekuens Selesai';
+      if ($('guideStepSubtitle')) $('guideStepSubtitle').textContent = 'Operasi DECY-13 Normal';
+      if ($('guideBadgeIcon')) $('guideBadgeIcon').textContent = '🌟';
+      if ($('guideBadgeText')) $('guideBadgeText').textContent = 'OPERASI SUKSES 100%';
+      if ($('guideMessageText')) $('guideMessageText').innerHTML = '<strong>SEKUENS OPERASI BERHASIL!</strong><br/>Seluruh subsistem Siklotron DECY-13 telah berhasil dioperasikan mulai dari inisiasi catu daya, ruang hampa udara, hingga ekstraksi berkas 13 MeV ke target medik!';
+      if ($('guideFunFact')) $('guideFunFact').textContent = 'Selamat! Kini kamu telah memahami cara kerja akselerator partikel medik kebanggaan Indonesia!';
+
+      const nextBtn = $('guideBtnNext');
+      if (nextBtn) {
+        nextBtn.innerHTML = '<span>Tutup Panduan ✕</span>';
+        nextBtn.onclick = () => {
+          this.stop();
+          nextBtn.onclick = null;
+        };
+      }
+    }
+
+    init() {
+      this.updateModeUi();
+      // Auto-start at step 0 if power is off, providing immediate friendly guidance
+      if (!state.power) {
+        this.start(0);
+      }
+    }
+  }
+
+  
+  // ==================== DEVELOPER MENU MODAL LOGIC ====================
+  const devModal = $('modalDevSettings');
+  const btnDevMenu = $('btnDevMenu');
+  const modalDevCloseBtn = $('modalDevCloseBtn');
+
+  btnDevMenu?.addEventListener('click', () => {
+    devModal?.classList.remove('hidden');
+  });
+
+  modalDevCloseBtn?.addEventListener('click', () => {
+    devModal?.classList.add('hidden');
+  });
+
+  // Dev Modal Tabs
+  const devTabs = [
+    { btn: $('tabDevMqtt'), pane: $('paneDevMqtt') },
+    { btn: $('tabDevParams'), pane: $('paneDevParams') },
+    { btn: $('tabDevCode'), pane: $('paneDevCode') },
+    { btn: $('tabDevDiag'), pane: $('paneDevDiag') }
+  ];
+
+  devTabs.forEach(({ btn, pane }) => {
+    btn?.addEventListener('click', () => {
+      devTabs.forEach(t => {
+        t.pane?.classList.add('hidden');
+        if (t.btn) t.btn.className = 'px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white transition';
+      });
+      pane?.classList.remove('hidden');
+      if (btn) btn.className = 'px-3.5 py-1.5 rounded-xl bg-cyan-500 text-slate-950 shadow font-bold transition';
+    });
+  });
+
+  // Initial Boot
+  rebuildOrbitSegments();
+  syncUiFromState();
+  appendCommLog('INFO', 'Sistem HMI Siklotron DECY-13 siap. Menghubungkan ke MQTT Broker...');
+  // Auto-connect MQTT ke Mosquitto saat halaman dimuat
+  // Jika RPi belum aktif, akan masuk mode simulasi lokal otomatis
+  connectMQTT();
+  requestAnimationFrame(simulationStep);
+
+  // Inisiasi DecyKidsGuideManager
+  window.decyKidsGuide = new DecyKidsGuideManager();
+  window.decyKidsGuide.init();
+})();
+</script>
+</body>
+</html>

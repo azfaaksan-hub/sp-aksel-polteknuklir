@@ -1,0 +1,66 @@
+================================================================================
+  BACA INI DULU! — Proyek Alat Peraga Siklotron DECY-13
+  Politeknik Teknologi Nuklir Indonesia (BRIN)
+================================================================================
+
+  Halo anggota kelompok!
+  
+  Sebelum bingung, ini panduan singkat supaya tahu harus mulai dari mana.
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  BUKA FILE INI DI BROWSER DULU:                                  ║
+  ║                                                                  ║
+  ║  📂 instruksi untuk projek sp\PANDUAN_VISUAL.html               ║
+  ║                                                                  ║
+  ║  Klik kanan → Open With → Google Chrome / Microsoft Edge         ║
+  ╚══════════════════════════════════════════════════════════════════╝
+
+  File HTML itu menjelaskan SEGALANYA dengan tampilan yang bagus:
+  - Apa itu proyek ini
+  - Peran masing-masing anggota
+  - Alur 7 tahap operasional
+  - Arsitektur sistem
+  - Wiring sambungan kabel
+  - Daftar semua file & fungsinya
+  - Panduan mulai cepat sesuai kondisi Anda
+
+================================================================================
+  TIDAK PUNYA WAKTU BUKA HTML? Baca ini dulu (ringkasan 2 menit):
+================================================================================
+
+  SISTEM INI TERDIRI DARI:
+  
+  [1] Raspberry Pi 3B+     → Otak hardware (kipas, LED, buzzer, LCD)
+  [2] Mosquitto Broker     → Penghubung komunikasi (ada di RPi)  
+  [3] Web HMI (index.html) → Layar kontrol (buka di Chrome, Mini PC)
+
+  URUTAN KERJA SAAT DEMO:
+  
+  Power ON → Vakum ON → Tunggu tekanan turun → Interlock → 
+  Start Beam → LED spiral berputar → Shoot → LED tembak target
+
+  FILE PENTING:
+  
+  raspi_cli/04_decy13_mqtt_daemon.py  ← Program utama di RPi (sudo python3)
+  web_hmi/index.html                  ← Buka di Chrome di Mini PC
+  raspi_cli/01, 02, 03                ← Uji hardware satu per satu dulu
+
+  BELUM PUNYA RPi / MAU TEST DI LAPTOP DULU:
+  
+  Lihat: instruksi untuk projek sp\PANDUAN_DRYRUN_LAPTOP_WINDOWS.txt
+
+================================================================================
+  DAFTAR PANDUAN LENGKAP (buka sesuai kebutuhan):
+================================================================================
+
+  instruksi untuk projek sp\
+  ├── PANDUAN_VISUAL.html              ← MULAI DARI SINI (buka di browser!)
+  ├── PANDUAN_UJI_RASPI_LENGKAP.txt   ← Setup RPi dari awal sampai demo
+  ├── PANDUAN_DRYRUN_LAPTOP_WINDOWS.txt ← Uji di laptop tanpa RPi
+  ├── KARTU_REFERENSI_CEPAT.txt       ← Cheat sheet (bisa dicetak!)
+  ├── WIRING_DIAGRAM.txt              ← Detail sambungan kabel
+  ├── SOFTWARE_MINI_PC.txt            ← Software yang dibutuhkan Mini PC
+  ├── INSTRUKSI_LENGKAP.txt           ← Instruksi A-Z versi teks
+  └── CHECKLIST_COMMISSIONING.txt     ← Daftar cek sebelum demo
+
+================================================================================

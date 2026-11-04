@@ -1,0 +1,62 @@
+================================================================================
+  WIRING DIAGRAM — DECY-13 CYCLOTRON DEMONSTRATOR
+  Raspberry Pi 3 Model B+ GPIO Pinout Reference
+================================================================================
+
+  RASPBERRY PI 3B+ PHYSICAL PIN LAYOUT (40-pin Header):
+  -------------------------------------------------------
+
+   3.3V [01] [02] 5V
+  GPIO2 [03] [04] 5V
+  GPIO3 [05] [06] GND
+  GPIO4 [07] [08] GPIO14 (TXD)
+    GND [09] [10] GPIO15 (RXD)
+ GPIO17 [11] [12] GPIO18   <-- ** LED WS2812B DIN **
+ GPIO27 [13] [14] GND
+ GPIO22 [15] [16] GPIO23   <-- [15] ** E-STOP BUTTON **
+   3.3V [17] [18] GPIO24   <-- [18] ** LCD DC **
+ GPIO10 [19] [20] GND      <-- [19] LCD MOSI (SPI0)
+  GPIO9 [21] [22] GPIO25   <-- [22] ** LCD RST **
+ GPIO11 [23] [24] GPIO8    <-- [24] LCD CE0 (SPI0 CS)
+    GND [25] [26] GPIO7
+  GPIO0 [27] [28] GPIO1
+  GPIO5 [29] [30] GND
+  GPIO6 [31] [32] GPIO12
+ GPIO13 [33] [34] GND
+ GPIO19 [35] [36] GPIO16
+ GPIO26 [37] [38] GPIO20
+    GND [39] [40] GPIO21   <-- [40] ** RELAY KIPAS VAKUM **
+
+  (**) = Pin yang digunakan proyek DECY-13
+
+  SUMMARY PEMETAAN PIN:
+  -------------------------------------------------------
+  Fungsi                  GPIO (BCM)  Pin Fisik  Keterangan
+  ----------------------  ----------  ---------  ----------------------------
+  LED WS2812B DIN         GPIO 18     Pin 12     PWM0 DMA (wajib audio OFF)
+  Relay Kipas 12V (IN)    GPIO 21     Pin 40     Active-LOW (0=ON, 1=OFF)
+  Buzzer SFM-27           GPIO 17     Pin 11     Active-HIGH (1=BUNYI)
+  E-Stop Button           GPIO 22     Pin 15     Input Pull-Up, NC ke GND
+  LCD SPI0 CS/CE0         GPIO 8      Pin 24     Chip Select LCD
+  LCD SPI0 MOSI           GPIO 10     Pin 19     Data ke LCD
+  LCD SPI0 SCLK           GPIO 11     Pin 23     Clock SPI
+  LCD DC (Data/Cmd)       GPIO 24     Pin 18     Register Select
+  LCD RESET               GPIO 25     Pin 22     Reset LCD
+  LCD MISO (opsional)     GPIO 9      Pin 21     Tidak selalu diperlukan
+
+  KONEKSI POWER:
+  -------------------------------------------------------
+  Pin 2  (5V)  --> VCC LED Strip WS2812B (+ power eksternal 5V jika >10 LED)
+  Pin 6  (GND) --> GND semua peripheral (LED, Relay, Buzzer, E-Stop)
+  Pin 17 (3.3V)--> VCC LCD TFT (cek datasheet LCD, ada yg butuh 5V)
+  Pin 2  (5V)  --> VCC Modul Relay
+
+  CATATAN PENTING:
+  -------------------------------------------------------
+  1. LED WS2812B DIN harus via resistor 300-470 Ohm untuk proteksi signal
+  2. Buzzer aktif boleh langsung ke GPIO 17, buzzer pasif butuh transistor
+  3. E-Stop: kaki NC tombol ke GPIO 22, kaki COM ke GND
+  4. Untuk LCD 5V logic: tambahkan level shifter 3.3V->5V di jalur SPI
+  5. Ground HARUS terhubung bersama antara RPi, PS eksternal, dan semua modul
+
+================================================================================

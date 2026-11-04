@@ -1,0 +1,121 @@
+================================================================================
+  KARTU REFERENSI CEPAT — DECY-13 CYCLOTRON
+  (Cetak & tempel di meja kerja)
+================================================================================
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  URUTAN 7 TAHAP OPERASIONAL                                      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  [1] POWER ON    → Buzzer 5 detik, LED #0 biru standby          ║
+  ║  [2] SET PARAMS  → I_mag=1450A, RF=22.5MHz, V_dee=45kV, I=8.4µA ║
+  ║  [3] MQTT TX     → Perintah terkirim ke RPi 3B+                 ║
+  ║  [4] VACUUM ON   → Kipas berputar, P: 1013→1.2e-7 mbar          ║
+  ║  [5] INTERLOCK   → Kunci saat P ≤ 1e-3 mbar → BEAM READY       ║
+  ║  [6] START BEAM  → LED spiral makin cepat (energi → 13 MeV)    ║
+  ║  [7] SHOOT       → LED beamline tembak target + buzzer beep     ║
+  ╚══════════════════════════════════════════════════════════════════╝
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  PIN GPIO RASPBERRY PI 3B+ (BCM Numbering)                      │
+  ├────────────────────────┬────────────────────────────────────────┤
+  │  GPIO 18 (Pin Fisik 12)│ LED WS2812B DIN (via R 330Ω)          │
+  │  GPIO 21 (Pin Fisik 40)│ Relay Kipas 12V (Active-LOW)          │
+  │  GPIO 17 (Pin Fisik 11)│ Buzzer SFM-27                          │
+  │  GPIO 22 (Pin Fisik 15)│ Tombol E-Stop (Input Pull-Up)          │
+  │  GPIO  8 (Pin Fisik 24)│ LCD CS/CE0 (SPI0)                      │
+  │  GPIO 10 (Pin Fisik 19)│ LCD MOSI   (SPI0)                      │
+  │  GPIO 11 (Pin Fisik 23)│ LCD SCLK   (SPI0)                      │
+  │  GPIO 24 (Pin Fisik 18)│ LCD DC                                  │
+  │  GPIO 25 (Pin Fisik 22)│ LCD RST                                 │
+  └────────────────────────┴────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  TOPIK MQTT                                                      │
+  ├────────────────────────┬────────────────────────────────────────┤
+  │  decy13/hmi/cmd        │ HMI → RPi (Perintah)                   │
+  │  decy13/rpi/state      │ RPi → HMI (Telemetri 200ms)            │
+  │  Broker TCP  1883      │ Python daemon (paho-mqtt)               │
+  │  Broker WS   9001      │ Browser Web HMI (MQTT.js)              │
+  │  Broker IP             │ 192.168.137.1 (sesuaikan!)             │
+  └────────────────────────┴────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  FORMAT JSON PERINTAH (topic: decy13/hmi/cmd)                   │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  {"cmd":"TOGGLE_POWER"}                                          │
+  │  {"cmd":"TOGGLE_VACUUM"}                                         │
+  │  {"cmd":"TOGGLE_INTERLOCK"}                                      │
+  │  {"cmd":"START_BEAM"}                                            │
+  │  {"cmd":"SHOOT"}                                                 │
+  │  {"cmd":"EMERGENCY_STOP"}                                        │
+  │  {"cmd":"SET_PARAMS","magnet_a":1450,"rf_mhz":22.5,             │
+  │         "rf_kv":45,"beam_ua":8.4}                               │
+  └─────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  PERINTAH TERMINAL CEPAT (di RPi via SSH)                       │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  # Uji Hardware                                                  │
+  │  cd ~/decy13/raspi_cli                                           │
+  │  python3 01_test_relay_buzzer.py          ← Kipas + Buzzer      │
+  │  python3 02_test_lcd_ili9341.py           ← LCD TFT SPI         │
+  │  sudo python3 03_test_led_pixel_finder.py ← LED WS2812B         │
+  │  sudo python3 04_decy13_mqtt_daemon.py    ← Daemon UTAMA        │
+  │                                                                  │
+  │  # Monitor MQTT di RPi                                           │
+  │  mosquitto_sub -h localhost -t "decy13/rpi/state" -v            │
+  │                                                                  │
+  │  # Kirim perintah manual dari RPi                                │
+  │  mosquitto_pub -h localhost -t "decy13/hmi/cmd" \               │
+  │    -m '{"cmd":"TOGGLE_POWER"}'                                   │
+  │                                                                  │
+  │  # Cek status layanan                                            │
+  │  sudo systemctl status mosquitto                                 │
+  │  sudo systemctl status decy13.service                            │
+  │                                                                  │
+  │  # Lihat log daemon                                              │
+  │  tail -f /var/log/decy13.log                                     │
+  └─────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  DRY-RUN DI LAPTOP WINDOWS (Tanpa RPi)                          │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  1. Install Mosquitto Windows → mosquitto.org/download          │
+  │     Jalankan: mosquitto.exe -c mosquitto_windows.conf -v        │
+  │                                                                  │
+  │  2. pip install paho-mqtt                                        │
+  │                                                                  │
+  │  3. python 05_laptop_dryrun_simulator.py                         │
+  │                                                                  │
+  │  4. Buka index.html di Chrome                                    │
+  │     URL MQTT: ws://127.0.0.1:9001                               │
+  │     Klik "Hubungkan" → animasi HMI aktif tanpa RPi!             │
+  └─────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  LED STRIP WS2812B — PEMETAAN PIKSEL                            │
+  ├───────────────┬─────────────────────────────────────────────────┤
+  │  Piksel 0–47  │ Segmen SPIRAL (di dalam area Dee elektroda)     │
+  │  Piksel 48–63 │ Segmen LURUS BEAMLINE (tembak ke Target)        │
+  │  RF Gap idx   │ 11, 23, 35, 47 (warna kuning oranye)           │
+  │  Brightness   │ 110 / 255                                        │
+  │  Total Piksel │ 64                                               │
+  └───────────────┴─────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  TROUBLESHOOTING KILAT                                           │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  LED tidak menyala   → Audio sudah off? dtparam=audio=off       │
+  │                        Sudah sudo? sudo python3 ...             │
+  │  LCD blank           → Cek SPI: ls /dev/spidev*                 │
+  │  MQTT gagal          → systemctl status mosquitto               │
+  │  HMI tidak connect   → IP benar? ping [IP_RPi] dari Mini PC     │
+  │                        Port 9001 di mosquitto.conf?              │
+  │  Relay tidak respon  → Active-LOW: GPIO LOW = ON, HIGH = OFF    │
+  │  E-Stop tidak kerja  → NC ke GND, Pull-Up aktif di kode         │
+  └─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+  IP RPi Anda: _______________ | Password SSH: _______________
+  Catatan: ___________________________________________________
+================================================================================

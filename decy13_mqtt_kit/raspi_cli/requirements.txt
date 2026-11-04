@@ -1,0 +1,6 @@
+paho-mqtt>=1.6.1
+RPi.GPIO>=0.7.1
+rpi-ws281x>=5.0.0
+luma.lcd>=2.10.0
+Pillow>=10.0.0
+spidev>=3.6

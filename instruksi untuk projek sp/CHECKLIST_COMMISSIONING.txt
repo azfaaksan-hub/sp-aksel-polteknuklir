@@ -1,0 +1,54 @@
+================================================================================
+  CHECKLIST PEMASANGAN & COMMISSIONING DECY-13
+  Centang satu per satu sebelum demo!
+================================================================================
+
+  [ ] PERSIAPAN RASPBERRY PI
+      [ ] OS Raspberry Pi OS Lite/Desktop terinstall
+      [ ] /boot/config.txt: dtparam=audio=OFF
+      [ ] /boot/config.txt: dtparam=spi=on
+      [ ] Sudah reboot setelah ubah config.txt
+      [ ] Mosquitto terinstall dan berjalan (port 1883 + 9001)
+      [ ] File decy13.conf sudah ada di /etc/mosquitto/conf.d/
+      [ ] Semua dependensi Python terinstall (paho-mqtt, RPi.GPIO, dll)
+      [ ] File Python tersalin ke /home/pi/decy13/raspi_cli/
+
+  [ ] WIRING HARDWARE
+      [ ] LED WS2812B: DIN ke GPIO 18 (Pin 12) via R 300-470 Ohm
+      [ ] LED WS2812B: VCC ke 5V, GND ke GND
+      [ ] Relay Kipas: IN ke GPIO 21 (Pin 40), VCC ke 5V, GND ke GND
+      [ ] Kipas 12V: COM relay ke +12V, NO relay ke kabel + kipas
+      [ ] Buzzer: + ke GPIO 17 (Pin 11), - ke GND
+      [ ] E-Stop: NC ke GPIO 22 (Pin 15), COM ke GND (Pin 14)
+      [ ] LCD VCC ke 3.3V (Pin 17), GND ke GND (Pin 6)
+      [ ] LCD CS ke GPIO 8 (Pin 24)
+      [ ] LCD MOSI ke GPIO 10 (Pin 19)
+      [ ] LCD SCLK ke GPIO 11 (Pin 23)
+      [ ] LCD DC ke GPIO 24 (Pin 18)
+      [ ] LCD RST ke GPIO 25 (Pin 22)
+      [ ] LCD Backlight ke 3.3V via R 100 Ohm
+
+  [ ] PENGUJIAN BERTAHAP
+      [ ] TAHAP 1: Relay + Buzzer OK (01_test_relay_buzzer.py)
+      [ ] TAHAP 2: LCD TFT menampilkan teks (02_test_lcd_ili9341.py)
+      [ ] TAHAP 3: LED WS2812B menyala & spiral OK (03_test_led_pixel_finder.py)
+      [ ] TAHAP 4: Daemon MQTT berjalan & publish state (04_decy13_mqtt_daemon.py)
+      [ ] TAHAP 5: Web HMI terhubung MQTT & sinkron dengan RPi
+
+  [ ] PERSIAPAN MINI PC
+      [ ] Browser Chrome/Edge terinstall & up-to-date
+      [ ] File index.html tersalin ke Mini PC
+      [ ] Mini PC terhubung ke jaringan yang sama dengan RPi
+      [ ] Ping 192.168.137.1 berhasil dari Mini PC
+
+  [ ] CEK FINAL SEBELUM DEMO
+      [ ] Daemon RPi berjalan (layar terminal RPi aktif)
+      [ ] Web HMI status: HIJAU "MQTT TERHUBUNG"
+      [ ] Klik Power di HMI -> buzzer RPi bunyi 5 detik
+      [ ] Klik Vacuum -> kipas berputar
+      [ ] Tekanan turun dari 1013 mbar -> 1.2e-7 mbar
+      [ ] Klik Interlock -> status BEAM READY di LCD
+      [ ] Klik Start Beam -> LED spiral berputar makin cepat
+      [ ] Klik Shoot -> LED beamline menyala, buzzer beep
+
+================================================================================

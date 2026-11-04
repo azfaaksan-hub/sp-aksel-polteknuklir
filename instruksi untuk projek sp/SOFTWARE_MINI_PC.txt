@@ -1,0 +1,63 @@
+================================================================================
+  CHECKLIST SOFTWARE MINI PC (Web HMI)
+  Proyek DECY-13 Cyclotron Control Center
+================================================================================
+
+  Mini PC ini HANYA berperan sebagai layar Web HMI.
+  TIDAK perlu install Python, MQTT broker, atau aplikasi khusus.
+  Cukup BROWSER + koneksi jaringan ke Raspberry Pi.
+
+  YANG PERLU DISIAPKAN:
+  -------------------------------------------------------
+
+  [1] BROWSER (WAJIB)
+      - Google Chrome v90 ke atas     --> DIREKOMENDASIKAN
+      - Microsoft Edge v90 ke atas    --> OK
+      - Mozilla Firefox v85 ke atas   --> OK
+      - JANGAN gunakan Internet Explorer
+
+  [2] FILE WEB HMI (WAJIB)
+      - Salin folder: web_hmi/
+      - File utama:   web_hmi/index.html
+      - Cara salin: USB flashdrive, kabel LAN + share folder, atau SCP
+      - TIDAK perlu install server web (bisa buka langsung via browser)
+
+  [3] KONEKSI JARINGAN (WAJIB)
+      - Mini PC dan Raspberry Pi harus di jaringan yang SAMA
+      - Opsi A: Hubungkan keduanya ke router/switch yang sama
+      - Opsi B: RPi buat WiFi hotspot, Mini PC connect ke hotspot RPi
+      - IP Raspberry Pi harus: 192.168.137.1
+        (atau sesuaikan di file index.html jika IP berbeda)
+
+  [4] CARA BUKA WEB HMI
+      - Buka Google Chrome
+      - Tekan Ctrl+O (atau File > Open File)
+      - Pilih file: web_hmi/index.html
+      - Halaman DECY-13 Control Center akan terbuka
+
+      ATAU (jika RPi menjadi web server):
+      - Ketik di address bar: http://192.168.137.1:8080
+      - (RPi harus menjalankan: python3 -m http.server 8080)
+
+  [5] KONEKSI MQTT DI WEB HMI
+      - Klik tab "WebSocket / MQTT Bridge" di bagian atas HMI
+      - Pastikan URL endpoint: ws://192.168.137.1:9001
+      - Klik tombol "Hubungkan ke Raspberry Pi"
+      - Status harus berubah menjadi HIJAU "MQTT TERHUBUNG"
+
+  CATATAN JIKA TIDAK BISA CONNECT:
+  -------------------------------------------------------
+  - Pastikan RPi sudah menjalankan: sudo python3 04_decy13_mqtt_daemon.py
+  - Pastikan Mosquitto berjalan di RPi: sudo systemctl status mosquitto
+  - Cek ping dari Mini PC ke RPi: buka CMD > ketik: ping 192.168.137.1
+  - Buka F12 di Chrome > Console untuk melihat error detail
+
+  TIDAK DIPERLUKAN DI MINI PC:
+  -------------------------------------------------------
+  x Python / pip
+  x Mosquitto / MQTT broker
+  x Node.js / Node-RED
+  x Visual Studio Code / IDE apapun
+  x Driver khusus
+
+================================================================================
