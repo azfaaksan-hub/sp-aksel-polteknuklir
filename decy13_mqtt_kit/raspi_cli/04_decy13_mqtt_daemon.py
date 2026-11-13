@@ -1,51 +1,63 @@
 #!/usr/bin/env python3
 """
-LANGKAH 4 & 5: DAEMON UTAMA MQTT RASPBERRY PI 3B+ (SUMBER KEBENARAN HARDWARE NYATA)
-Program ini menjalankan State Machine 7-Tahap Siklotron DECY-13 secara real-time:
-  - Subscribe perintah dari Web HMI pada topic: decy13/hmi/cmd
-  - Menggerakkan Kipas Vakum, Buzzer, LCD TFT SPI ILI9341, dan LED Strip WS2812B
-  - Mem-publish keadaan nyata (Real Hardware Telemetry) ke topic: decy13/rpi/state
-    sehingga animasi di Web HMI 100% mengikuti keadaan fisik yang terjadi di Raspberry Pi 3B+!
+DIVISI 1 (CORE BACKEND): DAEMON UTAMA MQTT & PHYSICS ENGINE RASPBERRY PI 3B+
+============================================================================
+Penanggung Jawab : Anggota 1 (Lead / Core Raspi Backend & Integrator)
+Branch GitHub    : main / core-raspi-backend
+File Terkait     : - raspi_cli/04_decy13_mqtt_daemon.py (File ini)
+                   - raspi_cli/config_hardware.json
+                   - raspi_cli/modules/base_module.py
+
+Arsitektur Anti-Konflik (Modular Plugin Pattern):
+File ini HANYA mengatur:
+  1. Koneksi MQTT Broker (`decy13/hmi/cmd` & `decy13/rpi/state`)
+  2. State Machine 7-Tahap & Perhitungan Fisika Siklotron DECY-13 (13 MeV H-)
+  3. Orkestrasi pemanggilan modul hardware dari Divisi 2, 3, dan 4:
+     - `VacuumSafetyModule` (Divisi 2: `modules/mod_vacuum_safety.py`)
+     - `LedStripModule`     (Divisi 3: `modules/mod_led_ws2812b.py`)
+     - `LcdDisplayModule`   (Divisi 4: `modules/mod_lcd_ili9341.py`)
 
 Jalankan di Raspberry Pi 3B+:
   sudo python3 04_decy13_mqtt_daemon.py
 """
+
 import json
 import math
+import os
 import random
+import socket
 import threading
 import time
+import warnings
 import paho.mqtt.client as mqtt
 
-# Import opsional agar skrip juga bisa diuji di laptop/PC dalam mode simulasi CLI
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+from modules import (
+    VacuumSafetyModule,
+    LedStripModule,
+    LcdDisplayModule,
+)
+
 try:
     import RPi.GPIO as GPIO
     HAS_GPIO = True
 except ImportError:
     HAS_GPIO = False
 
-try:
-    from rpi_ws281x import PixelStrip, Color
-    HAS_WS281X = True
-except ImportError:
-    HAS_WS281X = False
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "config_hardware.json")
 
-try:
-    from luma.core.interface.serial import spi
-    from luma.core.render import canvas
-    from luma.lcd.device import ili9341
-    from PIL import ImageFont
-    HAS_LCD = True
-except ImportError:
-    HAS_LCD = False
-
-with open("config_hardware.json", "r") as f:
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     CFG = json.load(f)
 
-class Decy13HardwareDaemon:
+
+class Decy13CoreDaemon:
+    """Core Backend Orchestrator & Physics State Machine Siklotron DECY-13."""
+
     def __init__(self):
         self.lock = threading.Lock()
-        # Keadaan Nyata Perangkat Keras (Source of Truth)
+        # Keadaan Nyata Perangkat Keras (Source of Truth — Kontrak JSON MQTT)
         self.state = {
             "power": False,
             "vacuum": False,
@@ -79,70 +91,45 @@ class Decy13HardwareDaemon:
             "targetCurrent": 0.0,
             "beamCurrent": 0.0,
             "beamEnergy": 0.0,
-            "peakEnergy": 13.0,
+            "peakEnergy": CFG["physics_defaults"].get("max_energy_mev", 13.0),
             "exposureSeconds": 0.0,
             "activeLedIdx": -1,
             "shootLedIdx": -1,
             "buzzerActive": False,
             "buzzerUntil": 0.0,
-            "logs": ["Sistem Daemon RPi 3B+ siap. Menunggu perintah MQTT."]
+            "logs": ["Sistem Core Daemon RPi 3B+ siap. Menunggu perintah MQTT."]
         }
         self.last_tick = time.time()
-        self.init_hardware()
 
-    def add_log(self, msg: str):
+        # Daftar plugin modul dari Divisi 2, 3, dan 4
+        self.modules = [
+            VacuumSafetyModule(CFG),
+            LedStripModule(CFG),
+            LcdDisplayModule(CFG),
+        ]
+        self.init_modules()
+
+    def add_log(self, msg: str) -> None:
         ts = time.strftime("%H:%M:%S")
         self.state["logs"].insert(0, f"{ts} - {msg}")
         self.state["logs"] = self.state["logs"][:12]
         print(f"[{ts}] {msg}")
 
-    def init_hardware(self):
-        pins = CFG["pins_bcm"]
-        if HAS_GPIO:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            GPIO.setup(pins["relay_vacuum_fan"], GPIO.OUT)
-            GPIO.setup(pins["buzzer"], GPIO.OUT)
-            GPIO.setup(pins["estop_button"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            self._write_vacuum_pin(False)
-            GPIO.output(pins["buzzer"], GPIO.LOW)
-
-        self.strip = None
-        if HAS_WS281X:
-            led_cfg = CFG["led_mapping"]
-            self.strip = PixelStrip(
-                led_cfg["total_leds"],
-                pins["led_ws2812b"],
-                800000, 10, False, led_cfg["brightness"], 0
-            )
-            self.strip.begin()
-
-        self.lcd = None
-        if HAS_LCD:
+    def init_modules(self) -> None:
+        print("=" * 64)
+        print("  INISIALISASI MODUL HARDWARE SIKLOTRON DECY-13 (ARSITEKTUR 6 DIVISI)")
+        print("=" * 64)
+        for mod in self.modules:
             try:
-                serial_spi = spi(
-                    port=pins["lcd_spi_port"],
-                    device=pins["lcd_spi_device_ce"],
-                    gpio_DC=pins["lcd_dc"],
-                    gpio_RST=pins["lcd_rst"],
-                    bus_speed_hz=16000000
-                )
-                self.lcd = ili9341(serial_spi, width=320, height=240, rotate=0)
-                self.font = ImageFont.load_default()
+                hw_ok = mod.setup()
+                mod.update(self.state, 0.0, time.time())
+                status_txt = "HARDWARE AKTIF" if hw_ok else "SIMULASI / FALLBACK"
+                print(f"  - {mod.name:<22} : [{status_txt}]")
             except Exception as e:
-                print("Peringatan LCD SPI:", e)
+                print(f"  - {mod.name:<22} : [ERROR ISOLATED: {e}]")
+        print("=" * 64)
 
-    def _write_vacuum_pin(self, on: bool):
-        if not HAS_GPIO:
-            return
-        pin = CFG["pins_bcm"]["relay_vacuum_fan"]
-        active_low = CFG["pins_bcm"]["relay_vacuum_active_low"]
-        if active_low:
-            GPIO.output(pin, GPIO.LOW if on else GPIO.HIGH)
-        else:
-            GPIO.output(pin, GPIO.HIGH if on else GPIO.LOW)
-
-    def handle_command(self, payload: dict):
+    def handle_command(self, payload: dict) -> None:
         with self.lock:
             cmd = str(payload.get("cmd", "")).upper()
             s = self.state
@@ -224,7 +211,7 @@ class Decy13HardwareDaemon:
                     s["setpoint_beam_ua"] = float(payload["beam_ua"])
                 self.add_log(f"Tahap 2: Input HMI diperbarui (I_mag={s['setpoint_magnet_a']}A, V_dee={s['setpoint_rf_kv']}kV)")
 
-    def step_physics_and_hardware(self):
+    def step_physics_and_hardware(self) -> None:
         now = time.time()
         dt = max(0.01, min(1.0, now - self.last_tick))
         self.last_tick = now
@@ -232,19 +219,16 @@ class Decy13HardwareDaemon:
         with self.lock:
             s = self.state
 
-            # Cek tombol fisik E-Stop jika ada di GPIO 22 (Active-LOW)
-            if HAS_GPIO and GPIO.input(CFG["pins_bcm"]["estop_button"]) == GPIO.LOW and not s["emergency"]:
-                s["emergency"] = True
-                s["power"] = s["vacuum"] = s["interlocks"] = s["beam"] = s["exposureActive"] = False
-                s["buzzerUntil"] = now + 3.0
-                self.add_log("INTERUPSI FISIK: Tombol E-Stop Hardware Ditekan!")
-
             # 1. Fisika Vakum Eksponensial
             if s["power"] and s["vacuum"]:
                 s["basePressure"] = max(1.2e-7, s["basePressure"] * math.exp(-dt * 3.2))
             else:
                 s["basePressure"] = min(1013.0, s["basePressure"] * 2.5 + 5.0)
-            s["pressure"] = s["basePressure"] * (1.0 + random.uniform(-0.08, 0.08)) if s["basePressure"] < 1e-5 else s["basePressure"]
+            s["pressure"] = (
+                s["basePressure"] * (1.0 + random.uniform(-0.08, 0.08))
+                if s["basePressure"] < 1e-5
+                else s["basePressure"]
+            )
 
             # Cascading Safety Interlock
             if not s["power"] or not s["vacuum"]:
@@ -272,7 +256,11 @@ class Decy13HardwareDaemon:
                 s["baseCurrent"] = max(0.0, s["baseCurrent"] - 4.0 * dt)
                 s["baseEnergy"] = max(0.0, s["baseEnergy"] - 5.0 * dt)
 
-            s["magnetCurrent"] = s["setpoint_magnet_a"] + random.uniform(-1.5, 1.5) if (s["power"] and s["magnet"]) else 0.0
+            s["magnetCurrent"] = (
+                s["setpoint_magnet_a"] + random.uniform(-1.5, 1.5)
+                if (s["power"] and s["magnet"])
+                else 0.0
+            )
             s["magnetPower"] = (s["magnetCurrent"] / 1450.0) * 85.2
             s["frequency"] = s["setpoint_rf_mhz"] + random.uniform(-0.01, 0.01) if s["rf"] else 0.0
             s["rfPower"] = s["baseRf"]
@@ -325,48 +313,28 @@ class Decy13HardwareDaemon:
             s["lcd_line3"] = f"Mag:{s['magnetCurrent']:.0f}A | RF:{s['frequency']:.1f}MHz"
             s["lcd_line4"] = f"Vac:{s['pressure']:.1e}mbar | E:{s['beamEnergy']:.1f}MeV"
 
-            # 4. Update Output Fisik (Relay Kipas, Buzzer, LED Strip WS2812B)
-            self._write_vacuum_pin(s["power"] and s["vacuum"])
-            s["buzzerActive"] = (now < s["buzzerUntil"]) or (s["exposureActive"] and int(now * 2) % 2 == 0)
-            if HAS_GPIO:
-                GPIO.output(CFG["pins_bcm"]["buzzer"], GPIO.HIGH if s["buzzerActive"] else GPIO.LOW)
+            # 4. Delegasikan Update ke Modul Divisi 2, 3, dan 4 (Fault-Isolated)
+            for mod in self.modules:
+                try:
+                    mod.update(s, dt, now)
+                except Exception as e:
+                    print(f"[Peringatan Modul {mod.name}] Error saat update: {e}")
 
-            # Update Indeks LED Spiral & Shoot
-            led_cfg = CFG["led_mapping"]
-            if s["beam"]:
-                step_inc = max(1, int((s["beamEnergy"] / 13.0) * 3) + 1)
-                s["activeLedIdx"] = led_cfg["spiral_start_idx"] + (
-                    (s["activeLedIdx"] - led_cfg["spiral_start_idx"] + step_inc)
-                    % (led_cfg["spiral_end_idx"] - led_cfg["spiral_start_idx"] + 1)
-                )
-                if s["exposureActive"]:
-                    s["shootLedIdx"] = led_cfg["shoot_start_idx"] + (
-                        (s["shootLedIdx"] - led_cfg["shoot_start_idx"] + 2)
-                        % (led_cfg["shoot_end_idx"] - led_cfg["shoot_start_idx"] + 1)
-                    )
-                else:
-                    s["shootLedIdx"] = -1
-            else:
-                s["activeLedIdx"] = 0 if s["power"] else -1
-                s["shootLedIdx"] = -1
+    def cleanup_all(self) -> None:
+        for mod in self.modules:
+            try:
+                mod.cleanup()
+            except Exception as e:
+                print(f"[Peringatan Modul {mod.name}] Error saat cleanup: {e}")
+        if HAS_GPIO:
+            try:
+                GPIO.cleanup()
+            except Exception:
+                pass
 
-            if self.strip:
-                for i in range(self.strip.numPixels()):
-                    self.strip.setPixelColor(i, Color(0, 0, 0))
-                if s["emergency"]:
-                    for i in range(self.strip.numPixels()):
-                        self.strip.setPixelColor(i, Color(180, 0, 0))
-                elif s["beam"]:
-                    idx = s["activeLedIdx"]
-                    self.strip.setPixelColor(idx, Color(0, 220, 255))
-                    if s["exposureActive"] and s["shootLedIdx"] >= 0:
-                        self.strip.setPixelColor(s["shootLedIdx"], Color(255, 100, 0))
-                elif s["power"]:
-                    self.strip.setPixelColor(0, Color(0, 0, 120))
-                self.strip.show()
 
 def main():
-    daemon = Decy13HardwareDaemon()
+    daemon = Decy13CoreDaemon()
     mqtt_cfg = CFG["mqtt"]
 
     try:
@@ -376,8 +344,24 @@ def main():
         # paho-mqtt < 2.0.0
         client = mqtt.Client(client_id="rpi3b_decy13_hardware_daemon")
 
-    def on_connect(c, userdata, flags, rc):
-        print(f"Terhubung ke MQTT Broker ({mqtt_cfg['broker_host']}:{mqtt_cfg['broker_port_tcp']}) rc={rc}")
+    connected_host = mqtt_cfg["broker_host"]
+    port_tcp = mqtt_cfg["broker_port_tcp"]
+
+    # Fast TCP probe (0.4s) agar langsung fallback ke 127.0.0.1 tanpa menunggu timeout 20 detik
+    def _is_reachable(h: str, p: int) -> bool:
+        try:
+            with socket.create_connection((h, p), timeout=0.4):
+                return True
+        except OSError:
+            return False
+
+    if not _is_reachable(connected_host, port_tcp) and connected_host != "127.0.0.1":
+        if _is_reachable("127.0.0.1", port_tcp):
+            print(f"[Auto-Fallback] Broker {connected_host}:{port_tcp} tidak aktif -> beralih ke localhost (127.0.0.1:{port_tcp}).")
+            connected_host = "127.0.0.1"
+
+    def on_connect(c, userdata, flags, rc, *args):
+        print(f"Terhubung ke MQTT Broker ({connected_host}:{port_tcp}) rc={rc}")
         c.subscribe(mqtt_cfg["topic_cmd"])
 
     def on_message(c, userdata, msg):
@@ -391,27 +375,29 @@ def main():
     client.on_message = on_message
 
     try:
-        client.connect(mqtt_cfg["broker_host"], mqtt_cfg["broker_port_tcp"], 60)
+        client.connect(connected_host, port_tcp, 60)
         client.loop_start()
     except Exception as e:
-        print(f"Mode Offline (Broker MQTT {mqtt_cfg['broker_host']} belum aktif): {e}")
+        print(f"Mode Offline (Broker MQTT {connected_host}:{port_tcp} belum aktif): {e}")
 
-    print("Daemon Hardware DECY-13 berjalan. Tekan Ctrl+C untuk keluar.")
+    print("Core Daemon Hardware DECY-13 berjalan. Tekan Ctrl+C untuk keluar.")
     try:
         while True:
             daemon.step_physics_and_hardware()
-            payload_out = json.dumps(daemon.state)
+            with daemon.lock:
+                payload_out = json.dumps(daemon.state)
             try:
                 client.publish(mqtt_cfg["topic_state"], payload_out, qos=0)
             except Exception:
                 pass
             time.sleep(mqtt_cfg["publish_interval_sec"])
     except KeyboardInterrupt:
-        print("Menghentikan daemon...")
+        print("\nMenghentikan Core Daemon DECY-13...")
     finally:
         client.loop_stop()
-        if HAS_GPIO:
-            GPIO.cleanup()
+        daemon.cleanup_all()
+        print("Seluruh modul perangkat keras telah dibersihkan dengan aman.")
+
 
 if __name__ == "__main__":
     main()

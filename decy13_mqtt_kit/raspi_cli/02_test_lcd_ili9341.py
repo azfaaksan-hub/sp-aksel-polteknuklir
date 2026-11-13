@@ -6,13 +6,15 @@ Jalankan di terminal Raspberry Pi 3B+:
   python3 02_test_lcd_ili9341.py
 """
 import json
+import os
 import time
 from luma.core.interface.serial import spi
 from luma.core.render import canvas
 from luma.lcd.device import ili9341
 from PIL import ImageFont
 
-with open("config_hardware.json", "r") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, "config_hardware.json"), "r", encoding="utf-8") as f:
     CFG = json.load(f)
 
 def main():

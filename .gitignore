@@ -1,0 +1,14 @@
+# Byte-compiled / optimized / DLL files (Agar tidak bentrok antar anggota tim!)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Panduan GitHub Pemula & Kolaborasi 6 Divisi AI — Siklotron DECY-13</title>
+<style>
+  :root {
+    --bg: #0b1320;
+    --card: #131f33;
+    --card-alt: #0f192a;
+    --border: #233554;
+    --teal: #14b8a6;
+    --cyan: #38bdf8;
+    --blue: #3b82f6;
+    --amber: #f59e0b;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(145deg, #070d17 0%, #0f1b2d 100%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.65;
+    padding-bottom: 80px;
+  }
+  header {
+    background: linear-gradient(90deg, #0f2942 0%, #0d4a4d 50%, #0f2942 100%);
+    border-bottom: 2px solid var(--teal);
+    padding: 32px 20px 24px;
+    text-align: center;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.5);
+  }
+  header h1 { font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+  header p { color: #99f6e4; margin-top: 8px; font-size: 0.96rem; max-width: 780px; margin-left: auto; margin-right: auto; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+  .badge {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--cyan);
+    color: #7dd3fc;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 14px 16px;
+    background: rgba(7, 13, 23, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav a {
+    text-decoration: none;
+    color: var(--muted);
+    background: #162338;
+    border: 1px solid #293d5c;
+    padding: 7px 15px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  nav a:hover, nav a.active {
+    background: var(--teal);
+    color: #041311;
+    border-color: #5eead4;
+    font-weight: 700;
+  }
+
+  main { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+  section { margin-top: 38px; scroll-margin-top: 76px; }
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #5eead4;
+    border-left: 5px solid var(--teal);
+    padding-left: 12px;
+    margin-bottom: 16px;
+  }
+  h3 { font-size: 1.05rem; font-weight: 700; color: #7dd3fc; margin: 14px 0 8px; }
+  p { color: #cbd5e1; font-size: 0.92rem; margin-bottom: 10px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+
+  /* Kamus Istilah */
+  .term-box {
+    background: var(--card-alt);
+    border: 1px solid #1e3250;
+    border-left: 4px solid var(--cyan);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .term-box strong { color: #fff; font-size: 0.95rem; display: block; margin-bottom: 4px; }
+  .term-box span { color: var(--muted); font-size: 0.84rem; }
+
+  /* Division Cards */
+  .div-card {
+    background: linear-gradient(160deg, #16243b 0%, #0d1726 100%);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--c, var(--teal));
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .div-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .div-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  .branch-pill {
+    font-family: 'Consolas', monospace;
+    font-size: 0.78rem;
+    background: #08101c;
+    border: 1px solid #2b4266;
+    color: #34d399;
+    padding: 5px 10px;
+    border-radius: 6px;
+    margin: 8px 0;
+    display: block;
+  }
+  .file-list { list-style: none; margin: 8px 0; font-size: 0.82rem; }
+  .file-list li {
+    padding: 4px 0;
+    color: #e2e8f0;
+    font-family: 'Consolas', monospace;
+    word-break: break-all;
+  }
+  .file-list li.ok::before { content: '✅ BOLEH EDIT: '; color: #4ade80; font-family: sans-serif; font-weight: 700; }
+  .file-list li.no::before { content: '🚫 JANGAN SENTUH: '; color: #f87171; font-family: sans-serif; font-weight: 700; }
+
+  /* Code & Command Copy Block */
+  .cmd-wrap {
+    position: relative;
+    background: #070d17;
+    border: 1px solid #243857;
+    border-radius: 10px;
+    margin: 10px 0 14px;
+    overflow: hidden;
+  }
+  .cmd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #101b2e;
+    padding: 6px 12px;
+    border-bottom: 1px solid #1e2f4d;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .copy-btn {
+    background: var(--teal);
+    color: #041c1a;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: #2dd4bf; transform: translateY(-1px); }
+  pre.cmd {
+    padding: 12px 14px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.82rem;
+    color: #38bdf8;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Alerts */
+  .alert {
+    border-left: 4px solid;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 14px 0;
+    font-size: 0.88rem;
+  }
+  .alert-info { border-color: var(--cyan); background: rgba(14, 165, 233, 0.12); color: #bae6fd; }
+  .alert-warn { border-color: var(--amber); background: rgba(245, 158, 11, 0.12); color: #fde68a; }
+  .alert-ok   { border-color: var(--green); background: rgba(34, 197, 94, 0.12); color: #bbf7d0; }
+  .alert-err  { border-color: var(--red); background: rgba(239, 68, 68, 0.12); color: #fecaca; }
+
+  /* Step Timeline */
+  .step-box {
+    display: flex;
+    gap: 14px;
+    background: var(--card-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .step-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #041c1a;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+  }
+  .step-content { flex: 1; }
+
+  /* Tabs for GUI vs CLI */
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .mode-tab {
+    background: #17253b;
+    color: #94a3b8;
+    border: 1px solid #2b4266;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .mode-tab.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: #60a5fa;
+  }
+
+  /* Checklist */
+  .chk-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #0d1626;
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .chk-item input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--teal); cursor: pointer; }
+
+  footer {
+    text-align: center;
+    margin-top: 50px;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 MODUL PANDUAN GITHUB & KOLABORASI 6 DIVISI AI</h1>
+  <p>Panduan Lengkap dari Nol (Instalasi, Penggunaan Harian Agar Selalu Online, Aturan Anti-Bentrok, & Prompt AI per Divisi) — Proyek Siklotron DECY-13 Politeknik Teknologi Nuklir Indonesia</p>
+  <div class="badge-row">
+    <span class="badge">👥 Tim 6 Orang</span>
+    <span class="badge">🤖 Multi-AI Ready (ChatGPT / Claude / Cursor / Gemini)</span>
+    <span class="badge">🛡️ Arsitektur Modular Anti-Conflict</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#kamus" class="active">1. 📖 Paham GitHub 3 Menit</a>
+  <a href="#divisi">2. 👥 Pembagian 6 Divisi & File</a>
+  <a href="#instalasi">3. 💻 Instalasi & Setup Awal</a>
+  <a href="#harian">4. 🔄 Rutinitas Harian (Online Terus)</a>
+  <a href="#prompts">5. 🤖 Copy Prompt AI Per Divisi</a>
+  <a href="#ketua">6. 👑 Panduan Merge Ketua (Core)</a>
+</nav>
+
+<main>
+
+  <!-- ==================== 1. KAMUS GITHUB PEMULA ==================== -->
+  <section id="kamus">
+    <h2>1. 📖 Apa Itu GitHub & Kenapa Kita Pakai Ini? (Khusus Pemula)</h2>
+    <div class="card">
+      <p>
+        Bayangkan kita ber-6 sedang merakit <strong>1 instrumen Siklotron DECY-13</strong> menggunakan AI masing-masing di laptop yang berbeda. Kalau kita kirim file lewat WhatsApp atau Flashdisk, file-nya pasti tertukar dan saling menimpa!
+      </p>
+      <p>
+        <strong>GitHub</strong> adalah <em>"Google Drive khusus kodingan"</em> yang punya fitur pintar bernama <strong>Branch (Cabang)</strong>. Dengan Branch, 6 orang bisa mengedit proyek di waktu bersamaan secara online, lalu digabungkan (<strong>Merge</strong>) menjadi satu kesatuan yang utuh.
+      </p>
+
+      <h3>6 Istilah GitHub yang Wajib Kamu Tahu (Bahasa Manusia):</h3>
+      <div class="grid-3" style="margin-top:10px">
+        <div class="term-box">
+          <strong>1. Repository (Repo)</strong>
+          <span>Folder proyek utama kita di internet:<br><code>github.com/azfaaksan-hub/sp-aksel-polteknuklir</code></span>
+        </div>
+        <div class="term-box">
+          <strong>2. Clone (Kloning)</strong>
+          <span>Mendownload seluruh folder proyek dari GitHub ke laptopmu (cukup dilakukan <strong>1 kali saja</strong> di awal).</span>
+        </div>
+        <div class="term-box">
+          <strong>3. Branch (Cabang Kerja)</strong>
+          <span>Ruang kerja pribadimu (misal <code>divisi-3-led-ws2812b</code>) supaya kodinganmu tidak mengganggu teman lain.</span>
+        </div>
+        <div class="term-box">
+          <strong>4. Pull (Tarik Update)</strong>
+          <span>Menarik update terbaru dari server GitHub ke laptopmu <strong>sebelum mulai kerja</strong>.</span>
+        </div>
+        <div class="term-box">
+          <strong>5. Commit & Push (Simpan & Upload)</strong>
+          <span>Menyimpan perubahan di laptop (<em>Commit</em>) lalu mengunggahnya ke GitHub online (<em>Push</em>).</span>
+        </div>
+        <div class="term-box">
+          <strong>6. Pull Request & Merge (Gabung)</strong>
+          <span>Meminta Ketua Tim (Divisi 1 - Core Raspi) menggabungkan hasil kerjamu ke program utama (<code>main</code>).</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 2. PEMBAGIAN 6 DIVISI ==================== -->
+  <section id="divisi">
+    <h2>2. 👥 Pembagian 6 Divisi & Aturan Anti-Bentrok (Zero Conflict)</h2>
+    <div class="alert alert-warn">
+      ⚠️ <strong>ATURAN EMAS AGAR TIDAK KONFLIK SAAT MERGE:</strong><br>
+      Setiap anggota (dan AI yang digunakannya) <strong>HANYA BOLEH MENGEDIT FILE MILIK DIVISINYA SENDIRI</strong>. Jangan pernah menyuruh AI mengedit file milik divisi lain! Karena file tiap divisi sudah dipisah di dalam folder <code>raspi_cli/modules/</code>, saat digabungkan oleh Ketua Tim dijamin <strong>100% bebas bentrok (Zero Merge Conflict)</strong>.
+    </div>
+
+    <div class="grid-3">
+      <!-- DIVISI 1 -->
+      <div class="div-card" style="--c:#14b8a6">
+        <div>
+          <span class="div-badge">👑 Divisi 1 (Ketua / Integrator)</span>
+          <div class="div-title">Core Backend Raspi & Physics Engine</div>
+          <span class="branch-pill">Branch: main / core-raspi-backend</span>
+          <p style="font-size:0.82rem">Mengatur otak utama MQTT Daemon, State Machine 7-tahap, konfigurasi pin terpusat, serta menggabungkan (merge) modul Divisi 2–6.</p>
+          <ul class="file-list">
+            <li class="ok">raspi_cli/04_decy13_mqtt_daemon.py</li>
+            <li class="ok">raspi_cli/05_laptop_dryrun_simulator.py</li>
+            <li class="ok">raspi_cli/config_hardware.json</li>
+            <li class="ok">raspi_cli/modules/base_module.py</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIVISI 2 -->
+      <div class="div-card" style="--c:#38bdf8">
+        <div>
+          <span class="div-badge">🌀 Divisi 2 (Anggota 2)</span>
+          <div class="div-title">Sistem Vakum, Buzzer & Safety E-Stop</div>
+          <span class="branch-pill">Branch: divisi-2-vakum-safety</span>
+          <p style="font-size:0.82rem">Mengurus Relay Kipas DC 12V (GPIO 21), pola bunyi Buzzer SFM-27 (GPIO 17), dan interupsi tombol fisik Emergency Stop (GPIO 22).</p>
+          <ul class="file-list">
+            <li class="ok">raspi_cli/modules/mod_vacuum_safety.py</li>
+            <li class="ok">raspi_cli/01_test_relay_buzzer.py</li>
+            <li class="no">04_decy13_mqtt_daemon.py & index.html</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIVISI 3 -->
+      <div class="div-card" style="--c:#a855f7">
+        <div>
+          <span class="div-badge">💡 Divisi 3 (Anggota 3)</span>
+          <div class="div-title">Sistem LED Strip WS2812B (Spiral & Shoot)</div>
+          <span class="branch-pill">Branch: divisi-3-led-ws2812b</span>
+          <p style="font-size:0.82rem">Mengurus animasi 64 LED WS2812B (GPIO 18): efek komet spiral (0–47), kilatan celah RF Gap, dan tembakan lurus ke target (48–63).</p>
+          <ul class="file-list">
+            <li class="ok">raspi_cli/modules/mod_led_ws2812b.py</li>
+            <li class="ok">raspi_cli/03_test_led_pixel_finder.py</li>
+            <li class="no">04_decy13_mqtt_daemon.py & index.html</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIVISI 4 -->
+      <div class="div-card" style="--c:#22c55e">
+        <div>
+          <span class="div-badge">📟 Divisi 4 (Anggota 4)</span>
+          <div class="div-title">Sistem Layar LCD TFT SPI ILI9341</div>
+          <span class="branch-pill">Branch: divisi-4-lcd-ili9341</span>
+          <p style="font-size:0.82rem">Mengurus tampilan grafis layar LCD 320×240 (SPI0): warna header per tahap, 4 baris telemetri, serta progress bar vakum & energi MeV.</p>
+          <ul class="file-list">
+            <li class="ok">raspi_cli/modules/mod_lcd_ili9341.py</li>
+            <li class="ok">raspi_cli/02_test_lcd_ili9341.py</li>
+            <li class="no">04_decy13_mqtt_daemon.py & index.html</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIVISI 5 -->
+      <div class="div-card" style="--c:#f59e0b">
+        <div>
+          <span class="div-badge">🖥️ Divisi 5 (Anggota 5)</span>
+          <div class="div-title">Web HMI SCADA & Simulator 2D (Mini PC)</div>
+          <span class="branch-pill">Branch: divisi-5-web-hmi</span>
+          <p style="font-size:0.82rem">Mengurus dashboard kontrol di browser Mini PC, grafik real-time, animasi kanvas siklotron 2D, panduan edukasi, dan Web Audio.</p>
+          <ul class="file-list">
+            <li class="ok">web_hmi/index.html</li>
+            <li class="ok">web_hmi/assets/*</li>
+            <li class="no">Semua file Python di folder raspi_cli/</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DIVISI 6 -->
+      <div class="div-card" style="--c:#ef4444">
+        <div>
+          <span class="div-badge">📡 Divisi 6 (Anggota 6)</span>
+          <div class="div-title">Jaringan MQTT, Node-RED & QA Testing</div>
+          <span class="branch-pill">Branch: divisi-6-nodered-qa</span>
+          <p style="font-size:0.82rem">Mengurus skrip health-check otomatis MQTT, dashboard cadangan Node-RED, konfigurasi jaringan RPi-Mini PC, & checklist commissioning.</p>
+          <ul class="file-list">
+            <li class="ok">raspi_cli/06_test_mqtt_healthcheck.py</li>
+            <li class="ok">nodered/flows_mqtt_decy13.json</li>
+            <li class="ok">instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 3. INSTALASI DARI NOL ==================== -->
+  <section id="instalasi">
+    <h2>3. 💻 Instalasi & Setup Pertama Kali (Cukup Sekali Saja!)</h2>
+    <p>Ikuti 4 langkah berurutan ini di laptop Windows kamu supaya terhubung ke proyek GitHub kelompok kita:</p>
+
+    <div class="step-box">
+      <div class="step-circle">1</div>
+      <div class="step-content">
+        <h3>Buat Akun GitHub & Minta Undangan Akses (Collaborator)</h3>
+        <p>1. Buka <a href="https://github.com" target="_blank" style="color:var(--cyan)">https://github.com</a> lalu daftar akun gratis (jika belum punya).<br>
+           2. Kirimkan <strong>username GitHub</strong> atau emailmu ke Ketua Tim (Divisi 1).<br>
+           3. Ketua Tim akan mengundangmu di menu <em>Settings &rarr; Collaborators &rarr; Add people</em> pada repositori <code>azfaaksan-hub/sp-aksel-polteknuklir</code>. <strong>Klik Accept Invitation</strong> di emailmu!</p>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-circle">2</div>
+      <div class="step-content">
+        <h3>Install Git & Pilih Cara Kerja (Bisa Pakai Aplikasi Klik GUI atau Terminal)</h3>
+        <p>Download dan install kedua software gratis ini (klik <em>Next &rarr; Next &rarr; Finish</em> saja):</p>
+        <ul style="margin-left:20px;color:#cbd5e1;font-size:0.9rem">
+          <li><strong>Wajib: Git for Windows</strong> &rarr; <a href="https://git-scm.com/download/win" target="_blank" style="color:var(--cyan)">https://git-scm.com/download/win</a></li>
+          <li><strong>Sangat Direkomendasikan untuk Pemula: GitHub Desktop</strong> &rarr; <a href="https://desktop.github.com" target="_blank" style="color:var(--cyan)">https://desktop.github.com</a> (Aplikasi visual tinggal klik tombol tanpa perlu hafal perintah terminal!).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-circle">3</div>
+      <div class="step-content">
+        <h3>Kenalkan Nama & Emailmu ke Git (Jika Menggunakan Terminal / VS Code)</h3>
+        <p>Buka PowerShell atau Terminal di VS Code, lalu salin dan jalankan perintah ini (ganti dengan nama dan email GitHub kamu):</p>
+        <div class="cmd-wrap">
+          <div class="cmd-header"><span>PowerShell / Terminal (Sekali Saja)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+          <pre class="cmd">git config --global user.name "Nama Kamu"
+git config --global user.email "emailkamu@gmail.com"</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-circle">4</div>
+      <div class="step-content">
+        <h3>Download Proyek (Clone) & Masuk ke Cabang (Branch) Divisimu</h3>
+        <p><strong>Jika pakai GitHub Desktop (Cara Visual):</strong><br>
+           Klik <em>File &rarr; Clone Repository &rarr; URL</em> &rarr; ketik <code>https://github.com/azfaaksan-hub/sp-aksel-polteknuklir.git</code> &rarr; Klik <strong>Clone</strong>. Setelah selesai, klik menu <strong>Current Branch</strong> di bagian atas, lalu pilih atau buat branch sesuai divisimu (misal: <code>divisi-2-vakum-safety</code>).</p>
+        <p style="margin-top:8px"><strong>Jika pakai Terminal / PowerShell (Cara Cepat):</strong></p>
+        <div class="cmd-wrap">
+          <div class="cmd-header"><span>PowerShell — Clone & Buat Branch Divisi</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+          <pre class="cmd"># 1. Download folder proyek ke laptopmu
+git clone https://github.com/azfaaksan-hub/sp-aksel-polteknuklir.git
+cd sp-aksel-polteknuklir
+
+# 2. Masuk ke branch sesuai divisimu (GANTI nama branch sesuai tabel Divisi 2-6!)
+# Contoh untuk Divisi 2:
+git checkout -b divisi-2-vakum-safety</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 4. RUTINITAS BERKALA HARIAN ==================== -->
+  <section id="harian">
+    <h2>4. 🔄 Penggunaan Berkala Harian ("Agar Progres Online & Update Terus")</h2>
+    <p>Setiap kali kamu mau mulai mengerjakan proyek bersama AI dan setiap kali selesai, lakukan <strong>Ritual 3 Langkah</strong> ini. Pilih tampilan panduan yang paling nyaman buatmu:</p>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="switchGuideMode('gui', this)">🖱️ Cara 1: Pakai GitHub Desktop (Paling Mudah / Tinggal Klik)</button>
+      <button class="mode-tab" onclick="switchGuideMode('cli', this)">⌨️ Cara 2: Pakai Terminal VS Code / PowerShell</button>
+    </div>
+
+    <!-- MODE GUI -->
+    <div id="guideModeGui" class="card">
+      <h3>🖱️ Rutinitas Harian dengan Aplikasi GitHub Desktop (Tanpa Ketik Kode Git)</h3>
+      <div class="grid-3" style="margin-top:12px">
+        <div class="term-box" style="border-left-color:var(--amber)">
+          <strong>🌅 A. SEBELUM MULAI KERJA</strong>
+          <span>
+            1. Buka aplikasi <strong>GitHub Desktop</strong>.<br>
+            2. Pastikan kotak <em>Current Branch</em> di atas bertuliskan nama branch divisimu (misal <code>divisi-3-led-ws2812b</code>).<br>
+            3. Klik tombol <strong>Fetch origin</strong> (atau <strong>Pull origin</strong>) di kanan atas, lalu klik <em>Branch &rarr; Update from main</em> agar kamu mendapat update terbaru dari Ketua Tim!
+          </span>
+        </div>
+        <div class="term-box" style="border-left-color:var(--cyan)">
+          <strong>🤖 B. SAAT NGODING BERSAMA AI</strong>
+          <span>
+            1. Klik tombol <strong>Open in Visual Studio Code</strong> (atau buka folder proyek di AI pilihanmu).<br>
+            2. Salin <strong>Prompt Divisimu</strong> dari Bagian 5 di bawah ke AI.<br>
+            3. Pastikan di bagian kiri GitHub Desktop (<em>Changes</em>), file yang berubah <strong>HANYA file jatah divisimu</strong>.
+          </span>
+        </div>
+        <div class="term-box" style="border-left-color:var(--green)">
+          <strong>🌙 C. SETELAH SELESAI (BIAR ONLINE)</strong>
+          <span>
+            1. Buka kembali <strong>GitHub Desktop</strong>.<br>
+            2. Di pojok kiri bawah, isi kotak <em>Summary</em> (contoh: <code>Perbaiki efek trail LED spiral</code>).<br>
+            3. Klik tombol biru <strong>Commit to divisi-...</strong><br>
+            4. Klik tombol <strong>Push origin</strong> di kanan atas!<br>
+            5. Klik <strong>Create Pull Request</strong> jika ingin digabung oleh Ketua.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE CLI -->
+    <div id="guideModeCli" class="card" style="display:none">
+      <h3>⌨️ Rutinitas Harian dengan Terminal (Copy-Paste 3 Blok Ini)</h3>
+
+      <p><strong>🌅 A. Sebelum Mulai Kerja (Ambil Update Terbaru dari Main):</strong></p>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>1. Tarik Update Terbaru dari Server GitHub</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd">git fetch origin
+git merge origin/main</pre>
+      </div>
+
+      <p><strong>🔍 B. Cek File Apa Saja yang Diubah oleh AI Kamu:</strong></p>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>2. Cek Status File (Pastikan Hanya File Divisimu yang Berubah!)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd">git status</pre>
+      </div>
+
+      <p><strong>🌙 C. Setelah Selesai Kerja (Simpan & Upload Online ke GitHub):</strong></p>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>3. Simpan (Commit) & Upload (Push) ke GitHub Online</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd"># Tambahkan semua perubahan di file divisimu
+git add .
+
+# Simpan catatan perubahan
+git commit -m "Update progres modul divisi saya"
+
+# Upload ke branch divisimu di GitHub (otomatis online!)
+git push -u origin HEAD</pre>
+      </div>
+    </div>
+
+    <!-- CHECKLIST HARIAN INTERAKTIF -->
+    <div class="card" style="border-color:var(--teal)">
+      <h3 style="margin-top:0">☑️ Checklist Anti-Salah Sebelum Kamu Klik "Push" ke GitHub:</h3>
+      <label class="chk-item"><input type="checkbox"> <span>Saya sudah berada di <strong>Branch Divisi saya sendiri</strong> (bukan langsung di branch <code>main</code>).</span></label>
+      <label class="chk-item"><input type="checkbox"> <span>Saya sudah mengecek daftar file yang berubah, dan <strong>tidak ada file milik divisi lain</strong> yang ikut terubah oleh AI saya.</span></label>
+      <label class="chk-item"><input type="checkbox"> <span>Kode saya sudah dites jalan tanpa <em>SyntaxError</em> di laptop/Raspi.</span></label>
+      <label class="chk-item"><input type="checkbox"> <span>Saya sudah klik <strong>Push</strong> sehingga progres saya sudah naik ke GitHub online dan bisa dilihat Ketua Tim.</span></label>
+    </div>
+  </section>
+
+  <!-- ==================== 5. COPY PROMPT ANATOMY PER DIVISI ==================== -->
+  <section id="prompts">
+    <h2>5. 🤖 Prompt Anatomy Siap Copy-Paste untuk AI Masing-Masing Divisi</h2>
+    <p>Setiap anggota cukup mencari divisinya di bawah ini, klik tombol <strong>"📋 Salin Prompt Divisi ..."</strong>, lalu tempelkan (<em>paste</em>) di awal percakapan dengan AI (ChatGPT, Claude, Cursor, Gemini, dll.) agar AI tersebut langsung paham aturan main dan tidak merusak file anggota lain!</p>
+
+    <!-- PROMPT DIVISI 1 -->
+    <div class="card">
+      <h3>👑 Divisi 1 (Ketua / Kamu): Raspi Core Backend & Integrator</h3>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>Prompt Anatomy — Divisi 1 (Core Raspi Backend)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin Prompt Divisi 1</button></div>
+        <pre class="cmd">[1. ROLE & PERSONA]
+Kamu adalah Lead Embedded Systems Architect & Nuclear Instrumentation Engineer untuk proyek "Alat Peraga Akselerator Siklotron DECY-13 (13 MeV H-)" di Politeknik Teknologi Nuklir Indonesia (BRIN). Saya adalah Ketua Tim (Divisi 1) yang memegang Core Backend Raspberry Pi 3 Model B+ dan bertugas mengintegrasikan modul dari 5 rekan tim saya.
+
+[2. SYSTEM CONTEXT]
+Sistem menggunakan arsitektur MQTT State-Driven dengan Mosquitto Broker (TCP port 1883, WebSocket port 9001):
+- Topic Perintah (Web HMI -> RPi): `decy13/hmi/cmd`
+- Topic State Nyata (RPi -> Web HMI tiap 200ms): `decy13/rpi/state`
+Core Daemon (`04_decy13_mqtt_daemon.py`) merupakan Source of Truth yang menghitung fisika siklotron 7-tahap dan mendelegasikan pembacaan/penggerak IO fisik ke 3 plugin modul di folder `raspi_cli/modules/`:
+1. `VacuumSafetyModule` (`mod_vacuum_safety.py` - Divisi 2)
+2. `LedStripModule` (`mod_led_ws2812b.py` - Divisi 3)
+3. `LcdDisplayModule` (`mod_lcd_ili9341.py` - Divisi 4)
+
+[3. WORKSPACE BOUNDARY]
+File utama yang saya kelola:
+- `decy13_mqtt_kit/raspi_cli/04_decy13_mqtt_daemon.py`
+- `decy13_mqtt_kit/raspi_cli/05_laptop_dryrun_simulator.py`
+- `decy13_mqtt_kit/raspi_cli/config_hardware.json`
+- `decy13_mqtt_kit/raspi_cli/modules/base_module.py`
+Saat memodifikasi Core Daemon, JANGAN merusak kontrak pemanggilan `mod.setup()`, `mod.update(self.state, dt, now)`, dan `mod.cleanup()` agar PR dari Divisi 2-6 selalu bisa di-merge tanpa konflik.</pre>
+      </div>
+    </div>
+
+    <!-- PROMPT DIVISI 2 -->
+    <div class="card">
+      <h3>🌀 Divisi 2 (Anggota 2): Sistem Vakum (Relay Kipas), Buzzer & Safety E-Stop</h3>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>Prompt Anatomy — Divisi 2 (Vakum, Buzzer & Safety)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin Prompt Divisi 2</button></div>
+        <pre class="cmd">[1. ROLE & PERSONA]
+Kamu adalah Embedded Hardware & Safety Interlock Engineer yang membantu saya (Anggota Divisi 2) mengerjakan subsistem "Pompa Vakum (Relay Kipas 12V), Buzzer Indikator, dan Tombol Fisik Emergency Stop" pada proyek Alat Peraga Siklotron DECY-13 (13 MeV H-) di Raspberry Pi 3 Model B+.
+
+[2. SYSTEM CONTEXT]
+Proyek ini dikerjakan oleh 6 orang di GitHub menggunakan arsitektur modular Python. Core Daemon (`04_decy13_mqtt_daemon.py`) memanggil modul saya setiap siklus (200ms) melalui kontrak class `VacuumSafetyModule`.
+
+[3. STRICT WORKSPACE BOUNDARY (ATURAN ANTI-KONFLIK GITHUB)]
+- Branch kerja saya: `divisi-2-vakum-safety`
+- File yang BOLEH kamu baca sebagai referensi: `decy13_mqtt_kit/raspi_cli/config_hardware.json` dan `decy13_mqtt_kit/raspi_cli/modules/base_module.py`.
+- File yang BOLEH kamu edit/modifikasi HANYA:
+  1. `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`
+  2. `decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py`
+- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain agar tidak terjadi Merge Conflict di GitHub!
+
+[4. INTERFACE & STATE CONTRACT]
+Di dalam `mod_vacuum_safety.py`, class `VacuumSafetyModule(HardwareModule)` WAJIB mempertahankan method `setup(self) -> bool`, `update(self, state: dict, dt: float, now: float) -> None`, dan `cleanup(self) -> None`. Wajib menggunakan `try/except ImportError` untuk `RPi.GPIO` agar kode tetap bisa diuji di laptop Windows tanpa RPi fisik.
+
+[5. TECHNICAL OBJECTIVES]
+Baca terlebih dahulu isi `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini, lalu bantu saya menyempurnakan kendali Relay Kipas (GPIO 21 Active-LOW), pola bunyi Buzzer (GPIO 17: Power ON 5s, Beep iradiasi Shoot, Alarm E-Stop), serta software debouncing tombol fisik E-Stop (GPIO 22).</pre>
+      </div>
+    </div>
+
+    <!-- PROMPT DIVISI 3 -->
+    <div class="card">
+      <h3>💡 Divisi 3 (Anggota 3): Sistem LED Strip WS2812B (Spiral Dee & Beamline Shoot)</h3>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>Prompt Anatomy — Divisi 3 (LED Strip WS2812B)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin Prompt Divisi 3</button></div>
+        <pre class="cmd">[1. ROLE & PERSONA]
+Kamu adalah Embedded Lighting & Physics Animation Engineer yang membantu saya (Anggota Divisi 3) mengembangkan subsistem "Visualisasi LED Strip Programmable WS2812B (Spiral Elektroda Dee & Beamline Shoot)" pada proyek Alat Peraga Siklotron DECY-13 (13 MeV H-) di Raspberry Pi 3 Model B+.
+
+[2. SYSTEM CONTEXT]
+Core Daemon (`04_decy13_mqtt_daemon.py`) memanggil modul `LedStripModule` milik saya. LED Strip WS2812B dipasang pada GPIO 18 (Pin Fisik 12, DMA PWM0) sebanyak total 64 piksel:
+- Indeks 0..47 (`spiral_start_idx`..`spiral_end_idx`): Jalur spiral di dalam kamar Dee.
+- Indeks [11, 23, 35, 47] (`rf_gap_indices`): Celah akselerasi RF (RF Gap).
+- Indeks 48..63 (`shoot_start_idx`..`shoot_end_idx`): Jalur lurus ekstraksi berkas menuju Target.
+
+[3. STRICT WORKSPACE BOUNDARY (ATURAN ANTI-KONFLIK GITHUB)]
+- Branch kerja saya: `divisi-3-led-ws2812b`
+- File yang BOLEH kamu baca sebagai referensi: `decy13_mqtt_kit/raspi_cli/config_hardware.json` dan `decy13_mqtt_kit/raspi_cli/modules/base_module.py`.
+- File yang BOLEH kamu edit/modifikasi HANYA:
+  1. `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`
+  2. `decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py`
+- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain!
+
+[4. INTERFACE & STATE CONTRACT]
+Class `LedStripModule(HardwareModule)` WAJIB mempertahankan method `setup()`, `update(state, dt, now)`, dan `cleanup()`, serta meng-update `state["activeLedIdx"]` dan `state["shootLedIdx"]` secara real-time di thread animasi karena nilainya dipakai oleh Web HMI melalui MQTT.
+
+[5. TECHNICAL OBJECTIVES]
+Baca terlebih dahulu isi `mod_led_ws2812b.py` dan `03_test_led_pixel_finder.py`, lalu bantu saya memperhalus animasi percepatan spiral sesuai `beamEnergy` (0-13 MeV), efek ekor komet, kilatan saat melewati `rf_gap_indices`, dan animasi tembakan target.</pre>
+      </div>
+    </div>
+
+    <!-- PROMPT DIVISI 4 -->
+    <div class="card">
+      <h3>📟 Divisi 4 (Anggota 4): Sistem Layar LCD TFT SPI ILI9341</h3>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>Prompt Anatomy — Divisi 4 (LCD TFT SPI ILI9341)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin Prompt Divisi 4</button></div>
+        <pre class="cmd">[1. ROLE & PERSONA]
+Kamu adalah Embedded GUI & Display Engineer yang membantu saya (Anggota Divisi 4) mengembangkan subsistem "Layar Status Lokal LCD TFT 2.4/2.8 inch SPI (Driver ILI9341 320x240)" pada proyek Alat Peraga Siklotron DECY-13 (13 MeV H-) di Raspberry Pi 3 Model B+.
+
+[2. SYSTEM CONTEXT]
+Core Daemon (`04_decy13_mqtt_daemon.py`) memanggil modul `LcdDisplayModule` milik saya. Layar LCD terhubung ke Hardware SPI0 RPi 3B+ (`CE0=GPIO 8`, `MOSI=GPIO 10`, `SCLK=GPIO 11`, `DC=GPIO 24`, `RST=GPIO 25`) menggunakan `luma.lcd` dan `Pillow`.
+
+[3. STRICT WORKSPACE BOUNDARY (ATURAN ANTI-KONFLIK GITHUB)]
+- Branch kerja saya: `divisi-4-lcd-ili9341`
+- File yang BOLEH kamu baca sebagai referensi: `decy13_mqtt_kit/raspi_cli/config_hardware.json` dan `decy13_mqtt_kit/raspi_cli/modules/base_module.py`.
+- File yang BOLEH kamu edit/modifikasi HANYA:
+  1. `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`
+  2. `decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py`
+- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain!
+
+[4. INTERFACE & STATE CONTRACT]
+Class `LcdDisplayModule(HardwareModule)` WAJIB mempertahankan method `setup()`, `update(state, dt, now)`, dan `cleanup()`, serta menggambar frame di background thread agar SPI tidak memperlambat loop MQTT utama.
+
+[5. TECHNICAL OBJECTIVES]
+Baca terlebih dahulu isi `mod_lcd_ili9341.py` dan `02_test_lcd_ili9341.py`, lalu bantu saya memperbagus tata letak grafis 320x240 piksel (header warna per tahap, 4 baris telemetri, bar vakum logaritmik, dan bar energi MeV).</pre>
+      </div>
+    </div>
+
+    <!-- PROMPT DIVISI 5 -->
+    <div class="card">
+      <h3>🖥️ Divisi 5 (Anggota 5): Sistem Web HMI SCADA & Simulator 2D (Mini PC)</h3>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>Prompt Anatomy — Divisi 5 (Web HMI SCADA)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin Prompt Divisi 5</button></div>
+        <pre class="cmd">[1. ROLE & PERSONA]
+Kamu adalah Senior Frontend SCADA & Scientific Visualization Engineer yang membantu saya (Anggota Divisi 5) mengembangkan antarmuka "Web HMI Control Center & Live 2D Cyclotron Simulator" pada proyek Alat Peraga Siklotron DECY-13 (13 MeV H-).
+
+[2. SYSTEM CONTEXT]
+Web HMI berkomunikasi dengan Raspberry Pi 3B+ melalui Mosquitto MQTT over WebSockets (port 9001) menggunakan topic perintah `decy13/hmi/cmd` dan topic telemetri `decy13/rpi/state`. Saat `state.mqttConnected === true`, seluruh indikator, grafik, teks LCD Digital Twin, serta indeks LED spiral (`activeLedIndex`) dan shoot (`shootLedIndex`) wajib mengikuti data dari `applyRpiState(rpi)`.
+
+[3. STRICT WORKSPACE BOUNDARY (ATURAN ANTI-KONFLIK GITHUB)]
+- Branch kerja saya: `divisi-5-web-hmi`
+- File yang BOLEH kamu edit/modifikasi HANYA:
+  1. `decy13_mqtt_kit/web_hmi/index.html` (dan aset di `decy13_mqtt_kit/web_hmi/assets/`)
+- DILARANG KERAS mengedit file Python di dalam `raspi_cli/`, `config_hardware.json`, atau `nodered/`!
+
+[4. INTERFACE & STATE CONTRACT]
+Jangan mengubah nama perintah JSON yang dikirim ke `decy13/hmi/cmd` (`TOGGLE_POWER`, `TOGGLE_VACUUM`, `TOGGLE_INTERLOCK`, `AUTO_INIT`, `START_BEAM`, `SHOOT`, `EMERGENCY_STOP`, `SET_PARAMS`).
+
+[5. TECHNICAL OBJECTIVES]
+Baca struktur `decy13_mqtt_kit/web_hmi/index.html` terlebih dahulu, lalu bantu saya menyempurnakan visualisasi SCADA, animasi 2D siklotron, mode panduan edukasi, dan indikator Digital Twin.</pre>
+      </div>
+    </div>
+
+    <!-- PROMPT DIVISI 6 -->
+    <div class="card">
+      <h3>📡 Divisi 6 (Anggota 6): Jaringan MQTT, Node-RED & Commissioning QA</h3>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>Prompt Anatomy — Divisi 6 (MQTT QA & Node-RED)</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin Prompt Divisi 6</button></div>
+        <pre class="cmd">[1. ROLE & PERSONA]
+Kamu adalah Industrial IoT Network, Node-RED & Quality Assurance (QA) Engineer yang membantu saya (Anggota Divisi 6) mengelola pengujian jaringan MQTT, dashboard Node-RED, serta Commissioning QA untuk proyek Alat Peraga Siklotron DECY-13 (13 MeV H-).
+
+[2. STRICT WORKSPACE BOUNDARY (ATURAN ANTI-KONFLIK GITHUB)]
+- Branch kerja saya: `divisi-6-nodered-qa`
+- File yang BOLEH kamu edit/modifikasi HANYA:
+  1. `decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py`
+  2. `decy13_mqtt_kit/nodered/flows_mqtt_decy13.json`
+  3. `instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt`
+- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html`!
+
+[3. TECHNICAL OBJECTIVES]
+Baca terlebih dahulu isi `06_test_mqtt_healthcheck.py` dan `flows_mqtt_decy13.json`, lalu bantu saya mengembangkan fitur pengujian otomatis 7-tahap operasional, pengukuran frekuensi/latensi paket MQTT `decy13/rpi/state`, dan kelengkapan checklist commissioning.</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 6. PANDUAN KHUSUS KETUA (DIVISI 1) ==================== -->
+  <section id="ketua">
+    <h2>6. 👑 Panduan Mandiri Git untuk Ketua (Divisi 1) & Aturan Wajib Anggota</h2>
+    <div class="card">
+      <div class="alert alert-warn" style="margin-top:0">
+        ⚡ <strong>ATURAN DISIPLIN TIM (WAJIB MANDIRI):</strong><br>
+        Di proyek ini, <strong>setiap anggota (Divisi 1 s.d. Divisi 6) WAJIB bisa melakukan <code>branch</code>, <code>pull</code>, <code>commit</code>, dan <code>push</code> sendiri-sendiri</strong> dari laptop masing-masing. Ketua tidak membuatkan branch untuk anggota, melainkan setiap anggota membuat dan mengelola branch divisinya sendiri setelah fondasi <code>main</code> di-push oleh Ketua!
+      </div>
+
+      <h3>A. Langkah Mandiri untuk Kamu (Ketua / Divisi 1) — Upload Fondasi Awal ke Main</h3>
+      <p>Jalankan perintah ini sendiri di terminal VS Code / PowerShell pada folder <code>sp-aksel-polteknuklir</code> untuk mengunggah fondasi modular ke GitHub:</p>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>PowerShell Ketua — Cek Status, Commit, & Push Fondasi ke Main</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd"># 1. Masuk ke folder repo
+cd C:\Users\ucing\agy_vscode\sp-aksel-polteknuklir
+
+# 2. Cek file apa saja yang baru dibuat/diubah
+git status
+
+# 3. Tambahkan seluruh file arsitektur modular & panduan
+git add .
+
+# 4. Commit dengan pesan yang jelas
+git commit -m "Refactor arsitektur modular 6 divisi + panduan GitHub & Prompt Anatomy"
+
+# 5. Push ke branch aktif / main di GitHub
+git push -u origin HEAD</pre>
+      </div>
+
+      <h3>B. Langkah Mandiri Wajib untuk Anggota Divisi 2 s.d. 6 (Di Laptop Masing-Masing)</h3>
+      <p>Setelah Ketua selesai melakukan langkah A di atas, setiap anggota wajib menjalankan perintah ini sendiri di laptopnya:</p>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>PowerShell Anggota (Divisi 2–6) — Clone, Buat Branch Sendiri, Commit & Push Sendiri</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd"># 1. Clone repo dari GitHub (saat pertama kali) & tarik update terbaru
+git clone https://github.com/azfaaksan-hub/sp-aksel-polteknuklir.git
+cd sp-aksel-polteknuklir
+git pull origin coding
+
+# 2. WAJIB buat & pindah ke branch divisi masing-masing secara mandiri:
+#    - Divisi 2: git checkout -b divisi-2-vakum-safety
+#    - Divisi 3: git checkout -b divisi-3-led-ws2812b
+#    - Divisi 4: git checkout -b divisi-4-lcd-ili9341
+#    - Divisi 5: git checkout -b divisi-5-web-hmi
+#    - Divisi 6: git checkout -b divisi-6-nodered-qa
+
+# 3. Setelah selesai ngoding bersama AI di file jatah divisinya, WAJIB commit & push sendiri:
+git status
+git add .
+git commit -m "Progres fitur dari divisi saya"
+git push -u origin HEAD</pre>
+      </div>
+
+      <h3>C. Cara Ketua Menggabungkan (Merge) Branch Anggota yang Sudah Di-Push</h3>
+      <p>Saat anggota sudah berhasil <code>push</code> branch mereka sendiri ke GitHub, kamu (Ketua) bisa mengecek dan menggabungkannya:</p>
+      <ol style="margin-left:20px;color:#cbd5e1;font-size:0.9rem">
+        <li><strong>Lewat Web GitHub (Pull Request):</strong> Anggota klik tombol <strong>Compare & pull request</strong> di GitHub setelah push, lalu kamu review di tab <em>Pull requests</em> dan klik <strong>Merge pull request</strong>.</li>
+        <li><strong>Lewat Terminal di Laptop Ketua:</strong></li>
+      </ol>
+      <div class="cmd-wrap">
+        <div class="cmd-header"><span>PowerShell Ketua — Tarik & Merge Branch Teman</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd"># Tarik semua daftar branch terbaru yang sudah di-push teman-teman
+git fetch origin
+
+# Lihat semua branch yang sudah masuk ke GitHub
+git branch -a
+
+# Gabungkan branch divisi teman ke branch utamamu (contoh: divisi 2)
+git merge origin/divisi-2-vakum-safety</pre>
+      </div>
+
+      <div class="alert alert-ok">
+        💡 <strong>Pertolongan Pertama Jika Teman Salah Edit File di Laptopnya:</strong><br>
+        Kalau ada anggota yang tidak sengaja mengubah file milik divisi lain di laptopnya dan belum di-commit, suruh dia ketik sendiri:<br>
+        <code>git checkout -- nama_file_yang_salah_diedit</code> (untuk mengembalikan file tersebut ke kondisi semula).
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Proyek Alat Peraga Akselerator Siklotron DECY-13 (13 MeV H⁻) · Politeknik Teknologi Nuklir Indonesia (BRIN) · Modul Kolaborasi GitHub & Multi-AI
+</footer>
+
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.cmd-wrap').querySelector('pre.cmd');
+    if (!pre) return;
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      const old = btn.innerText;
+      btn.innerText = '✅ Tersalin!';
+      btn.style.background = '#22c55e';
+      setTimeout(() => {
+        btn.innerText = old;
+        btn.style.background = '';
+      }, 1800);
+    });
+  }
+
+  function switchGuideMode(mode, btn) {
+    document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('guideModeGui').style.display = (mode === 'gui') ? 'block' : 'none';
+    document.getElementById('guideModeCli').style.display = (mode === 'cli') ? 'block' : 'none';
+  }
+</script>
+</body>
+</html>

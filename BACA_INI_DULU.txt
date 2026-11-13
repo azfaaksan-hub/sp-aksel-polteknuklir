@@ -8,9 +8,14 @@
   Sebelum bingung, ini panduan singkat supaya tahu harus mulai dari mana.
 
   ╔══════════════════════════════════════════════════════════════════╗
-  ║  BUKA FILE INI DI BROWSER DULU:                                  ║
+  ║  BUKA 2 FILE HTML INI DI BROWSER DULU:                           ║
   ║                                                                  ║
-  ║  📂 instruksi untuk projek sp\PANDUAN_VISUAL.html               ║
+  ║  1. 📂 instruksi untuk projek sp\PANDUAN_VISUAL.html             ║
+  ║     (Gambaran proyek, wiring, & alur 7 tahap siklotron)          ║
+  ║                                                                  ║
+  ║  2. 📂 instruksi untuk projek sp\PANDUAN_GITHUB_DAN_TIM_AI.html  ║
+  ║     (Wajib baca! Pembagian 6 Divisi, Cara Pakai GitHub dari Nol  ║
+  ║      agar Online Terus, & Copy-Paste Prompt AI per Anggota)      ║
   ║                                                                  ║
   ║  Klik kanan → Open With → Google Chrome / Microsoft Edge         ║
   ╚══════════════════════════════════════════════════════════════════╝

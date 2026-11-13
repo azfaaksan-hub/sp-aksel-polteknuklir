@@ -5,10 +5,12 @@ Jalankan di terminal Raspberry Pi 3B+:
   python3 01_test_relay_buzzer.py
 """
 import json
+import os
 import time
 import RPi.GPIO as GPIO
 
-with open("config_hardware.json", "r") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, "config_hardware.json"), "r", encoding="utf-8") as f:
     CFG = json.load(f)
 
 PIN_VAC = CFG["pins_bcm"]["relay_vacuum_fan"]

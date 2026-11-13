@@ -5,10 +5,12 @@ PENTING: Wajib dijalankan dengan sudo karena DMA mengakses memori perangkat kera
   sudo python3 03_test_led_pixel_finder.py
 """
 import json
+import os
 import time
 from rpi_ws281x import PixelStrip, Color
 
-with open("config_hardware.json", "r") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, "config_hardware.json"), "r", encoding="utf-8") as f:
     CFG = json.load(f)
 
 LED_COUNT = CFG["led_mapping"]["total_leds"]

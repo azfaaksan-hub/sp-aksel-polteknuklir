@@ -382,10 +382,10 @@
         <div class="relative w-full h-[330px] bg-[#0c101d] rounded-2xl border border-white/5 overflow-hidden shadow-inner flex items-center justify-center">
           <canvas id="cyclotronCanvas" class="w-full h-full block"></canvas>
           <div class="pointer-events-none absolute top-2.5 left-3 text-[10px] mono text-sky-400">
-            DEE A (GPIO 14 WS2812B)
+            DEE A &amp; B SPIRAL (GPIO 18 WS2812B #0–47)
           </div>
           <div class="pointer-events-none absolute top-2.5 right-3 text-[10px] mono text-purple-400">
-            DEE B &amp; TARGET BEAMLINE (GPIO 5)
+            TARGET BEAMLINE SHOOT (GPIO 18 WS2812B #48–63)
           </div>
           <div class="pointer-events-none absolute bottom-2.5 left-3 right-3 flex justify-between text-[10px] mono text-slate-400">
             <span id="canvasStatusOverlay">Status: Menunggu Inisiasi Vakum &amp; Magnet</span>
@@ -520,7 +520,7 @@
       <div class="console-card p-4 flex flex-col justify-between">
         <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/5">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-200">KIPAS VAKUM &amp; BUZZER</span>
-          <span class="text-[10px] text-cyan-400 mono">RPi Pin 13 &amp; 26</span>
+          <span class="text-[10px] text-cyan-400 mono">GPIO 21 (Relay) &amp; GPIO 17 (Buzzer)</span>
         </div>
         <div class="flex items-center justify-between gap-3 my-1">
           <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
@@ -533,7 +533,7 @@
             <span id="hwFanState" class="text-xs font-bold text-slate-300 block truncate">KIPAS: OFF (0 RPM)</span>
             <span id="hwFanPwmTxt" class="text-[10px] mono text-slate-400 block truncate">PWM: 0/255</span>
             <span id="hwBuzzerState" class="text-[10px] font-bold text-slate-400 block truncate">BUZZER: SILENT</span>
-            <span id="hwInterruptTxt" class="text-[9px] mono text-emerald-400 block truncate">ISR D2: HIGH</span>
+            <span id="hwInterruptTxt" class="text-[9px] mono text-emerald-400 block truncate">ISR GPIO 22: HIGH</span>
           </div>
         </div>
       </div>
@@ -762,13 +762,14 @@
             <pre id="codeRpiBlock" class="h-64 bg-[#0a0f1d] p-3 rounded-xl border border-slate-800 text-[10px] mono text-slate-300 overflow-y-auto leading-relaxed">import time
 import paho.mqtt.client as mqtt
 
-# Pin Mappings RPi 3B+
-PIN_FAN_RELAY = 13
-PIN_BUZZER    = 26
-PIN_WS2812B   = 14
-PIN_TARGET    = 5
+# Pin Mappings RPi 3B+ (BCM Numbering - config_hardware.json)
+PIN_WS2812B   = 18  # Pin Fisik 12 (DMA PWM0, 64 LED: 0-47 Spiral, 48-63 Shoot)
+PIN_FAN_RELAY = 21  # Pin Fisik 40 (Active-LOW Relay Kipas Vakum 12V)
+PIN_BUZZER    = 17  # Pin Fisik 11 (Buzzer Indikator SFM-27)
+PIN_ESTOP     = 22  # Pin Fisik 15 (Input Pull-Up Tombol Fisik E-Stop)
+# LCD TFT ILI9341 via SPI0 (CE0=GPIO8, MOSI=GPIO10, SCLK=GPIO11, DC=GPIO24, RST=GPIO25)
 
-print("DECY-13 MQTT Daemon Active on Raspberry Pi 3B+")</pre>
+print("DECY-13 Modular MQTT Daemon Active on Raspberry Pi 3B+")</pre>
           </div>
 
           <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
@@ -1237,17 +1238,17 @@ void setup() {
     if (state.estop) {
       $('hwBuzzerState').textContent = 'ALARM DARURAT!';
       $('hwBuzzerState').className = 'text-xs font-bold text-red-400 animate-pulse block truncate';
-      $('hwInterruptTxt').textContent = 'ISR Pin D2: LOW (TRIP)';
+      $('hwInterruptTxt').textContent = 'ISR GPIO 22: TRIP (E-STOP)';
       $('hwInterruptTxt').className = 'text-[10px] mono text-red-400';
     } else if (state.shooting) {
       $('hwBuzzerState').textContent = 'BEEP RADIASI AKTIF';
       $('hwBuzzerState').className = 'text-xs font-bold text-amber-300 block truncate';
-      $('hwInterruptTxt').textContent = 'ISR Pin D2: HIGH (AMAN)';
+      $('hwInterruptTxt').textContent = 'ISR GPIO 22: AMAN';
       $('hwInterruptTxt').className = 'text-[10px] mono text-emerald-400';
     } else {
       $('hwBuzzerState').textContent = 'SILENT / AMAN';
       $('hwBuzzerState').className = 'text-xs font-bold text-slate-300 block truncate';
-      $('hwInterruptTxt').textContent = 'ISR Pin D2: HIGH (NC)';
+      $('hwInterruptTxt').textContent = 'ISR GPIO 22: STANDBY';
       $('hwInterruptTxt').className = 'text-[10px] mono text-emerald-400';
     }
 
@@ -1491,11 +1492,15 @@ void setup() {
     // 3. KUNCI STATE-DRIVEN: Sinkronisasi indeks LED dari RPi
     //    Browser TIDAK menghitung posisi LED sendiri — mengikuti RPi
     if (rpi.activeLedIdx !== undefined && rpi.activeLedIdx >= 0) {
-      state.activeLedIndex = rpi.activeLedIdx % state.ledSpiralCount;
+      const newIdx = rpi.activeLedIdx % state.ledSpiralCount;
+      if (state.beam && newIdx < state.activeLedIndex) {
+        state.passesCount += 2;
+      }
+      state.activeLedIndex = newIdx;
     }
     if (rpi.shootLedIdx !== undefined) {
       state.shootLedIndex = rpi.shootLedIdx >= 0
-        ? (rpi.shootLedIdx - 48) % 16   // konversi dari indeks absolut ke relatif 0-15
+        ? (rpi.shootLedIdx - 48) % 8   // konversi dari indeks absolut 48-63 ke 8 titik visual canvas
         : -1;
     }
 
@@ -1918,7 +1923,9 @@ void setup() {
         : `CYCLE: ${Math.round(ledDelayMs)} ms | MODE: SIMULASI LOKAL`;
     }
 
-    if (nowMs - lastLedStepMs >= ledDelayMs) {
+    // Saat OFFLINE (Mode Simulasi Lokal): hitung indeks LED di browser.
+    // Saat MQTT TERHUBUNG: indeks LED 100% dikendalikan oleh applyRpiState() dari Raspi!
+    if (!state.mqttConnected && nowMs - lastLedStepMs >= ledDelayMs) {
       lastLedStepMs = nowMs;
       if (state.power && state.beam && !state.estop) {
         state.activeLedIndex = (state.activeLedIndex + 1) % state.ledSpiralCount;
