@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 LANGKAH 1 TRY & ERROR CLI: Uji Isolasi Relay Kipas Vakum (GPIO 21) & Buzzer (GPIO 17)
 Jalankan di terminal Raspberry Pi 3B+:
@@ -38,7 +37,7 @@ def main():
     print("=== UJI ISOLASI RELAY KIPAS VAKUM & BUZZER DECY-13 ===")
     print(f"Pin Relay Kipas (BCM): GPIO {PIN_VAC} (Active-Low={ACTIVE_LOW})")
     print(f"Pin Buzzer      (BCM): GPIO {PIN_BUZ}")
-    print("Ketik perintah: [1] Buzzer 1s  [2] Kipas ON  [3] Kipas OFF  [q] Keluar")
+    print("Ketik perintah: [1] Buzzer 1s  [2] Kipas ON  [3] Kipas OFF  [4] Tes E-Stop  [q] Keluar")
 
     try:
         while True:
@@ -55,6 +54,18 @@ def main():
             elif cmd == "3":
                 print("-> Kipas Vakum OFF.")
                 set_vacuum_relay(False)
+            elif cmd == "4":
+                print("-> Tes E-Stop 10 detik. Tekan dan lepas tombolnya...")
+                akhir = time.time() + 10
+                terakhir = None
+                while time.time() < akhir:
+                    baca = GPIO.input(PIN_ESTOP)
+                    if baca != terakhir:
+                        status = "LOW" if baca == GPIO.LOW else "HIGH"
+                        print(f"   GPIO {PIN_ESTOP} = {status}")
+                        terakhir = baca
+                    time.sleep(0.01)
+                print("-> Tes E-Stop selesai.")
             elif cmd == "q":
                 break
     finally:
