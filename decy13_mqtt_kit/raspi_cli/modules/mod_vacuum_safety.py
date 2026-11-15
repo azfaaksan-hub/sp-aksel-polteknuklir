@@ -11,8 +11,8 @@ Tugas & Tanggung Jawab Modul Ini:
 1. Mengendalikan Relay Kipas DC 12V (GPIO 21, Active-LOW) sebagai simulasi Pompa Vakum.
 2. Mengendalikan Buzzer SFM-27 (GPIO 17, Active-HIGH) untuk 3 kondisi:
    - Tahap 1 (Power ON): Bunyi kontinyu selama 5 detik (`buzzerUntil`).
-   - Tahap 7 (Shoot Exposure): Bunyi beep-beep periodik (indikator radiasi aktif).
-   - Darurat (Emergency Stop): Bunyi alarm cepat/kontinyu selama 3 detik.
+   - Tahap 7 (Shoot Exposure): Bunyi beep periodik, 1 siklus per detik (nyala 0,5 detik, mati 0,5 detik).
+   - Darurat (Emergency Stop): Bunyi kontinyu selama 3 detik (`buzzerUntil`).
 3. Membaca tombol fisik Emergency Stop (GPIO 22, Pull-Up) dengan software debounce
    agar kebal terhadap noise listrik, serta mendukung konfigurasi `estop_active_low`
    (True = tombol ditekan bernilai LOW, False = tombol NC terputus bernilai HIGH).
@@ -54,17 +54,20 @@ class VacuumSafetyModule(HardwareModule):
             self.enabled = False
             return False
 
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(self.pin_vac, GPIO.OUT)
-        GPIO.setup(self.pin_buzzer, GPIO.OUT)
-        GPIO.setup(self.pin_estop, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-        # Pastikan kondisi awal aman (Kipas OFF, Buzzer OFF)
-        self._write_vacuum_pin(False)
-        GPIO.output(self.pin_buzzer, GPIO.LOW)
-        self.enabled = True
-        return True
+        try:
+            self.enabled = True
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            # Nilai "kipas mati": HIGH jika relay Active-LOW, LOW jika Active-HIGH
+            vac_off = GPIO.HIGH if self.vac_active_low else GPIO.LOW
+            GPIO.setup(self.pin_vac, GPIO.OUT, initial=vac_off)
+            GPIO.setup(self.pin_buzzer, GPIO.OUT, initial=GPIO.LOW)
+            GPIO.setup(self.pin_estop, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            return True
+        except Exception as e:
+            print(f"[VacuumSafetyModule] setup gagal: {e}")
+            self.enabled = False
+            return False
 
     def _write_vacuum_pin(self, turn_on: bool) -> None:
         if not self.enabled:
@@ -109,8 +112,8 @@ class VacuumSafetyModule(HardwareModule):
             self._last_vac_state = vac_on
 
         # 3. Kendalikan Pola Bunyi Buzzer
-        # - Kontinyu saat Power ON 5s atau Emergency Stop 3s (`now < buzzerUntil`)
-        # - Beep periodik 2 Hz saat Shoot Exposure aktif
+        # - Kontinyu selama `now < buzzerUntil` (Power ON 5 detik atau Emergency Stop 3 detik)
+        # - Beep periodik saat Shoot Exposure aktif: nyala 0,5 detik, mati 0,5 detik
         in_timer_beep = now < state.get("buzzerUntil", 0.0)
         in_exposure_beep = bool(state.get("exposureActive", False) and (int(now * 2) % 2 == 0))
         buzzer_on = in_timer_beep or in_exposure_beep
