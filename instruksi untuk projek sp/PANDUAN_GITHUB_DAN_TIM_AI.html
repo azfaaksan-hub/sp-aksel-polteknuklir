@@ -585,16 +585,17 @@ git push -u origin HEAD</pre>
     <div class="card" style="border-color:var(--teal)">
       <h3 style="margin-top:0">☑️ Checklist Anti-Salah Sebelum Kamu Klik "Push" ke GitHub:</h3>
       <label class="chk-item"><input type="checkbox"> <span>Saya sudah berada di <strong>Branch Divisi saya sendiri</strong> (bukan langsung di branch <code>main</code>).</span></label>
-      <label class="chk-item"><input type="checkbox"> <span>Saya sudah mengecek daftar file yang berubah, dan <strong>tidak ada file milik divisi lain</strong> yang ikut terubah oleh AI saya.</span></label>
-      <label class="chk-item"><input type="checkbox"> <span>Kode saya sudah dites jalan tanpa <em>SyntaxError</em> di laptop/Raspi.</span></label>
-      <label class="chk-item"><input type="checkbox"> <span>Saya sudah klik <strong>Push</strong> sehingga progres saya sudah naik ke GitHub online dan bisa dilihat Ketua Tim.</span></label>
+      <label class="chk-item"><input type="checkbox"> <span>Saya sudah membaca pengumuman & status terbaru di <code>README.md</code> halaman utama GitHub.</span></label>
+      <label class="chk-item"><input type="checkbox"> <span>Saya sudah mengecek <code>git status</code>, dan <strong>tidak ada file milik divisi lain atau folder <code>__pycache__/</code></strong> yang ikut berubah.</span></label>
+      <label class="chk-item"><input type="checkbox"> <span>Kode saya lolos cek otomatis: <code>python tools/cek_integrasi_dan_announcer.py --ci</code> tanpa error.</span></label>
+      <label class="chk-item"><input type="checkbox"> <span><strong>Saya sendiri</strong> (bukan AI!) yang menjalankan <code>git add</code>, <code>git commit</code>, dan <code>git push</code>, lalu mengecek tanda centang hijau (<strong>✅</strong>) di tab <strong>Actions</strong> GitHub.</span></label>
     </div>
   </section>
 
   <!-- ==================== 5. COPY PROMPT ANATOMY PER DIVISI ==================== -->
   <section id="prompts">
     <h2>5. 🤖 Prompt Anatomy Siap Copy-Paste untuk AI Masing-Masing Divisi</h2>
-    <p>Setiap anggota cukup mencari divisinya di bawah ini, klik tombol <strong>"📋 Salin Prompt Divisi ..."</strong>, lalu tempelkan (<em>paste</em>) di awal percakapan dengan AI (ChatGPT, Claude, Cursor, Gemini, dll.) agar AI tersebut langsung paham aturan main dan tidak merusak file anggota lain!</p>
+    <p>Setiap anggota cukup mencari divisinya di bawah ini, klik tombol <strong>"📋 Salin Prompt Divisi ..."</strong>, lalu tempelkan (<em>paste</em>) di awal percakapan baru dengan AI (ChatGPT, Claude, Cursor, Gemini, dll.) agar AI tersebut langsung paham aturan main, tidak merusak file anggota lain, dan <strong>tidak melakukan auto-commit/auto-push</strong>. <em>(Tips: Jika Ketua baru saja mengumumkan merge baru di grup WA, ambil prompt versi terbaru langsung dari halaman utama <code>README.md</code> di GitHub agar tidak kehilangan konteks!)</em></p>
 
     <!-- PROMPT DIVISI 1 -->
     <div class="card">
@@ -646,7 +647,11 @@ Proyek ini dikerjakan oleh 6 orang di GitHub menggunakan arsitektur modular Pyth
 Di dalam `mod_vacuum_safety.py`, class `VacuumSafetyModule(HardwareModule)` WAJIB mempertahankan method `setup(self) -> bool`, `update(self, state: dict, dt: float, now: float) -> None`, dan `cleanup(self) -> None`. Wajib menggunakan `try/except ImportError` untuk `RPi.GPIO` agar kode tetap bisa diuji di laptop Windows tanpa RPi fisik.
 
 [5. TECHNICAL OBJECTIVES]
-Baca terlebih dahulu isi `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini, lalu bantu saya menyempurnakan kendali Relay Kipas (GPIO 21 Active-LOW), pola bunyi Buzzer (GPIO 17: Power ON 5s, Beep iradiasi Shoot, Alarm E-Stop), serta software debouncing tombol fisik E-Stop (GPIO 22).</pre>
+Baca terlebih dahulu isi `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini, serta cek pengumuman terbaru di `README.md`. Bantu saya menyempurnakan kendali Relay Kipas (GPIO 21 Active-LOW), pola bunyi Buzzer (GPIO 17: Power ON 5s, Beep iradiasi Shoot, Alarm E-Stop), serta software debouncing tombol fisik E-Stop (GPIO 22).
+
+[6. ATURAN GIT & VERIFIKASI]
+- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk memastikan tidak ada SyntaxError / pelanggaran kontrak.
+- DILARANG KERAS menjalankan perintah `git add`, `git commit`, `git push`, atau membuat branch secara otomatis atas nama saya. Proses Git dikerjakan secara mandiri oleh saya sendiri.</pre>
       </div>
     </div>
 
@@ -676,7 +681,11 @@ Core Daemon (`04_decy13_mqtt_daemon.py`) memanggil modul `LedStripModule` milik 
 Class `LedStripModule(HardwareModule)` WAJIB mempertahankan method `setup()`, `update(state, dt, now)`, dan `cleanup()`, serta meng-update `state["activeLedIdx"]` dan `state["shootLedIdx"]` secara real-time di thread animasi karena nilainya dipakai oleh Web HMI melalui MQTT.
 
 [5. TECHNICAL OBJECTIVES]
-Baca terlebih dahulu isi `mod_led_ws2812b.py` dan `03_test_led_pixel_finder.py`, lalu bantu saya memperhalus animasi percepatan spiral sesuai `beamEnergy` (0-13 MeV), efek ekor komet, kilatan saat melewati `rf_gap_indices`, dan animasi tembakan target.</pre>
+Baca terlebih dahulu isi `mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, serta cek tabel status/revisi di `README.md`. Bantu saya memperhalus animasi percepatan spiral sesuai `beamEnergy` (0-13 MeV), efek ekor komet, kilatan saat melewati `rf_gap_indices`, dan animasi tembakan target menggunakan `LedStripModule` (`rpi_ws281x` GPIO 18 + fallback Windows).
+
+[6. ATURAN GIT & VERIFIKASI]
+- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi integrasi.
+- DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
 
@@ -703,7 +712,11 @@ Core Daemon (`04_decy13_mqtt_daemon.py`) memanggil modul `LcdDisplayModule` mili
 Class `LcdDisplayModule(HardwareModule)` WAJIB mempertahankan method `setup()`, `update(state, dt, now)`, dan `cleanup()`, serta menggambar frame di background thread agar SPI tidak memperlambat loop MQTT utama.
 
 [5. TECHNICAL OBJECTIVES]
-Baca terlebih dahulu isi `mod_lcd_ili9341.py` dan `02_test_lcd_ili9341.py`, lalu bantu saya memperbagus tata letak grafis 320x240 piksel (header warna per tahap, 4 baris telemetri, bar vakum logaritmik, dan bar energi MeV).</pre>
+Baca terlebih dahulu isi `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, serta cek pengumuman terbaru di `README.md`. Bantu saya memperbagus tata letak grafis 320x240 piksel (header warna per tahap, 4 baris telemetri, bar vakum logaritmik, dan bar energi MeV).
+
+[6. ATURAN GIT & VERIFIKASI]
+- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk memastikan lolos cek modul.
+- DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
 
@@ -728,7 +741,11 @@ Web HMI berkomunikasi dengan Raspberry Pi 3B+ melalui Mosquitto MQTT over WebSoc
 Jangan mengubah nama perintah JSON yang dikirim ke `decy13/hmi/cmd` (`TOGGLE_POWER`, `TOGGLE_VACUUM`, `TOGGLE_INTERLOCK`, `AUTO_INIT`, `START_BEAM`, `SHOOT`, `EMERGENCY_STOP`, `SET_PARAMS`).
 
 [5. TECHNICAL OBJECTIVES]
-Baca struktur `decy13_mqtt_kit/web_hmi/index.html` terlebih dahulu, lalu bantu saya menyempurnakan visualisasi SCADA, animasi 2D siklotron, mode panduan edukasi, dan indikator Digital Twin.</pre>
+Baca struktur `decy13_mqtt_kit/web_hmi/index.html` dan `README.md` terlebih dahulu, lalu bantu saya menyempurnakan visualisasi SCADA, animasi 2D siklotron, mode panduan edukasi, dan indikator Digital Twin.
+
+[6. ATURAN GIT & VERIFIKASI]
+- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi kontrak MQTT HMI.
+- DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
 
@@ -749,7 +766,11 @@ Kamu adalah Industrial IoT Network, Node-RED & Quality Assurance (QA) Engineer y
 - DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html`!
 
 [3. TECHNICAL OBJECTIVES]
-Baca terlebih dahulu isi `06_test_mqtt_healthcheck.py` dan `flows_mqtt_decy13.json`, lalu bantu saya mengembangkan fitur pengujian otomatis 7-tahap operasional, pengukuran frekuensi/latensi paket MQTT `decy13/rpi/state`, dan kelengkapan checklist commissioning.</pre>
+Baca terlebih dahulu isi `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, dan `README.md`, lalu bantu saya mengembangkan fitur pengujian otomatis 7-tahap operasional, pengukuran frekuensi/latensi paket MQTT `decy13/rpi/state`, dan kelengkapan checklist commissioning.
+
+[4. ATURAN GIT & VERIFIKASI]
+- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi integrasi.
+- DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
   </section>
@@ -790,7 +811,7 @@ git push -u origin HEAD</pre>
         <pre class="cmd"># 1. Clone repo dari GitHub (saat pertama kali) & tarik update terbaru
 git clone https://github.com/azfaaksan-hub/sp-aksel-polteknuklir.git
 cd sp-aksel-polteknuklir
-git pull origin coding
+git pull origin main
 
 # 2. WAJIB buat & pindah ke branch divisi masing-masing secara mandiri:
 #    - Divisi 2: git checkout -b divisi-2-vakum-safety
@@ -799,29 +820,41 @@ git pull origin coding
 #    - Divisi 5: git checkout -b divisi-5-web-hmi
 #    - Divisi 6: git checkout -b divisi-6-nodered-qa
 
-# 3. Setelah selesai ngoding bersama AI di file jatah divisinya, WAJIB commit & push sendiri:
+# 3. Sebelum commit, jalankan cek integrasi lokal (tidak menyentuh Git):
+python tools/cek_integrasi_dan_announcer.py --ci
+
+# 4. Setelah selesai ngoding & lolos tes, WAJIB commit & push sendiri secara manual:
 git status
 git add .
 git commit -m "Progres fitur dari divisi saya"
 git push -u origin HEAD</pre>
       </div>
 
-      <h3>C. Cara Ketua Menggabungkan (Merge) Branch Anggota yang Sudah Di-Push</h3>
-      <p>Saat anggota sudah berhasil <code>push</code> branch mereka sendiri ke GitHub, kamu (Ketua) bisa mengecek dan menggabungkannya:</p>
+      <h3>C. Cara Ketua Mengecek CI, Menggabungkan (Merge), & Mengumumkan Update di WA</h3>
+      <p>Saat anggota sudah berhasil <code>push</code> branch mereka sendiri ke GitHub, GitHub Actions (<code>.github/workflows/ci_cek_modul.yml</code>) otomatis memeriksa secara <strong>read-only</strong> apakah kodenya sehat (tanda <strong>✅</strong> hijau atau <strong>❌</strong> merah di tab <em>Actions</em>) tanpa pernah menyentuh kode/commit siapa pun. Setelah itu kamu (Ketua) bisa mengecek dan menggabungkannya:</p>
       <ol style="margin-left:20px;color:#cbd5e1;font-size:0.9rem">
-        <li><strong>Lewat Web GitHub (Pull Request):</strong> Anggota klik tombol <strong>Compare & pull request</strong> di GitHub setelah push, lalu kamu review di tab <em>Pull requests</em> dan klik <strong>Merge pull request</strong>.</li>
-        <li><strong>Lewat Terminal di Laptop Ketua:</strong></li>
+        <li><strong>Lewat Web GitHub (Pull Request):</strong> Anggota klik tombol <strong>Compare & pull request</strong> di GitHub setelah push, pastikan cek CI hijau <strong>✅</strong>, lalu kamu klik <strong>Merge pull request</strong>.</li>
+        <li><strong>Lewat Terminal di Laptop Ketua + Generator Pengumuman WhatsApp:</strong></li>
       </ol>
       <div class="cmd-wrap">
-        <div class="cmd-header"><span>PowerShell Ketua — Tarik & Merge Branch Teman</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
-        <pre class="cmd"># Tarik semua daftar branch terbaru yang sudah di-push teman-teman
+        <div class="cmd-header"><span>PowerShell Ketua — Merge Branch, Update Papan README, & Buat Teks Announcer WA</span><button class="copy-btn" onclick="copyCode(this)">📋 Salin</button></div>
+        <pre class="cmd"># 1. Tarik semua daftar branch terbaru yang sudah di-push teman-teman
 git fetch origin
 
-# Lihat semua branch yang sudah masuk ke GitHub
+# 2. Lihat semua branch yang sudah masuk ke GitHub
 git branch -a
 
-# Gabungkan branch divisi teman ke branch utamamu (contoh: divisi 2)
-git merge origin/divisi-2-vakum-safety</pre>
+# 3. Gabungkan branch divisi teman yang sudah lolos cek (contoh: divisi 2)
+git merge origin/divisi-2-vacum-safety
+
+# 4. Jalankan alat cek integrasi & cetak draf pesan Announcer WhatsApp
+python tools/cek_integrasi_dan_announcer.py --versi "v1.2" --catatan "Merge modul Divisi 2"
+
+# 5. Update tabel status/revisi di README.md bila perlu, lalu commit & push main secara manual
+git status
+git add .
+git commit -m "Merge divisi-2 dan update papan pengumuman README"
+git push origin main</pre>
       </div>
 
       <div class="alert alert-ok">

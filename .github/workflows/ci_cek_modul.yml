@@ -1,0 +1,37 @@
+# Workflow Verifikasi Read-Only (TIDAK PERNAH melakukan commit/push otomatis).
+# Setiap anggota tetap wajib melakukan branch, commit, push, dan pull secara mandiri.
+# Workflow ini hanya berperan sebagai "Satpam Otomatis" yang memberi status Lulus/Gagal
+# setelah anggota melakukan git push ke branch divisinya masing-masing.
+
+name: Cek Kualitas & Kontrak Modul Tim (Read-Only)
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  cek-integrasi:
+    name: Uji Kontrak Modul & Sintaks (6 Divisi)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ambil Kode Branch
+        uses: actions/checkout@v4
+
+      - name: Siapkan Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Pasang Dependensi Minimal MQTT
+        run: python -m pip install --upgrade pip && pip install paho-mqtt
+
+      - name: Jalankan Pemeriksaan Kontrak & Kebersihan Repo
+        run: python tools/cek_integrasi_dan_announcer.py --ci

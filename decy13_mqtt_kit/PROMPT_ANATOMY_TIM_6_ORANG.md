@@ -103,7 +103,8 @@ Bantu saya menyempurnakan `mod_vacuum_safety.py` dan skrip uji mandiri `01_test_
 3. Menu diagnostik interaktif yang lengkap pada `01_test_relay_buzzer.py` (termasuk tes pembacaan status tombol fisik E-Stop secara live di terminal).
 
 [6. VERIFICATION]
-Pastikan kode yang kamu tulis selalu lolos uji sintaks Python di laptop (mode fallback tanpa RPi) dan siap diuji langsung di Raspberry Pi 3B+. Baca dulu isi `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini sebelum memberikan saran perubahan.
+Pastikan kode yang kamu tulis selalu lolos uji sintaks Python di laptop (mode fallback tanpa RPi) dengan menjalankan `python tools/cek_integrasi_dan_announcer.py --ci` dan cek `README.md` untuk pengumuman/revisi terbaru. Baca dulu isi `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini sebelum memberikan saran perubahan.
+DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
 ---
@@ -144,7 +145,8 @@ Bantu saya memperbagus efek visual di `mod_led_ws2812b.py` dan alat kalibrasi `0
 4. Efek darurat kedip merah seluruh LED saat `state["emergency"] == True`, dan warna biru tenang di piksel #0 saat Standby (`power == True`, `beam == False`).
 
 [6. VERIFICATION]
-Pastikan kode aman dijalankan di laptop (mode simulasi tanpa `rpi_ws281x`) maupun di Raspberry Pi (`sudo python3`). Baca dulu isi `mod_led_ws2812b.py` dan `03_test_led_pixel_finder.py` saat ini sebelum memberikan perubahan.
+Pastikan kode aman dijalankan di laptop (mode simulasi tanpa `rpi_ws281x`) maupun di Raspberry Pi (`sudo python3`) serta lolos `python tools/cek_integrasi_dan_announcer.py --ci`. Baca dulu isi `mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, dan tabel status/revisi di `README.md` sebelum memberikan perubahan.
+DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
 ---
@@ -181,7 +183,8 @@ Bantu saya mempercantik tampilan grafis lokal `mod_lcd_ili9341.py` dan skrip uji
 3. Optimasi *dirty-check* (hanya mengirim frame SPI jika nilai berubah) agar CPU Raspberry Pi tetap ringan.
 
 [6. VERIFICATION]
-Pastikan kode tetap aman ketika diimpor di laptop tanpa library `luma.lcd` dan bebas bug. Baca dulu isi `mod_lcd_ili9341.py` dan `02_test_lcd_ili9341.py` sebelum memberikan perubahan.
+Pastikan kode tetap aman ketika diimpor di laptop tanpa library `luma.lcd`, bebas bug, dan lolos `python tools/cek_integrasi_dan_announcer.py --ci`. Baca dulu isi `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, dan `README.md` sebelum memberikan perubahan.
+DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
 ---
@@ -218,7 +221,8 @@ Format perintah JSON yang dikirim ke `decy13/hmi/cmd` TIDAK BOLEH diubah namanya
 - `{"cmd": "SET_PARAMS", "magnet_a": 1450, "rf_mhz": 22.5, "rf_kv": 45, "beam_ua": 8.4}`
 
 [5. TECHNICAL OBJECTIVES]
-Bantu saya menyempurnakan tampilan, responsivitas, animasi Canvas 2D, fitur edukasi interaktif, efek suara Web Audio API, dan indikator Digital Twin di dalam `web_hmi/index.html` tanpa merusak kontrak MQTT di atas. Baca struktur `web_hmi/index.html` terlebih dahulu sebelum melakukan perubahan.
+Bantu saya menyempurnakan tampilan, responsivitas, animasi Canvas 2D, fitur edukasi interaktif, efek suara Web Audio API, dan indikator Digital Twin di dalam `web_hmi/index.html` tanpa merusak kontrak MQTT di atas. Baca struktur `web_hmi/index.html` dan `README.md` terlebih dahulu sebelum melakukan perubahan, lalu verifikasi dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
 ---
@@ -246,5 +250,6 @@ Sistem menghubungkan Mini PC (Web HMI) dan Raspberry Pi 3B+ (Hardware Daemon) me
 Seluruh pengujian di `06_test_mqtt_healthcheck.py` dan flow `flows_mqtt_decy13.json` wajib memvalidasi 22 field telemetri dari `decy13/rpi/state` (`power`, `vacuum`, `rf`, `magnet`, `interlocks`, `beam`, `exposureActive`, `emergency`, `stage`, `mode`, `lcd_line1`..`4`, `pressure`, `beamEnergy`, `beamCurrent`, `targetCurrent`, `activeLedIdx`, `shootLedIdx`, `buzzerActive`, `logs`) serta mengirim format perintah standar ke `decy13/hmi/cmd`.
 
 [5. TECHNICAL OBJECTIVES]
-Bantu saya mengembangkan fitur automated test sequence (skenario uji otomatis Tahap 1 sampai Tahap 7 + uji Emergency Stop), laporan latensi/jitter paket MQTT di `06_test_mqtt_healthcheck.py`, serta penyempurnaan flow Node-RED dan checklist commissioning. Baca file-file terkait terlebih dahulu sebelum memberikan perubahan.
+Bantu saya mengembangkan fitur automated test sequence (skenario uji otomatis Tahap 1 sampai Tahap 7 + uji Emergency Stop), laporan latensi/jitter paket MQTT di `06_test_mqtt_healthcheck.py`, serta penyempurnaan flow Node-RED dan checklist commissioning. Baca file-file terkait dan `README.md` terlebih dahulu sebelum memberikan perubahan, lalu cek dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
