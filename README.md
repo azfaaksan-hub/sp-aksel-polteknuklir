@@ -27,8 +27,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 
 | Info | Keterangan |
 | :--- | :--- |
-| **Versi / Status `main`** | **`v1.1` — Fondasi Modular 6 Divisi + Sistem Audit & Announcer Aktif** |
-| **Pengumuman Ketua** | Fondasi kode modular (`raspi_cli/modules/`), satpam otomatis GitHub (*Read-Only CI*), dan Papan Rapor 6 Divisi sudah aktif. Silakan cek tabel status & prompt konteks terbaru divisimu di bawah sebelum lanjut ngoding. |
+| **Versi / Status `main`** | **`v1.2` — Modul Divisi 2 Resmi Di-Merge + Prompt Kompatibel AI Web & CLI** |
+| **Pengumuman Ketua** | Modul **Divisi 2 (`divisi-2-vacum-safety`) sudah di-merge ke `main`**! Seluruh prompt juga sudah mendukung **AI Web (ChatGPT/Gemini/Claude di browser)** maupun AI IDE/CLI. Wajib tarik update `main` terbaru sebelum lanjut ngoding! |
 | **Cara Tarik Update Terbaru** | **GitHub Desktop:** Pastikan di branch divisimu → klik *Fetch origin* → menu *Branch* → *Update from main*.<br>**Terminal:** `git fetch origin` lalu `git merge origin/main` |
 
 ---
@@ -40,7 +40,7 @@ Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (
 | Divisi | Penanggung Jawab | Branch Wajib | File Eksklusif (Boleh Diedit) | Status Audit Saat Ini |
 | :--- | :--- | :--- | :--- | :--- |
 | **Divisi 1 (Ketua)** | `azfaaksan-hub` | `main` | `04_decy13_mqtt_daemon.py`, `05_laptop_dryrun_simulator.py`, `config_hardware.json`, `modules/base_module.py`, `tools/*` | ✅ **Core Aktif** |
-| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`<br>`decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py` | ✅ **Lulus Audit & Siap Merge** *(Initial relay OFF, cleanup aman, menu tes E-Stop oke)* |
+| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`<br>`decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py` | ✅ **Sudah Di-Merge ke `main`** *(Initial relay OFF, cleanup aman, menu tes E-Stop oke — tarik `main` terbaru jika lanjut kerja)* |
 | **Divisi 3** | `blufiaa` | `divisi-3-led-ws2812b` *(saat ini masih di `pacarjeno`)* | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`<br>`decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py` | ⚠️ **Perlu Revisi Sebelum Merge** *(Lihat tabel kesalahan & prompt perbaikan khusus Divisi 3 di bawah)* |
 | **Divisi 4** | *(Anggota 4)* | `divisi-4-lcd-ili9341` | `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`<br>`decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py` | ⏳ **Menunggu Push Pertama** |
 | **Divisi 5** | *(Anggota 5)* | `divisi-5-web-hmi` | `decy13_mqtt_kit/web_hmi/index.html` | ⏳ **Menunggu Push Pertama** |
@@ -69,16 +69,20 @@ Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (
 
 Gunakan prompt di bawah ini **setiap kali kamu membuka chat AI baru** (atau setelah Ketua mengumumkan update `main` di WhatsApp) agar AI kamu tidak kehilangan konteks proyek!
 
+> 💡 **Pakai AI Web (ChatGPT / Gemini / Claude di Browser) vs AI IDE/CLI (Cursor / Antigravity / Copilot)? Keduanya BISA & AMAN!**
+> - **Kalau pakai AI Web (di browser):** AI di browser **tidak bisa membuka folder laptopmu atau menjalankan terminal** secara otomatis. Jadi saat membuka chat baru: **(1)** *paste* prompt divisimu, **(2)** sekaligus **upload atau *copy-paste* isi file referensi + file divisimu** (misal `config_hardware.json`, `modules/base_module.py`, dan file modulmu) agar AI tidak mengarang, lalu **(3)** salin kode lengkap dari AI ke file resminya di VS Code dan jalankan perintah tes di terminal laptopmu sendiri (`python tools/cek_integrasi_dan_announcer.py --ci`).
+> - **Kalau pakai AI IDE/CLI (di VS Code / terminal):** AI bisa langsung membaca file & menjalankan tes, tetapi **tetap DILARANG** melakukan `git commit` / `git push` otomatis. Kamu wajib commit & push sendiri!
+
 <details>
 <summary><b>🌀 DIVISI 2 — Prompt Lanjutan Konteks Terbaru (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.1]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
 Saya adalah Anggota Divisi 2 (Sistem Vakum, Buzzer & Safety E-Stop) pada repo `sp-aksel-polteknuklir`.
-Status kode saya di branch `divisi-2-vacum-safety` sudah LULUS AUDIT awal (initial pin relay OFF, cleanup aman menjaga relay tetap OFF, dan menu [4] Tes E-Stop di `01_test_relay_buzzer.py`).
+Status kode saya di branch `divisi-2-vacum-safety` sudah **RESMI DI-MERGE ke `main`** (initial pin relay OFF, cleanup aman menjaga relay tetap OFF, dan menu [4] Tes E-Stop di `01_test_relay_buzzer.py`).
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
-- Branch aktif saya: `divisi-2-vacum-safety` (sudah tersinkron dengan `main`).
+- Branch aktif saya: `divisi-2-vacum-safety` (pastikan sudah `git merge origin/main` agar sinkron dengan `main` `v1.2`).
 - File yang BOLEH kamu baca sebagai referensi: `decy13_mqtt_kit/raspi_cli/config_hardware.json` dan `decy13_mqtt_kit/raspi_cli/modules/base_module.py`.
 - File yang BOLEH kamu edit HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`
@@ -90,7 +94,8 @@ Status kode saya di branch `divisi-2-vacum-safety` sudah LULUS AUDIT awal (initi
 Class `VacuumSafetyModule(HardwareModule)` wajib memiliki `setup() -> bool`, `update(state, dt, now)`, `cleanup()`, fallback `try/except ImportError` untuk `RPi.GPIO` agar aman jalan di laptop Windows, serta memenuhi pengecekan `python tools/cek_integrasi_dan_announcer.py --ci`.
 
 [TUGAS LANJUTAN]
-Baca `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini terlebih dahulu, lalu tanyakan fitur lanjutan atau penyempurnaan pengujian fisik apa yang ingin saya kerjakan sekarang.
+- Jika kamu **AI Web (browser)** yang tidak bisa mengakses folder lokal secara langsung: **JANGAN mengarang isi file** — minta saya meng-upload/mem-paste isi `config_hardware.json`, `base_module.py`, `mod_vacuum_safety.py`, dan `01_test_relay_buzzer.py` terlebih dahulu, lalu berikan hasil kode **utuh siap copy-paste** serta beri tahu perintah terminal yang harus saya jalankan sendiri.
+- Jika kamu **AI IDE/CLI**: baca `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini terlebih dahulu, lalu tanyakan fitur lanjutan atau penyempurnaan pengujian fisik apa yang ingin saya kerjakan sekarang.
 ```
 
 </details>
@@ -122,9 +127,10 @@ Saya ingin mempertahankan logika efek ekor komet halus (`_comet`), pewarnaan per
 - JANGAN membuat folder `divisi3_led/` baru, JANGAN edit `04_decy13_mqtt_daemon.py` atau `config_hardware.json`, dan JANGAN jalankan `git commit` / `git push` otomatis (saya yang akan commit & push sendiri).
 
 [TUGAS SEKARANG]
+0. **Khusus jika kamu AI Web (browser):** jika tidak punya akses membaca file lokal, **JANGAN mengarang pin atau isi file** — minta saya meng-upload/mem-paste isi `config_hardware.json`, `base_module.py`, `mod_led_ws2812b.py`, dan `03_test_led_pixel_finder.py` lebih dulu, dan sajikan kode **utuh per file** siap copy-paste ke VS Code.
 1. Baca isi `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py` dan `config_hardware.json` yang ada di `main` sekarang.
 2. Adaptasikan algoritma animasi komet & pewarnaan tahap saya ke dalam `LedStripModule(HardwareModule)` di `mod_led_ws2812b.py` agar 100% kompatibel dengan GPIO 18 (`rpi_ws281x`), mode fallback laptop Windows, membaca parameter dinamis dari `self.cfg["led_mapping"]`, dan tetap meng-update `state["activeLedIdx"]` & `state["shootLedIdx"]`.
-3. Setelah selesai, bantu saya memverifikasi dengan menjalankan `python tools/cek_integrasi_dan_announcer.py --ci` agar pasti lolos satpam GitHub Actions.
+3. Setelah selesai, verifikasi (atau arahkan saya menjalankan sendiri di terminal) perintah `python tools/cek_integrasi_dan_announcer.py --ci` agar pasti lolos satpam GitHub Actions.
 ```
 
 </details>
@@ -133,7 +139,7 @@ Saya ingin mempertahankan logika efek ekor komet halus (`_comet`), pewarnaan per
 <summary><b>📟 DIVISI 4 — Prompt Konteks Terbaru Layar LCD TFT SPI (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.1]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
 Saya adalah Anggota Divisi 4 (Layar Status Lokal LCD TFT SPI ILI9341 320x240) pada Raspberry Pi 3 Model B+.
 Hardware LCD memakai SPI0 (`CE0=GPIO 8`, `MOSI=GPIO 10`, `SCLK=GPIO 11`, `DC=GPIO 24`, `RST=GPIO 25`) dengan `luma.lcd` & `Pillow`.
 
@@ -146,7 +152,7 @@ Hardware LCD memakai SPI0 (`CE0=GPIO 8`, `MOSI=GPIO 10`, `SCLK=GPIO 11`, `DC=GPI
 - DILARANG mengedit file divisi lain (`04_decy13_mqtt_daemon.py`, `config_hardware.json`, dll) dan DILARANG menjalankan `git commit` / `git push` otomatis.
 
 [TUGAS SEKARANG]
-Baca `mod_lcd_ili9341.py` dan `02_test_lcd_ili9341.py` yang ada di `main` sekarang, pastikan background SPI render thread tetap non-blocking dan aman di Windows tanpa `luma.lcd`, lalu bantu saya menyempurnakan tampilan dashboard 320x240 LCD (warna tema per stage, indikator interlock, progress bar vakum & MeV). Pastikan lolos `python tools/cek_integrasi_dan_announcer.py --ci`.
+Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, dan `02_test_lcd_ili9341.py` dulu sebelum menulis kode (jangan mengarang!), dan beri kode utuh siap copy-paste. Jika punya akses lokal, baca file tersebut langsung. Pastikan background SPI render thread tetap non-blocking dan aman di Windows tanpa `luma.lcd`, lalu bantu saya menyempurnakan tampilan dashboard 320x240 LCD (warna tema per stage, indikator interlock, progress bar vakum & MeV). Verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
 ```
 
 </details>
@@ -155,7 +161,7 @@ Baca `mod_lcd_ili9341.py` dan `02_test_lcd_ili9341.py` yang ada di `main` sekara
 <summary><b>🖥️ DIVISI 5 — Prompt Konteks Terbaru Web HMI SCADA & 2D Canvas (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.1]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
 Saya adalah Anggota Divisi 5 (Web HMI SCADA & Live 2D Simulator) untuk Mini PC Ruang Kontrol.
 Web HMI berkomunikasi dengan RPi 3B+ via Mosquitto MQTT over WebSockets (port 9001):
 - Publish perintah ke `decy13/hmi/cmd` (`TOGGLE_POWER`, `TOGGLE_VACUUM`, `TOGGLE_INTERLOCK`, `AUTO_INIT`, `START_BEAM`, `SHOOT`, `EMERGENCY_STOP`, `SET_PARAMS`).
@@ -167,7 +173,7 @@ Web HMI berkomunikasi dengan RPi 3B+ via Mosquitto MQTT over WebSockets (port 90
 - DILARANG mengedit file Python di `raspi_cli/`, `config_hardware.json`, atau `nodered/`, dan DILARANG menjalankan `git commit` / `git push` otomatis.
 
 [TUGAS SEKARANG]
-Baca struktur `decy13_mqtt_kit/web_hmi/index.html` saat ini terlebih dahulu, pertahankan mode State-Driven saat `state.mqttConnected === true`, dan bantu saya menyempurnakan UI SCADA, grafik, atau simulasi 2D. Pastikan lolos `python tools/cek_integrasi_dan_announcer.py --ci`.
+Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `decy13_mqtt_kit/web_hmi/index.html` (atau bagian kode terkait yang sedang saya kerjakan) lebih dulu agar tidak merusak fungsi yang sudah ada, lalu berikan bagian kode/perubahan yang jelas untuk saya salin ke VS Code. Pertahankan mode State-Driven saat `state.mqttConnected === true`, dan bantu saya menyempurnakan UI SCADA, grafik, atau simulasi 2D. Setelah selesai, verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
 ```
 
 </details>
@@ -176,7 +182,7 @@ Baca struktur `decy13_mqtt_kit/web_hmi/index.html` saat ini terlebih dahulu, per
 <summary><b>📡 DIVISI 6 — Prompt Konteks Terbaru MQTT QA, Node-RED & Commissioning (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.1]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
 Saya adalah Anggota Divisi 6 (Jaringan MQTT, Node-RED & Commissioning QA) pada proyek DECY-13.
 Sistem menggunakan Mosquitto (`1883` TCP & `9001` WebSocket) dengan topic `decy13/hmi/cmd` dan `decy13/rpi/state` (22 field JSON wajib).
 
@@ -189,7 +195,7 @@ Sistem menggunakan Mosquitto (`1883` TCP & `9001` WebSocket) dengan topic `decy1
 - DILARANG mengedit `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html`, dan DILARANG menjalankan `git commit` / `git push` otomatis.
 
 [TUGAS SEKARANG]
-Baca `06_test_mqtt_healthcheck.py` dan `flows_mqtt_decy13.json` saat ini, lalu bantu saya menambahkan mode automated end-to-end test 7 tahap + pengukuran latensi MQTT. Pastikan lolos `python tools/cek_integrasi_dan_announcer.py --ci`.
+Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/paste `06_test_mqtt_healthcheck.py` dan `flows_mqtt_decy13.json` saat ini lebih dulu sebelum mengedit, lalu berikan kode utuh siap copy-paste. Bantu saya menambahkan mode automated end-to-end test 7 tahap + pengukuran latensi MQTT, lalu verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
 ```
 
 </details>

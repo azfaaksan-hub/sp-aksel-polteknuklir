@@ -596,6 +596,13 @@ git push -u origin HEAD</pre>
   <section id="prompts">
     <h2>5. 🤖 Prompt Anatomy Siap Copy-Paste untuk AI Masing-Masing Divisi</h2>
     <p>Setiap anggota cukup mencari divisinya di bawah ini, klik tombol <strong>"📋 Salin Prompt Divisi ..."</strong>, lalu tempelkan (<em>paste</em>) di awal percakapan baru dengan AI (ChatGPT, Claude, Cursor, Gemini, dll.) agar AI tersebut langsung paham aturan main, tidak merusak file anggota lain, dan <strong>tidak melakukan auto-commit/auto-push</strong>. <em>(Tips: Jika Ketua baru saja mengumumkan merge baru di grup WA, ambil prompt versi terbaru langsung dari halaman utama <code>README.md</code> di GitHub agar tidak kehilangan konteks!)</em></p>
+    <div class="alert alert-info">
+      🌐 <strong>Catatan Penting Jika Kamu Pakai AI Web di Browser (ChatGPT Web / Gemini Web / Claude Web):</strong><br>
+      AI versi browser <strong>tidak bisa membaca folder laptopmu</strong> atau menjalankan terminal secara langsung — itu <strong>bukan masalah</strong>! Cukup ikuti 3 langkah ini:<br>
+      1. <strong>Lampirkan/upload</strong> atau <em>copy-paste</em> isi file referensi (<code>config_hardware.json</code>, <code>base_module.py</code>) + isi file divisimu saat ini bersamaan dengan prompt di bawah agar AI tidak mengarang.<br>
+      2. Salin kode utuh yang diberikan AI Web lalu timpa ke file resminya di VS Code / laptopmu.<br>
+      3. Jalankan tesnya sendiri di terminal VS Code: <code>python tools/cek_integrasi_dan_announcer.py --ci</code>, lalu commit &amp; push sendiri!
+    </div>
 
     <!-- PROMPT DIVISI 1 -->
     <div class="card">
@@ -649,8 +656,9 @@ Di dalam `mod_vacuum_safety.py`, class `VacuumSafetyModule(HardwareModule)` WAJI
 [5. TECHNICAL OBJECTIVES]
 Baca terlebih dahulu isi `mod_vacuum_safety.py` dan `01_test_relay_buzzer.py` saat ini, serta cek pengumuman terbaru di `README.md`. Bantu saya menyempurnakan kendali Relay Kipas (GPIO 21 Active-LOW), pola bunyi Buzzer (GPIO 17: Power ON 5s, Beep iradiasi Shoot, Alarm E-Stop), serta software debouncing tombol fisik E-Stop (GPIO 22).
 
-[6. ATURAN GIT & VERIFIKASI]
-- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk memastikan tidak ada SyntaxError / pelanggaran kontrak.
+[6. ATURAN GIT, AI WEB & VERIFIKASI]
+- Khusus AI Web (browser): jika tidak punya akses baca file lokal, JANGAN mengarang isi file! Minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_vacuum_safety.py`, dan `01_test_relay_buzzer.py` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- Jalankan (atau arahkan saya menjalankan di terminal) `python tools/cek_integrasi_dan_announcer.py --ci` untuk memastikan tidak ada SyntaxError / pelanggaran kontrak.
 - DILARANG KERAS menjalankan perintah `git add`, `git commit`, `git push`, atau membuat branch secara otomatis atas nama saya. Proses Git dikerjakan secara mandiri oleh saya sendiri.</pre>
       </div>
     </div>
@@ -683,8 +691,9 @@ Class `LedStripModule(HardwareModule)` WAJIB mempertahankan method `setup()`, `u
 [5. TECHNICAL OBJECTIVES]
 Baca terlebih dahulu isi `mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, serta cek tabel status/revisi di `README.md`. Bantu saya memperhalus animasi percepatan spiral sesuai `beamEnergy` (0-13 MeV), efek ekor komet, kilatan saat melewati `rf_gap_indices`, dan animasi tembakan target menggunakan `LedStripModule` (`rpi_ws281x` GPIO 18 + fallback Windows).
 
-[6. ATURAN GIT & VERIFIKASI]
-- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi integrasi.
+[6. ATURAN GIT, AI WEB & VERIFIKASI]
+- Khusus AI Web (browser): jika tidak punya akses baca file lokal, JANGAN mengarang pin atau nama class! Minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_led_ws2812b.py`, dan `03_test_led_pixel_finder.py` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- Jalankan (atau arahkan saya menjalankan di terminal) `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi integrasi.
 - DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
@@ -714,8 +723,9 @@ Class `LcdDisplayModule(HardwareModule)` WAJIB mempertahankan method `setup()`, 
 [5. TECHNICAL OBJECTIVES]
 Baca terlebih dahulu isi `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, serta cek pengumuman terbaru di `README.md`. Bantu saya memperbagus tata letak grafis 320x240 piksel (header warna per tahap, 4 baris telemetri, bar vakum logaritmik, dan bar energi MeV).
 
-[6. ATURAN GIT & VERIFIKASI]
-- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk memastikan lolos cek modul.
+[6. ATURAN GIT, AI WEB & VERIFIKASI]
+- Khusus AI Web (browser): jika tidak punya akses baca file lokal, JANGAN mengarang! Minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, dan `02_test_lcd_ili9341.py` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- Jalankan (atau arahkan saya menjalankan di terminal) `python tools/cek_integrasi_dan_announcer.py --ci` untuk memastikan lolos cek modul.
 - DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
@@ -743,8 +753,9 @@ Jangan mengubah nama perintah JSON yang dikirim ke `decy13/hmi/cmd` (`TOGGLE_POW
 [5. TECHNICAL OBJECTIVES]
 Baca struktur `decy13_mqtt_kit/web_hmi/index.html` dan `README.md` terlebih dahulu, lalu bantu saya menyempurnakan visualisasi SCADA, animasi 2D siklotron, mode panduan edukasi, dan indikator Digital Twin.
 
-[6. ATURAN GIT & VERIFIKASI]
-- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi kontrak MQTT HMI.
+[6. ATURAN GIT, AI WEB & VERIFIKASI]
+- Khusus AI Web (browser): jika tidak punya akses baca file lokal, minta saya melampirkan `decy13_mqtt_kit/web_hmi/index.html` lebih dulu sebelum mengubah kode, lalu berikan potongan/kode lengkap siap copy-paste.
+- Jalankan (atau arahkan saya menjalankan di terminal) `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi kontrak MQTT HMI.
 - DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
@@ -768,8 +779,9 @@ Kamu adalah Industrial IoT Network, Node-RED & Quality Assurance (QA) Engineer y
 [3. TECHNICAL OBJECTIVES]
 Baca terlebih dahulu isi `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, dan `README.md`, lalu bantu saya mengembangkan fitur pengujian otomatis 7-tahap operasional, pengukuran frekuensi/latensi paket MQTT `decy13/rpi/state`, dan kelengkapan checklist commissioning.
 
-[4. ATURAN GIT & VERIFIKASI]
-- Jalankan `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi integrasi.
+[4. ATURAN GIT, AI WEB & VERIFIKASI]
+- Khusus AI Web (browser): jika tidak punya akses baca file lokal, minta saya meng-upload/paste `06_test_mqtt_healthcheck.py` dan `flows_mqtt_decy13.json` lebih dulu sebelum mengedit, lalu berikan kode utuh siap copy-paste.
+- Jalankan (atau arahkan saya menjalankan di terminal) `python tools/cek_integrasi_dan_announcer.py --ci` untuk verifikasi integrasi.
 - DILARANG KERAS menjalankan perintah `git add`, `git commit`, atau `git push` otomatis atas nama saya. Proses Git dikerjakan mandiri oleh saya sendiri.</pre>
       </div>
     </div>
