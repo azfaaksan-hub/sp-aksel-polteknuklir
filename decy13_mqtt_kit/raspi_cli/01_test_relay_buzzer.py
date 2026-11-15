@@ -26,7 +26,8 @@ def set_vacuum_relay(turn_on: bool):
 def main():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
-    GPIO.setup(PIN_VAC, GPIO.OUT, initial=GPIO.HIGH)
+    # Relay langsung di-set ke kondisi OFF sejak pin menjadi output
+    GPIO.setup(PIN_VAC, GPIO.OUT, initial=(GPIO.HIGH if ACTIVE_LOW else GPIO.LOW))
     GPIO.setup(PIN_BUZ, GPIO.OUT, initial=GPIO.LOW)
     GPIO.setup(PIN_ESTOP, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -71,8 +72,9 @@ def main():
     finally:
         set_vacuum_relay(False)
         GPIO.output(PIN_BUZ, GPIO.LOW)
-        GPIO.cleanup()
-        print("GPIO dibersihkan.")
+        # Pin relay sengaja TIDAK di-cleanup agar tetap OFF setelah program selesai
+        GPIO.cleanup([PIN_BUZ, PIN_ESTOP])
+        print("GPIO dibersihkan (relay tetap OFF).")
 
 if __name__ == "__main__":
     main()
