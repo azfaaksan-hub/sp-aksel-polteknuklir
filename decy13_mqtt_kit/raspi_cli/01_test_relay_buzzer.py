@@ -26,8 +26,8 @@ def set_vacuum_relay(turn_on: bool):
 def main():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
-    GPIO.setup(PIN_VAC, GPIO.OUT)
-    GPIO.setup(PIN_BUZ, GPIO.OUT)
+    GPIO.setup(PIN_VAC, GPIO.OUT, initial=GPIO.HIGH)
+    GPIO.setup(PIN_BUZ, GPIO.OUT, initial=GPIO.LOW)
     GPIO.setup(PIN_ESTOP, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     # Kondisi awal: Kipas Mati, Buzzer Mati
