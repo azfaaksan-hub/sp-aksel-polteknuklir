@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Ambil Kode Branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Siapkan Python 3.11
         uses: actions/setup-python@v5
@@ -33,5 +35,5 @@ jobs:
       - name: Pasang Dependensi Minimal MQTT
         run: python -m pip install --upgrade pip && pip install paho-mqtt
 
-      - name: Jalankan Pemeriksaan Kontrak & Kebersihan Repo
-        run: python tools/cek_integrasi_dan_announcer.py --ci
+      - name: Jalankan Pemeriksaan Kontrak, Kebersihan Repo, & Lampirkan Ringkasan Perubahan
+        run: python tools/cek_integrasi_dan_announcer.py --ci --ci-summary
