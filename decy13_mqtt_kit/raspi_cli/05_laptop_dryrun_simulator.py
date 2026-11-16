@@ -35,6 +35,7 @@ CARA UJI WEB HMI TANPA RPi:
 
 import json
 import math
+import os
 import random
 import threading
 import time
@@ -56,6 +57,38 @@ MQTT_PORT   = 1883
 TOPIC_CMD   = "decy13/hmi/cmd"
 TOPIC_STATE = "decy13/rpi/state"
 INTERVAL    = 0.2            # publish tiap 200ms
+
+# Batas aman setpoint HMI (identik dengan 04_decy13_mqtt_daemon.py).
+# Dibaca dari `setpoint_limits` di config_hardware.json bila tersedia.
+SETPOINT_LIMITS = {
+    "magnet_a": (400.0, 2200.0),
+    "rf_mhz": (15.0, 30.0),
+    "rf_kv": (0.0, 120.0),
+    "beam_ua": (0.0, 100.0),
+}
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config_hardware.json"),
+              "r", encoding="utf-8") as _f:
+        for _k, _v in json.load(_f).get("setpoint_limits", {}).items():
+            _lo, _hi = float(_v[0]), float(_v[1])
+            if math.isfinite(_lo) and math.isfinite(_hi) and _lo <= _hi:
+                SETPOINT_LIMITS[_k] = (_lo, _hi)
+except (OSError, ValueError, TypeError, IndexError, AttributeError):
+    pass
+
+
+def validasi_setpoint(key, raw):
+    """Float valid dalam batas, atau None bila harus ditolak (NaN/Inf/di luar batas)."""
+    if isinstance(raw, bool):
+        return None
+    try:
+        nilai = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(nilai):
+        return None
+    lo, hi = SETPOINT_LIMITS.get(key, (-math.inf, math.inf))
+    return nilai if lo <= nilai <= hi else None
 
 # ──────────────────────────────────────────────────────────────────
 # STATE MACHINE (identik dengan 04_decy13_mqtt_daemon.py)
@@ -166,11 +199,21 @@ def handle_command(payload: dict):
             add_log("!!! EMERGENCY STOP !!! Semua sistem diputus.")
 
         elif cmd == "SET_PARAMS":
-            if "magnet_a" in payload: s["setpoint_magnet_a"] = float(payload["magnet_a"])
-            if "rf_mhz"   in payload: s["setpoint_rf_mhz"]   = float(payload["rf_mhz"])
-            if "rf_kv"    in payload: s["setpoint_rf_kv"]     = float(payload["rf_kv"])
-            if "beam_ua"  in payload: s["setpoint_beam_ua"]   = float(payload["beam_ua"])
-            add_log(f"SET_PARAMS: Mag={s['setpoint_magnet_a']}A  Vdee={s['setpoint_rf_kv']}kV")
+            diterima, ditolak = [], []
+            for key_in, key_state in (("magnet_a", "setpoint_magnet_a"), ("rf_mhz", "setpoint_rf_mhz"),
+                                      ("rf_kv", "setpoint_rf_kv"), ("beam_ua", "setpoint_beam_ua")):
+                if key_in not in payload:
+                    continue
+                nilai = validasi_setpoint(key_in, payload[key_in])
+                if nilai is None:
+                    ditolak.append(f"{key_in}={payload[key_in]!r}")
+                else:
+                    s[key_state] = nilai
+                    diterima.append(key_in)
+            if ditolak:
+                add_log(f"[TOLAK] SET_PARAMS di luar batas/tidak valid: {', '.join(ditolak)}")
+            if diterima:
+                add_log(f"SET_PARAMS: Mag={s['setpoint_magnet_a']}A  Vdee={s['setpoint_rf_kv']}kV")
 
         else:
             add_log(f"[INFO] Perintah tidak dikenal: {cmd}")

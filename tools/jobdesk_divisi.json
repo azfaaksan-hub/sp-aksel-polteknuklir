@@ -1,0 +1,294 @@
+{
+  "project": "Alat Peraga Akselerator Siklotron DECY-13 (13 MeV H-)",
+  "institution": "Politeknik Teknologi Nuklir Indonesia (BRIN)",
+  "milestones": [
+    {
+      "id": "M1",
+      "title": "Bootstrap & Preflight RPi",
+      "criteria": "RPi 3B+ lulus bash tools/raspi_bootstrap.sh dan python3 tools/raspi_preflight.py (SPI0 aktif, audio off, Mosquitto 1883 & 9001 aktif, 6 library Python siap)."
+    },
+    {
+      "id": "M2",
+      "title": "Uji Isolasi Hardware per Divisi",
+      "criteria": "Skrip 01_test_relay_buzzer.py (Div 2), 02_test_lcd_ili9341.py (Div 4), dan 03_test_led_pixel_finder.py (Div 3) lulus di aktuator fisik masing-masing."
+    },
+    {
+      "id": "M3",
+      "title": "Integrasi Core Daemon & Seluruh Aktuator",
+      "criteria": "sudo python3 04_decy13_mqtt_daemon.py menggerakkan Relay, Buzzer, E-Stop, LED WS2812B 40 FPS, dan LCD SPI0 secara bersamaan tanpa flicker/freeze."
+    },
+    {
+      "id": "M4",
+      "title": "Integrasi Jaringan Mini PC, Web HMI & QA",
+      "criteria": "Web HMI di Mini PC terhubung ke ws://<IP_RPI>:9001 dan 06_test_mqtt_healthcheck.py lulus (~5 Hz, 0 gagal)."
+    },
+    {
+      "id": "M5",
+      "title": "Commissioning Final & Demo Siap",
+      "criteria": "Keenam kartu laporan_uji/UJI_DIVISI_1..6_*.md berstatus LULUS_UJI_FISIK (Tahap A 100%, Tahap B 100%) dengan bukti terminal nyata di Bagian C."
+    }
+  ],
+  "divisions": [
+    {
+      "id": 1,
+      "name": "Core Backend Raspi & Integrator (Ketua)",
+      "pic": "azfaaksan-hub",
+      "branch": "main / core-raspi-backend",
+      "report_file": "UJI_DIVISI_1_CORE_RASPI.md",
+      "allowed_files": [
+        "decy13_mqtt_kit/raspi_cli/04_decy13_mqtt_daemon.py",
+        "decy13_mqtt_kit/raspi_cli/05_laptop_dryrun_simulator.py",
+        "decy13_mqtt_kit/raspi_cli/config_hardware.json",
+        "decy13_mqtt_kit/raspi_cli/modules/base_module.py",
+        "decy13_mqtt_kit/raspi_cli/modules/__init__.py",
+        "tools/*",
+        "laporan_uji/UJI_DIVISI_1_CORE_RASPI.md"
+      ],
+      "hardware_scope": [
+        "Raspberry Pi 3B+ Core Daemon (200 ms state loop)",
+        "Mosquitto Broker (TCP 1883 & WebSocket 9001)",
+        "Orkestrasi VacuumSafetyModule, LedStripModule, LcdDisplayModule"
+      ],
+      "dependencies": [],
+      "cross_division_warnings": [
+        "Setiap perubahan pin/indeks LED/parameter di config_hardware.json wajib diumumkan ke Divisi 2-6.",
+        "Daemon wajib dijalankan dengan sudo karena modul Divisi 3 (rpi_ws281x DMA GPIO 18) membutuhkan akses root."
+      ],
+      "tahap_b_commands": [
+        {
+          "item": "/boot/config.txt atau /boot/firmware/config.txt sudah dtparam=audio=off dan dtparam=spi=on",
+          "cmd": "grep -E 'audio|spi' /boot/firmware/config.txt /boot/config.txt 2>/dev/null && ls /dev/spi*"
+        },
+        {
+          "item": "Mosquitto Broker aktif di Raspberry Pi pada TCP 1883 dan WebSocket 9001",
+          "cmd": "sudo systemctl is-active mosquitto && sudo ss -tulnp | grep -E '1883|9001'"
+        },
+        {
+          "item": "sudo python3 04_decy13_mqtt_daemon.py berjalan stabil (~200ms) menggerakkan modul Divisi 2, 3, dan 4",
+          "cmd": "cd ~/decy13/raspi_cli && sudo python3 04_decy13_mqtt_daemon.py"
+        },
+        {
+          "item": "Seluruh stage 0..7 + EMERGENCY_STOP sinkron antara fisik RPi dan Web HMI Mini PC",
+          "cmd": "python3 06_test_mqtt_healthcheck.py --host 127.0.0.1 --duration 10 --no-menu"
+        },
+        {
+          "item": "Tekan Ctrl+C pada daemon membersihkan GPIO/LED/Relay (cleanup_all()) dengan aman",
+          "cmd": "Tekan Ctrl+C saat daemon berjalan dan pastikan output menutup semua modul tanpa traceback."
+        }
+      ],
+      "definition_of_done": "Core daemon berjalan stabil ~5 Hz, lolos cek_integrasi_dan_announcer.py --ci, seluruh modul Divisi 2-4 berstatus [HARDWARE AKTIF] di RPi 3B+, dan cleanup_all() aman."
+    },
+    {
+      "id": 2,
+      "name": "Sistem Vakum (Relay Kipas 12V), Buzzer & Safety E-Stop",
+      "pic": "dzakimumtazi",
+      "branch": "divisi-2-vacum-safety",
+      "report_file": "UJI_DIVISI_2_VAKUM_SAFETY.md",
+      "allowed_files": [
+        "decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py",
+        "decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py",
+        "laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md"
+      ],
+      "hardware_scope": [
+        "GPIO 21 (Pin Fisik 40): Relay Kipas Vakum 12V (Active-LOW)",
+        "GPIO 17 (Pin Fisik 11): Buzzer SFM-27 (Active-HIGH)",
+        "GPIO 22 (Pin Fisik 15): Tombol Fisik E-Stop (Input Pull-Up, Active-LOW)"
+      ],
+      "dependencies": [1],
+      "cross_division_warnings": [
+        "GND Adaptor 12V Kipas WAJIB disatukan (common ground) dengan Pin GND RPi.",
+        "Relay bersifat Active-LOW: initial setup() dan cleanup() wajib mengeset GPIO 21 ke HIGH agar kipas mati saat program berhenti.",
+        "Jika memakai saklar E-Stop jenis NC ke GND, sesuaikan estop_active_low melalui koordinasi dengan Ketua (Divisi 1)."
+      ],
+      "tahap_b_commands": [
+        {
+          "item": "Saat python3 01_test_relay_buzzer.py baru dijalankan, relay kipas GPIO 21 langsung OFF",
+          "cmd": "cd ~/decy13/raspi_cli && python3 01_test_relay_buzzer.py"
+        },
+        {
+          "item": "Menu [2] & [3] menyalakan dan mematikan kipas DC 12V fisik dengan stabil",
+          "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 2 (ON) lalu 3 (OFF)"
+        },
+        {
+          "item": "Menu [1] & pola daemon membunyikan Buzzer GPIO 17 dengan jelas",
+          "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 1 (Buzzer 1 detik)"
+        },
+        {
+          "item": "Menu [4] Tes E-Stop pada GPIO 22 terbaca akurat tanpa false-trigger saat kipas 12V hidup/mati",
+          "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 4 lalu tekan/lepas tombol fisik E-Stop"
+        },
+        {
+          "item": "Saat program dihentikan (Ctrl+C / cleanup()), relay kipas dan buzzer langsung mati total",
+          "cmd": "Ketik q atau tekan Ctrl+C dan pastikan kipas & buzzer tetap mati."
+        }
+      ],
+      "definition_of_done": "Relay kipas 12V, buzzer SFM-27, dan tombol E-Stop lulus uji isolasi (01_test_relay_buzzer.py) maupun uji terintegrasi bersama daemon tanpa false-trigger."
+    },
+    {
+      "id": 3,
+      "name": "Sistem Animasi LED Strip WS2812B (Spiral, RF Gap & Shoot)",
+      "pic": "blufiaa",
+      "branch": "divisi-3-led-ws2812b-v13",
+      "report_file": "UJI_DIVISI_3_LED_WS2812B.md",
+      "allowed_files": [
+        "decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py",
+        "decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py",
+        "laporan_uji/UJI_DIVISI_3_LED_WS2812B.md"
+      ],
+      "hardware_scope": [
+        "GPIO 18 (Pin Fisik 12, PWM0/DMA): Data IN LED Strip WS2812B via resistor 330 Ohm",
+        "Power Supply 5V 3A eksternal (common GND dengan RPi) untuk 64 LED (0..47 Spiral, 48..63 Shoot)"
+      ],
+      "dependencies": [1],
+      "cross_division_warnings": [
+        "WAJIB mematikan audio onboard (dtparam=audio=off) + reboot sebelum uji LED, karena audio onboard memakai PWM0 yang sama dengan GPIO 18.",
+        "Skrip LED wajib dijalankan dengan sudo karena rpi_ws281x mengakses DMA.",
+        "Jika urutan piksel fisik di papan siklotron berbeda dari 0..47 dan 48..63, catat hasilnya dari 03_test_led_pixel_finder.py dan lapor ke Ketua untuk diupdate di config_hardware.json."
+      ],
+      "tahap_b_commands": [
+        {
+          "item": "Audio analog di RPi sudah dimatikan (dtparam=audio=off) agar DMA GPIO 18 berjalan normal",
+          "cmd": "grep -E '^dtparam=audio=off' /boot/firmware/config.txt /boot/config.txt 2>/dev/null"
+        },
+        {
+          "item": "sudo python3 03_test_led_pixel_finder.py menyalakan piksel #0 s.d. #63 secara akurat",
+          "cmd": "cd ~/decy13/raspi_cli && sudo python3 03_test_led_pixel_finder.py --mode finder --hardware"
+        },
+        {
+          "item": "Urutan warna LED RGB/GRB benar sesuai warna per tahap",
+          "cmd": "cd ~/decy13/raspi_cli && sudo python3 03_test_led_pixel_finder.py --mode demo --hardware"
+        },
+        {
+          "item": "Animasi komet spiral (0..47), kilat RF Gap ([11,23,35,47]), dan Shoot (48..63) mulus tanpa flicker bersama LCD SPI0",
+          "cmd": "cd ~/decy13/raspi_cli && sudo python3 04_decy13_mqtt_daemon.py"
+        },
+        {
+          "item": "Saat Ctrl+C / cleanup(), seluruh LED padam total (Color(0,0,0))",
+          "cmd": "Tekan Ctrl+C pada skrip LED/daemon dan pastikan 64 piksel mati semua."
+        }
+      ],
+      "definition_of_done": "64 piksel WS2812B terpetakan akurat, warna sesuai tahap operasi, bebas flicker saat berjalan bersama LCD SPI0, dan padam bersih saat cleanup()."
+    },
+    {
+      "id": 4,
+      "name": "Layar Status Lokal LCD TFT SPI ILI9341 (320x240)",
+      "pic": "HDMrishiki (Anggota 4)",
+      "branch": "divisi-4-lcd-ili9341",
+      "report_file": "UJI_DIVISI_4_LCD_ILI9341.md",
+      "allowed_files": [
+        "decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py",
+        "decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py",
+        "laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md"
+      ],
+      "hardware_scope": [
+        "SPI0 CE0 (GPIO 8 / Pin 24), MOSI (GPIO 10 / Pin 19), SCLK (GPIO 11 / Pin 23)",
+        "DC (GPIO 24 / Pin 18), RST (GPIO 25 / Pin 22), Backlight 3.3V via R 100 Ohm"
+      ],
+      "dependencies": [1],
+      "cross_division_warnings": [
+        "Proses gambar SPI wajib tetap di background thread (~4 FPS) agar tidak memperlambat loop fisika/MQTT 200 ms maupun mengganggu LED GPIO 18.",
+        "Pastikan dev/spidev0.0 sudah aktif (dtparam=spi=on)."
+      ],
+      "tahap_b_commands": [
+        {
+          "item": "Interface SPI di RPi aktif (ls /dev/spi* menampilkan /dev/spidev0.0)",
+          "cmd": "ls -l /dev/spidev*"
+        },
+        {
+          "item": "python3 02_test_lcd_ili9341.py menampilkan gambar tajam 320x240 di layar fisik",
+          "cmd": "cd ~/decy13/raspi_cli && python3 02_test_lcd_ili9341.py"
+        },
+        {
+          "item": "Teks lcd_line1..4, indikator Interlock, bar Vakum logaritmik, dan bar Energi MeV terbaca jelas",
+          "cmd": "Amati 4 slide uji pada layar fisik ILI9341 dari jarak 1-2 meter."
+        },
+        {
+          "item": "Saat 04_decy13_mqtt_daemon.py jalan bersamaan dengan LED WS2812B, layar tidak freeze",
+          "cmd": "cd ~/decy13/raspi_cli && sudo python3 04_decy13_mqtt_daemon.py"
+        }
+      ],
+      "definition_of_done": "Layar LCD ILI9341 menampilkan 4 baris telemetri, warna header per stage, dan progress bar vakum/energi secara tajam tanpa memblokir loop utama."
+    },
+    {
+      "id": 5,
+      "name": "Web HMI SCADA & Simulator 2D (Mini PC Ruang Kontrol)",
+      "pic": "HDMrishiki (Anggota 5)",
+      "branch": "divisi-5-web-hmi",
+      "report_file": "UJI_DIVISI_5_WEB_HMI.md",
+      "allowed_files": [
+        "decy13_mqtt_kit/web_hmi/index.html",
+        "decy13_mqtt_kit/web_hmi/assets/*",
+        "laporan_uji/UJI_DIVISI_5_WEB_HMI.md"
+      ],
+      "hardware_scope": [
+        "Browser Chrome/Edge di Mini PC Ruang Kontrol",
+        "Koneksi MQTT over WebSocket (ws://<IP_RPI>:9001)"
+      ],
+      "dependencies": [1, 2, 3, 4],
+      "cross_division_warnings": [
+        "Jangan mengubah nama topic decy13/hmi/cmd, decy13/rpi/state, fungsi applyRpiState(), maupun ke-8 nama command JSON.",
+        "Saat state.mqttConnected === true, animasi kanvas wajib mengikuti activeLedIdx dan shootLedIdx dari RPi."
+      ],
+      "tahap_b_commands": [
+        {
+          "item": "Status koneksi MQTT WebSocket (ws://192.168.137.1:9001 atau IP RPi lokal) berubah hijau MQTT TERHUBUNG",
+          "cmd": "Buka web_hmi/index.html di Chrome Mini PC -> masukkan ws://<IP_RPI>:9001 -> klik Hubungkan MQTT"
+        },
+        {
+          "item": "Klik tombol di Web HMI (Power, Vacuum, Interlock, Start Beam, Shoot) menggerakkan hardware fisik di Raspi",
+          "cmd": "Uji klik berurutan tombol kontrol di Web HMI sambil mengamati aktuator RPi"
+        },
+        {
+          "item": "Indeks animasi LED 2D di kanvas Web HMI bergerak sinkron dengan LED fisik WS2812B",
+          "cmd": "Bandingkan putaran spiral & shoot di layar Mini PC dengan LED strip fisik"
+        },
+        {
+          "item": "Menekan tombol fisik E-Stop di Raspberry Pi langsung memicu tampilan darurat merah di Web HMI Mini PC",
+          "cmd": "Tekan tombol E-Stop fisik (GPIO 22) saat beam aktif dan amati alarm merah di Web HMI"
+        }
+      ],
+      "definition_of_done": "Web HMI di Mini PC terhubung stabil ke broker WebSocket 9001 RPi, mengendalikan 7 tahap operasional, dan tersinkronisasi penuh dengan aktuator fisik."
+    },
+    {
+      "id": 6,
+      "name": "Jaringan MQTT, Node-RED & Commissioning QA",
+      "pic": "rekypurnomo",
+      "branch": "divisi-6-mqtt-nodered-qa-testing",
+      "report_file": "UJI_DIVISI_6_MQTT_QA.md",
+      "allowed_files": [
+        "decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py",
+        "decy13_mqtt_kit/nodered/flows_mqtt_decy13.json",
+        "instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt",
+        "laporan_uji/UJI_DIVISI_6_MQTT_QA.md"
+      ],
+      "hardware_scope": [
+        "Jaringan LAN / Wi-Fi AP antara Raspberry Pi 3B+ dan Mini PC",
+        "Pengujian QoS/latensi/frekuensi MQTT 5 Hz & alur commissioning penuh"
+      ],
+      "dependencies": [1, 2, 3, 4, 5],
+      "cross_division_warnings": [
+        "Mode --auto pada 06_test_mqtt_healthcheck.py menggerakkan aktuator fisik nyata; beri aba-aba ke tim sebelum dijalankan.",
+        "Untuk SEQ-03 (TOGGLE_INTERLOCK), pastikan menunggu pressure <= 1e-3 mbar (~6-7 detik) atau gunakan --cmd-timeout 10."
+      ],
+      "tahap_b_commands": [
+        {
+          "item": "python3 06_test_mqtt_healthcheck.py terhubung stabil dan mengukur laju paket ~5.0 Hz tanpa packet drop berlebih",
+          "cmd": "python3 06_test_mqtt_healthcheck.py --host <IP_RPI> --duration 15 --no-menu"
+        },
+        {
+          "item": "Sekuens otomatis Tahap 1 s.d. Tahap 7 + EMERGENCY_STOP lewat MQTT sukses memicu perubahan tahap nyata",
+          "cmd": "python3 06_test_mqtt_healthcheck.py --host <IP_RPI> --auto --estop --yes --cmd-timeout 10 --report"
+        },
+        {
+          "item": "Dashboard Node-RED menerima telemetri langsung dari RPi dan tombol Node-RED berhasil mengirim perintah",
+          "cmd": "Import nodered/flows_mqtt_decy13.json ke Node-RED dan uji koneksi ke broker RPi:1883"
+        },
+        {
+          "item": "instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt sudah diverifikasi berpasangan saat uji integrasi",
+          "cmd": "Jalankan verifikasi berpasangan seluruh poin CHECKLIST_COMMISSIONING.txt"
+        }
+      ],
+      "definition_of_done": "Healthcheck MQTT lulus tanpa kegagalan (~5.0 Hz, 22/22 field valid), sekuens 7 tahap + E-Stop terverifikasi otomatis, dan CHECKLIST_COMMISSIONING.txt tuntas."
+    }
+  ]
+}

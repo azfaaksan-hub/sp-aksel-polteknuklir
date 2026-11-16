@@ -126,9 +126,12 @@ def check_core_daemon_contract() -> Tuple[bool, str]:
             if missing:
                 return False, f"State Daemon kehilangan field wajib: {missing}"
 
-            # Uji sekuens 7 tahap
+            # Uji sekuens 7 tahap + proteksi SET_PARAMS di luar batas (mis. magnet_a=0)
             daemon.handle_command({"cmd": "TOGGLE_POWER"})
             daemon.handle_command({"cmd": "SET_PARAMS", "magnet_a": 1450, "rf_kv": 45})
+            daemon.handle_command({"cmd": "SET_PARAMS", "magnet_a": 0, "rf_kv": -10})
+            if daemon.state.get("setpoint_magnet_a") != 1450.0 or daemon.state.get("setpoint_rf_kv") != 45.0:
+                return False, "Proteksi SET_PARAMS gagal menolak nilai di luar batas (magnet_a=0 / rf_kv=-10)."
             daemon.handle_command({"cmd": "AUTO_INIT"})
             daemon.handle_command({"cmd": "START_BEAM"})
             daemon.handle_command({"cmd": "SHOOT"})
@@ -143,7 +146,7 @@ def check_core_daemon_contract() -> Tuple[bool, str]:
             if not daemon.state.get("emergency") or daemon.state.get("beam"):
                 return False, "Mekanisme EMERGENCY_STOP gagal memutus beam."
 
-            return True, "Core Daemon + Modul Divisi 2/3/4 lolos uji 7-tahap & 22-key JSON."
+            return True, "Core Daemon + Modul Divisi 2/3/4 lolos uji 7-tahap, proteksi SET_PARAMS, & 22-key JSON."
         finally:
             daemon.cleanup_all()
     except Exception as e:
@@ -237,6 +240,46 @@ def check_hardware_reports() -> Tuple[bool, str, List[Dict[str, object]]]:
     return True, f"{len(summaries)} kartu ceklis uji hardware tervalidasi.", summaries
 
 
+def check_jobdesk_and_preflight(hw_summaries: List[Dict[str, object]]) -> Tuple[bool, str]:
+    """Pastikan jobdesk_divisi.json, raspi_bootstrap.sh (LF), raspi_preflight.py, dan JOBDESK_DAN_DOD.md valid."""
+    jobdesk_path = os.path.join(ROOT_DIR, "tools", "jobdesk_divisi.json")
+    bootstrap_path = os.path.join(ROOT_DIR, "tools", "raspi_bootstrap.sh")
+    preflight_path = os.path.join(ROOT_DIR, "tools", "raspi_preflight.py")
+    dod_doc_path = os.path.join(LAPORAN_DIR, "JOBDESK_DAN_DOD.md")
+
+    for req_path in (jobdesk_path, bootstrap_path, preflight_path, dod_doc_path):
+        if not os.path.isfile(req_path):
+            return False, f"File wajib tidak ditemukan: {os.path.relpath(req_path, ROOT_DIR)}"
+
+    try:
+        py_compile.compile(preflight_path, doraise=True)
+    except py_compile.PyCompileError as e:
+        return False, f"Sintaks raspi_preflight.py gagal: {e}"
+
+    with open(bootstrap_path, "rb") as fb:
+        if b"\r\n" in fb.read():
+            return False, "tools/raspi_bootstrap.sh mengandung CRLF (\\r\\n); wajib LF murni untuk bash Linux!"
+
+    try:
+        with open(jobdesk_path, "r", encoding="utf-8") as f:
+            jd = json.load(f)
+        divs = jd.get("divisions", [])
+        if len(divs) != 6:
+            return False, f"jobdesk_divisi.json harus berisi 6 divisi (ditemukan {len(divs)})."
+        by_file = {str(item["file"]): item for item in hw_summaries}
+        for d in divs:
+            rf = d.get("report_file", "")
+            if rf not in by_file:
+                return False, f"Divisi {d.get('id')}: report_file '{rf}' tidak ditemukan di laporan_uji/."
+            expected_b = int(by_file[rf]["b_tot"])
+            actual_b = len(d.get("tahap_b_commands", []))
+            if expected_b != actual_b:
+                return False, f"Divisi {d.get('id')}: jumlah tahap_b_commands ({actual_b}) != ceklis Tahap B di {rf} ({expected_b})."
+        return True, "Valid (6 divisi, 5 milestone, preflight & bootstrap LF siap)."
+    except Exception as e:
+        return False, f"Gagal memvalidasi jobdesk_divisi.json: {e}"
+
+
 def get_remote_branches() -> List[str]:
     try:
         out = subprocess.check_output(
@@ -280,10 +323,14 @@ Catatan update: {catatan}
 {hw_lines}
 
 🔍 *WAJIB CEK RAPOR, KARTU UJI, & PROMPT TERBARU:*
-Buka halaman depan GitHub repo kita (`README.md`) untuk melihat:
+Buka halaman depan GitHub repo kita (`README.md`) dan `laporan_uji/JOBDESK_DAN_DOD.md` untuk melihat:
 1. Divisi mana yang sudah *✅ Merged*, masih *🟡 Draft Laptop (Belum Uji Raspi)*, atau *⚠️ Perlu Revisi*.
 2. *Prompt AI Konteks Terbaru* per divisi (tinggal copy-paste kalau kalian mulai chat baru dengan AI Web maupun CLI!).
-3. Jangan lupa isi & centang jujur kartu `laporan_uji/UJI_DIVISI_X_*.md` milikmu sebelum `git push` (Tahap B HANYA boleh dicentang setelah tes alat fisik Raspi nyata!).
+3. Jika kamu menguji memakai Raspberry Pi 3B+ sendiri, jalankan dulu:
+   `bash tools/raspi_bootstrap.sh`
+   `python3 tools/raspi_preflight.py --divisi <NOMOR_DIVISIMU>`
+   agar OS/SPI/Audio/Mosquitto otomatis siap dan muncul daftar perintah uji Tahap B divisimu!
+4. Jangan lupa isi & centang jujur kartu `laporan_uji/UJI_DIVISI_X_*.md` milikmu sebelum `git push` (Tahap B HANYA boleh dicentang setelah tes alat fisik Raspi nyata!).
 
 🔄 *YANG HARUS KALIAN LAKUKAN SEKARANG (MANDIRI):*
 Jangan lupa tarik update terbaru dari `main` ke branch divisi masing-masing sebelum lanjut ngoding:
@@ -337,6 +384,9 @@ def main():
     ok_hw, msg_hw, hw_summaries = check_hardware_reports()
     checks.append(("Kartu Ceklis Hardware (laporan_uji/)", ok_hw, msg_hw))
 
+    ok_jd, msg_jd = check_jobdesk_and_preflight(hw_summaries)
+    checks.append(("Jobdesk, Preflight & Bootstrap RPi", ok_jd, msg_jd))
+
     all_passed = True
     for name, passed, detail in checks:
         icon = "[LULUS]" if passed else "[GAGAL]"
@@ -345,14 +395,23 @@ def main():
             all_passed = False
 
     if hw_summaries:
+        tot_a_done = sum(int(i["a_done"]) for i in hw_summaries)
+        tot_a_all = max(1, sum(int(i["a_tot"]) for i in hw_summaries))
+        tot_b_done = sum(int(i["b_done"]) for i in hw_summaries)
+        tot_b_all = max(1, sum(int(i["b_tot"]) for i in hw_summaries))
         print("\n" + "-" * 70)
-        print("  RINGKASAN STATUS UJI HARDWARE RASPI PER DIVISI (laporan_uji/)")
+        print(
+            f"  RINGKASAN STATUS UJI HARDWARE RASPI PER DIVISI "
+            f"(Total Laptop: {tot_a_done}/{tot_a_all} [{100*tot_a_done//tot_a_all}%] | "
+            f"Raspi Fisik: {tot_b_done}/{tot_b_all} [{100*tot_b_done//tot_b_all}%])"
+        )
         print("-" * 70)
         for item in hw_summaries:
             print(
                 f"  - {item['divisi']:<10} | {str(item['status']):<23} "
                 f"| Laptop {item['a_done']}/{item['a_tot']} | Raspi Fisik {item['b_done']}/{item['b_tot']}"
             )
+        print("  Panduan uji di RPi anggota: bash tools/raspi_bootstrap.sh && python3 tools/raspi_preflight.py --divisi <1..6>")
 
     if not args.ci:
         branches = get_remote_branches()

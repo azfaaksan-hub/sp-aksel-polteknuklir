@@ -25,6 +25,7 @@ import json
 import math
 import os
 import random
+import signal
 import socket
 import threading
 import time
@@ -50,6 +51,39 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config_hardware.json")
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     CFG = json.load(f)
+
+# Batas aman setpoint dari HMI (bisa dioverride lewat `setpoint_limits` di config).
+# Default mengikuti rentang slider Web HMI agar nilai sah tidak ikut tertolak.
+_DEFAULT_SETPOINT_LIMITS = {
+    "magnet_a": (400.0, 2200.0),
+    "rf_mhz": (15.0, 30.0),
+    "rf_kv": (0.0, 120.0),
+    "beam_ua": (0.0, 100.0),
+}
+SETPOINT_LIMITS = dict(_DEFAULT_SETPOINT_LIMITS)
+for _k, _v in CFG.get("setpoint_limits", {}).items():
+    try:
+        _lo, _hi = float(_v[0]), float(_v[1])
+        if math.isfinite(_lo) and math.isfinite(_hi) and _lo <= _hi:
+            SETPOINT_LIMITS[_k] = (_lo, _hi)
+    except (TypeError, ValueError, IndexError):
+        pass
+
+
+def _validasi_setpoint(key: str, raw):
+    """Kembalikan float valid dalam batas, atau None bila harus ditolak."""
+    if isinstance(raw, bool):
+        return None
+    try:
+        nilai = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(nilai):
+        return None
+    lo, hi = SETPOINT_LIMITS.get(key, (-math.inf, math.inf))
+    if nilai < lo or nilai > hi:
+        return None
+    return nilai
 
 
 class Decy13CoreDaemon:
@@ -201,15 +235,28 @@ class Decy13CoreDaemon:
                 self.add_log("DARURAT: EMERGENCY STOP DITEKAN! Semua sistem diputus.")
 
             elif cmd == "SET_PARAMS":
-                if "magnet_a" in payload:
-                    s["setpoint_magnet_a"] = float(payload["magnet_a"])
-                if "rf_mhz" in payload:
-                    s["setpoint_rf_mhz"] = float(payload["rf_mhz"])
-                if "rf_kv" in payload:
-                    s["setpoint_rf_kv"] = float(payload["rf_kv"])
-                if "beam_ua" in payload:
-                    s["setpoint_beam_ua"] = float(payload["beam_ua"])
-                self.add_log(f"Tahap 2: Input HMI diperbarui (I_mag={s['setpoint_magnet_a']}A, V_dee={s['setpoint_rf_kv']}kV)")
+                # Validasi input HMI: nilai non-angka, NaN/Infinity, atau di luar
+                # batas `setpoint_limits` (config_hardware.json) DITOLAK dan setpoint
+                # lama dipertahankan, agar fisika & JSON telemetri tetap valid.
+                diterima, ditolak = [], []
+                for key_in, key_state in (
+                    ("magnet_a", "setpoint_magnet_a"),
+                    ("rf_mhz", "setpoint_rf_mhz"),
+                    ("rf_kv", "setpoint_rf_kv"),
+                    ("beam_ua", "setpoint_beam_ua"),
+                ):
+                    if key_in not in payload:
+                        continue
+                    nilai = _validasi_setpoint(key_in, payload[key_in])
+                    if nilai is None:
+                        ditolak.append(f"{key_in}={payload[key_in]!r}")
+                    else:
+                        s[key_state] = nilai
+                        diterima.append(key_in)
+                if ditolak:
+                    self.add_log(f"SET_PARAMS ditolak (di luar batas/tidak valid): {', '.join(ditolak)}")
+                if diterima:
+                    self.add_log(f"Tahap 2: Input HMI diperbarui (I_mag={s['setpoint_magnet_a']}A, V_dee={s['setpoint_rf_kv']}kV)")
 
     def step_physics_and_hardware(self) -> None:
         now = time.time()
@@ -344,7 +391,8 @@ def main():
         # paho-mqtt < 2.0.0
         client = mqtt.Client(client_id="rpi3b_decy13_hardware_daemon")
 
-    connected_host = mqtt_cfg["broker_host"]
+    configured_host = mqtt_cfg["broker_host"]
+    connected_host = configured_host
     port_tcp = mqtt_cfg["broker_port_tcp"]
 
     # Fast TCP probe (0.4s) agar langsung fallback ke 127.0.0.1 tanpa menunggu timeout 20 detik
@@ -355,14 +403,24 @@ def main():
         except OSError:
             return False
 
-    if not _is_reachable(connected_host, port_tcp) and connected_host != "127.0.0.1":
-        if _is_reachable("127.0.0.1", port_tcp):
-            print(f"[Auto-Fallback] Broker {connected_host}:{port_tcp} tidak aktif -> beralih ke localhost (127.0.0.1:{port_tcp}).")
+    if connected_host != "127.0.0.1" and not _is_reachable(connected_host, port_tcp):
+        # Di RPi, Mosquitto berjalan lokal: walau belum siap (misal baru boot),
+        # tetap arahkan ke localhost dan biarkan auto-reconnect menunggu broker.
+        if _is_reachable("127.0.0.1", port_tcp) or HAS_GPIO:
+            print(f"[Auto-Fallback] Broker {configured_host}:{port_tcp} tidak aktif -> beralih ke localhost (127.0.0.1:{port_tcp}).")
             connected_host = "127.0.0.1"
 
     def on_connect(c, userdata, flags, rc, *args):
-        print(f"Terhubung ke MQTT Broker ({connected_host}:{port_tcp}) rc={rc}")
-        c.subscribe(mqtt_cfg["topic_cmd"])
+        rc_val = getattr(rc, "value", rc)
+        if rc_val == 0:
+            print(f"Terhubung ke MQTT Broker ({connected_host}:{port_tcp}) rc=0")
+            c.subscribe(mqtt_cfg["topic_cmd"])
+        else:
+            print(f"Broker {connected_host}:{port_tcp} menolak koneksi (rc={rc}). Mencoba ulang otomatis...")
+
+    def on_disconnect(c, userdata, rc, *args):
+        if getattr(rc, "value", rc) != 0:
+            print(f"Koneksi MQTT terputus (rc={rc}). Auto-reconnect aktif, hardware tetap berjalan aman.")
 
     def on_message(c, userdata, msg):
         try:
@@ -372,14 +430,31 @@ def main():
             print("Gagal parsing payload MQTT:", e)
 
     client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
     client.on_message = on_message
+    client.reconnect_delay_set(min_delay=1, max_delay=10)
 
+    # connect_async + loop_start: koneksi pertama & reconnect ditangani thread paho,
+    # sehingga daemon tidak terjebak "Mode Offline" bila Mosquitto baru siap belakangan.
     try:
-        client.connect(connected_host, port_tcp, 60)
+        print(f"Menghubungkan ke MQTT Broker {connected_host}:{port_tcp} (auto-reconnect aktif)...")
+        client.connect_async(connected_host, port_tcp, 60)
         client.loop_start()
     except Exception as e:
         print(f"Mode Offline (Broker MQTT {connected_host}:{port_tcp} belum aktif): {e}")
 
+    # systemd (`systemctl stop decy13`) mengirim SIGTERM: ubah jadi KeyboardInterrupt
+    # agar blok `finally` tetap mematikan relay/buzzer/LED dengan aman.
+    def _on_sigterm(signum, frame):
+        raise KeyboardInterrupt
+
+    try:
+        signal.signal(signal.SIGTERM, _on_sigterm)
+    except (ValueError, AttributeError, OSError):
+        pass
+
+    interval = float(mqtt_cfg["publish_interval_sec"])
+    next_tick = time.monotonic()
     print("Core Daemon Hardware DECY-13 berjalan. Tekan Ctrl+C untuk keluar.")
     try:
         while True:
@@ -390,10 +465,20 @@ def main():
                 client.publish(mqtt_cfg["topic_state"], payload_out, qos=0)
             except Exception:
                 pass
-            time.sleep(mqtt_cfg["publish_interval_sec"])
+            # Periode tetap (~200 ms) tanpa akumulasi drift, penting untuk debounce E-Stop.
+            next_tick += interval
+            sisa = next_tick - time.monotonic()
+            if sisa > 0:
+                time.sleep(sisa)
+            else:
+                next_tick = time.monotonic()
     except KeyboardInterrupt:
         print("\nMenghentikan Core Daemon DECY-13...")
     finally:
+        try:
+            client.disconnect()
+        except Exception:
+            pass
         client.loop_stop()
         daemon.cleanup_all()
         print("Seluruh modul perangkat keras telah dibersihkan dengan aman.")

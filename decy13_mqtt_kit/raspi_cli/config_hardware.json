@@ -40,5 +40,11 @@
     "rf_voltage_kv": 45.0,
     "max_energy_mev": 13.0,
     "vacuum_pump_time_sec": 5.0
+  },
+  "setpoint_limits": {
+    "magnet_a": [400.0, 2200.0],
+    "rf_mhz": [15.0, 30.0],
+    "rf_kv": [0.0, 120.0],
+    "beam_ua": [0.0, 100.0]
   }
 }
