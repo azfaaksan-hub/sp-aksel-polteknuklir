@@ -4,24 +4,25 @@ Dokumen ini menjadi acuan kerja seluruh 6 divisi proyek **Alat Peraga Akselerato
 
 ---
 
-## 1. Alur Auto-Konfigurasi & Pengingat Uji untuk RPi Anggota Divisi
+## 1. Alur Auto-Konfigurasi, Pengumuman Tugas Baru, & Pengingat Uji untuk RPi Anggota Divisi
 
-Jika anggota Divisi 2, 3, 4, 5, atau 6 mengetes menggunakan Raspberry Pi 3B+ sendiri (dengan username atau hostname apa pun, bukan hanya `pi@raspberrypi`), jalankan 2 perintah standar ini di RPi setelah menarik kode repo:
+Jika anggota Divisi 2, 3, 4, 5, atau 6 mengetes menggunakan Raspberry Pi 3B+/4B sendiri (dengan username atau hostname apa pun, bukan hanya `pi@raspberrypi`), jalankan 2 perintah standar ini di RPi setelah menarik kode repo:
 
 ```bash
 # 1. Auto-konfigurasi OS, SPI0, Audio OFF, Mosquitto (1883 & 9001), dan 6 paket Python:
 bash tools/raspi_bootstrap.sh
 
-# 2. Tampilkan pengingat wiring, batas file, ceklis Tahap B, & perintah uji divisimu:
+# 2. Tampilkan pengumuman ketua, tugas baru, show perubahan kode, batas file, & ceklis Tahap B divisimu:
 python3 tools/raspi_preflight.py --divisi <NOMOR_DIVISI_1_SAMPAI_6>
 ```
 
 Skrip `tools/raspi_preflight.py` otomatis:
-1. Memeriksa kesiapan `/boot/firmware/config.txt` (`dtparam=audio=off`, `dtparam=spi=on`), `/dev/spidev0.0`, port Mosquitto `1883` & `9001`, dan ke-6 library Python.
-2. Menampilkan daftar file yang boleh diedit oleh divisi tersebut (agar bebas *merge conflict*).
-3. Menampilkan peringatan wiring lintas-divisi (misal *common ground* 12V/5V, konflik PWM0 audio pada GPIO 18, dan orientasi SPI0 LCD).
-4. Mencetak tiap butir **Tahap B** dari kartu `laporan_uji/UJI_DIVISI_N_*.md` lengkap dengan perintah terminal yang harus dijalankan.
-5. Menyimpan log preflight ke `laporan_uji/bukti/` sebagai lampiran bukti Bagian C (tanpa mencentang `[x]` secara otomatis).
+1. Menampilkan **`[0] Pengumuman Ketua & Tugas Baru Divisi`** langsung dari `tools/jobdesk_divisi.json` (`current_announcement` & `current_tasks`) beserta **`[0B] Show Perubahan Kode Saat Ini`** (`git status -sb` & `git diff --stat` terhadap `origin/main`).
+2. Memeriksa kesiapan `/boot/firmware/config.txt` (`dtparam=audio=off`, `dtparam=spi=on`), `/dev/spidev0.0`, port Mosquitto `1883` & `9001`, dan ke-6 library Python.
+3. Menampilkan daftar file yang boleh diedit oleh divisi tersebut (agar bebas *merge conflict*).
+4. Menampilkan peringatan wiring lintas-divisi (misal *common ground* 12V/5V, konflik PWM0 audio pada GPIO 18, dan orientasi SPI0 LCD).
+5. Mencetak tiap butir **Tahap B** dari kartu `laporan_uji/UJI_DIVISI_N_*.md` lengkap dengan perintah terminal yang harus dijalankan.
+6. Menyimpan log preflight ke `laporan_uji/bukti/` sebagai lampiran bukti Bagian C (tanpa mencentang `[x]` secara otomatis).
 
 ---
 

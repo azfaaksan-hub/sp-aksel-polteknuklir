@@ -89,9 +89,15 @@ python3 tools/raspi_preflight.py --divisi <1..6> # cek kesiapan OS + tampilkan b
 
 Gunakan prompt di bawah ini **setiap kali kamu membuka chat AI baru** (atau setelah Ketua mengumumkan update `main` di WhatsApp) agar AI kamu tidak kehilangan konteks proyek!
 
+### 📂 Di Mana File Pengumuman & Tugas Baru untuk Tiap Divisi?
+Setiap kali prompt dieksekusi, AI milikmu diinstruksikan membaca **3 sumber pengumuman & tugas resmi** ini (atau menjalankan `python tools/raspi_preflight.py --divisi <1..6> --no-save`) lalu **wajib menampilkannya kepadamu**:
+1. **`README.md` (File ini):** Papan Pengumuman Utama, Tabel Rapor 6 Divisi, & Catatan Penyelarasan.
+2. **`tools/jobdesk_divisi.json` & [`laporan_uji/JOBDESK_DAN_DOD.md`](laporan_uji/JOBDESK_DAN_DOD.md):** Menyimpan field `current_announcement` (pengumuman khusus divisimu) dan `current_tasks` (daftar tugas baru divisimu saat ini) serta *Definition of Done*.
+3. **`laporan_uji/UJI_DIVISI_<1..6>_*.md`:** Kartu ceklis progres Tahap A (Laptop) & Tahap B (Fisik RPi) milik divisimu.
+
 > 💡 **Pakai AI Web (ChatGPT / Gemini / Claude di Browser) vs AI IDE/CLI (Cursor / Antigravity / Copilot)? Keduanya BISA & AMAN!**
-> - **Kalau pakai AI Web (di browser):** AI di browser **tidak bisa membuka folder laptopmu atau menjalankan terminal** secara otomatis. Jadi saat membuka chat baru: **(1)** *paste* prompt divisimu, **(2)** sekaligus **upload atau *copy-paste* isi file referensi + file divisimu** (misal `config_hardware.json`, `modules/base_module.py`, dan file modulmu) agar AI tidak mengarang, lalu **(3)** salin kode lengkap dari AI ke file resminya di VS Code dan jalankan perintah tes di terminal laptopmu sendiri (`python tools/cek_integrasi_dan_announcer.py --ci`).
-> - **Kalau pakai AI IDE/CLI (di VS Code / terminal):** AI bisa langsung membaca file & menjalankan tes, tetapi **tetap DILARANG** melakukan `git commit` / `git push` otomatis. Kamu wajib commit & push sendiri!
+> - **Kalau pakai AI Web (di browser):** AI di browser **tidak bisa membuka folder laptopmu atau menjalankan terminal** secara otomatis. Jadi saat membuka chat baru: **(1)** *paste* prompt divisimu, **(2)** sekaligus **upload atau *copy-paste* isi file pengumuman/referensi (`README.md`, `tools/jobdesk_divisi.json`, `config_hardware.json`, `laporan_uji/UJI_DIVISI_X_*.md`) + file kode divisimu** agar AI bisa membacakan tugas barumu tanpa mengarang, lalu **(3)** salin kode lengkap dari AI ke VS Code dan jalankan perintah tes di terminal laptopmu sendiri (`python tools/cek_integrasi_dan_announcer.py --ci`).
+> - **Kalau pakai AI IDE/CLI (di VS Code / terminal):** AI bisa langsung membaca file pengumuman, menjalankan `python tools/raspi_preflight.py --divisi <N> --no-save`, dan menampilkan perubahan kode, tetapi **tetap DILARANG** melakukan `git commit` / `git push` otomatis. Kamu wajib commit & push sendiri!
 
 <details>
 <summary><b>🌀 DIVISI 2 — Prompt Lanjutan Konteks Terbaru (Klik untuk buka & salin)</b></summary>
@@ -121,9 +127,14 @@ Saat saya akan mengetes rangkaian fisik pada unit RPi 3B+ yang saya pegang/pinja
 [KONTRAK YANG WAJIB DIJAGA]
 Class `VacuumSafetyModule(HardwareModule)` wajib memiliki `setup() -> bool`, `update(state, dt, now)`, `cleanup()`, fallback `try/except ImportError` untuk `RPi.GPIO` agar aman jalan di laptop Windows, serta memenuhi pengecekan `python tools/cek_integrasi_dan_announcer.py --ci`.
 
-[TUGAS LANJUTAN]
-- Jika kamu **AI Web (browser)** yang tidak bisa mengakses folder lokal secara langsung: **JANGAN mengarang isi file** — minta saya meng-upload/mem-paste isi `config_hardware.json`, `base_module.py`, `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, dan `UJI_DIVISI_2_VAKUM_SAFETY.md` terlebih dahulu, lalu berikan hasil kode **utuh siap copy-paste** serta beri tahu perintah terminal yang harus saya jalankan sendiri.
-- Jika kamu **AI IDE/CLI**: baca `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, dan `UJI_DIVISI_2_VAKUM_SAFETY.md` saat ini terlebih dahulu, lalu bantu saya menyiapkan uji hardware Divisi 2 atau penyempurnaan modul sesuai catatan.
+[TUGAS LANJUTAN & KEWAJIBAN TAMPILKAN PERUBAHAN (SHOW CHANGES + TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 2: `README.md`, `tools/jobdesk_divisi.json` (field `current_announcement` & `current_tasks` Divisi 2), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md`.
+- Jika kamu **AI IDE/CLI**: jalankan `python tools/raspi_preflight.py --divisi 2 --no-save` serta baca file di atas. Jika kamu **AI Web (browser)**: minta saya meng-upload/mem-paste file tersebut lebih dulu (JANGAN mengarang!).
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:**
+  1. **📢 Pengumuman Ketua & Tugas Baru Divisi 2:** Bacakan isi pengumuman terbaru & rincian tugas baru yang harus saya kerjakan sekarang.
+  2. **🔍 Show Perubahan Kode (`git status` / `git diff --stat`):** Tampilkan daftar file yang berubah serta bagian fungsi/baris apa yang ditambah atau diubah dibanding `origin/main`.
+  3. **🤖 Apa yang Dilakukan oleh AI:** Jelaskan secara singkat & mudah dipahami apa saja yang baru kamu (AI) kerjakan di balik layar.
+  4. **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang:** Berikan urutan perintah terminal (uji alat/preflight, `--ci`, dan `git add`/`commit`/`push` manual) yang harus saya ketik sendiri.
 ```
 
 </details>
@@ -151,10 +162,15 @@ Sebelum tes strip LED fisik di RPi 3B+ yang saya pegang/pinjam, arahkan saya men
 1. `bash tools/raspi_bootstrap.sh` (auto-set `dtparam=audio=off` & `spi=on` + paket `rpi-ws281x`; butuh reboot bila baru mematikan audio)
 2. `python3 tools/raspi_preflight.py --divisi 3` (cek status Audio OFF/DMA GPIO 18 & cetak daftar perintah uji Tahap B Divisi 3)
 
-[TUGAS SEKARANG]
-1. Bantu saya menjalankan pengujian fisik di RPi 3B+ (`dtparam=audio=off`, cek urutan piksel 0..63, cek warna RGB/GRB, cek bebas flicker saat LCD SPI0 aktif bersamaan, dan bila perlu perbaikan di `mod_led_ws2812b.py`).
-2. Catat hasil pengujian RPi fisik dengan jujur di `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` dan verifikasi dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
-3. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya mem-paste `mod_led_ws2812b.py` & `UJI_DIVISI_3_LED_WS2812B.md` dulu sebelum memberi revisi.
+[TUGAS SEKARANG & KEWAJIBAN TAMPILKAN PERUBAHAN (SHOW CHANGES + TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 3: `README.md`, `tools/jobdesk_divisi.json` (field `current_announcement` & `current_tasks` Divisi 3), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md`.
+- Jika kamu **AI IDE/CLI**, jalankan `python tools/raspi_preflight.py --divisi 3 --no-save` & baca file di atas. Jika kamu **AI Web (browser)** tanpa akses lokal, minta saya mem-paste file tersebut lebih dulu.
+- Bantu saya menjalankan pengujian fisik di RPi 3B+ (`dtparam=audio=off`, cek urutan piksel 0..63, cek warna RGB/GRB, cek bebas flicker saat LCD SPI0 aktif bersamaan) dan memperbarui `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md`.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:**
+  1. **📢 Pengumuman Ketua & Tugas Baru Divisi 3:** Ringkaskan pengumuman terbaru & daftar tugas baru Divisi 3 saat ini.
+  2. **🔍 Show Perubahan Kode (`git status` / `git diff --stat`):** Tunjukkan file apa yang berubah dan baris/logika apa yang ditambah atau diubah.
+  3. **🤖 Apa yang Dilakukan oleh AI:** Jelaskan dengan bahasa sederhana apa yang baru saja kamu (AI) kerjakan agar saya paham.
+  4. **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang:** Berikan langkah uji RPi/laptop (`--ci`) & perintah `git add`/`commit`/`push` manual untuk saya jalankan sendiri.
 ```
 
 </details>
@@ -182,8 +198,15 @@ Jika saya mengetes LCD fisik di RPi 3B+ yang saya pegang/pinjam, arahkan saya me
 1. `bash tools/raspi_bootstrap.sh` (auto-set SPI ON `dtparam=spi=on` + pasang `luma.lcd`, `Pillow`, `spidev`)
 2. `python3 tools/raspi_preflight.py --divisi 4` (cek `/dev/spidev0.0` & cetak langkah uji Tahap B Divisi 4)
 
-[TUGAS SEKARANG]
-Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, dan `UJI_DIVISI_4_LCD_ILI9341.md` dulu sebelum menulis kode (jangan mengarang!), dan beri kode utuh siap copy-paste. Jika punya akses lokal, baca file tersebut langsung. Pastikan background SPI render thread tetap non-blocking dan aman di Windows tanpa `luma.lcd`, lalu bantu saya menyempurnakan tampilan dashboard 320x240 LCD (warna tema per stage, indikator interlock, progress bar vakum & MeV). Verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
+[TUGAS SEKARANG & KEWAJIBAN TAMPILKAN PERUBAHAN (SHOW CHANGES + TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 4: `README.md`, `tools/jobdesk_divisi.json` (field `current_announcement` & `current_tasks` Divisi 4), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md`.
+- Jika kamu **AI IDE/CLI**, jalankan `python tools/raspi_preflight.py --divisi 4 --no-save` & baca file di atas. Jika kamu **AI Web (browser)** tanpa akses lokal, minta saya meng-upload/paste file tersebut dulu sebelum menulis kode (jangan mengarang!), dan beri kode utuh siap copy-paste.
+- Pastikan background SPI render thread tetap non-blocking dan aman di Windows tanpa `luma.lcd`, lalu bantu saya menyempurnakan tampilan dashboard 320x240 LCD.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:**
+  1. **📢 Pengumuman Ketua & Tugas Baru Divisi 4:** Ringkaskan pengumuman terbaru & daftar tugas baru Divisi 4 saat ini.
+  2. **🔍 Show Perubahan Kode (`git status` / `git diff --stat`):** Tunjukkan file apa yang berubah dan bagian apa yang ditambah/diperbaiki.
+  3. **🤖 Apa yang Dilakukan oleh AI:** Jelaskan dengan bahasa sederhana apa yang baru saja kamu (AI) kerjakan agar saya paham.
+  4. **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang:** Berikan langkah uji (`python tools/cek_integrasi_dan_announcer.py --ci`, tes LCD RPi) & perintah `git add`/`commit`/`push` manual untuk saya jalankan sendiri.
 ```
 
 </details>
@@ -212,8 +235,15 @@ Web HMI berkomunikasi dengan RPi 3B+ via Mosquitto MQTT over WebSockets (port 90
 Jika menguji Web HMI ke RPi Ketua/anggota (catatan: WebSocket aktif di port `9001`), pastikan RPi sudah disiapkan dengan:
 - `bash tools/raspi_bootstrap.sh` (bila RPi baru) & `python3 tools/raspi_preflight.py --divisi 5` (tampilkan panduan IP/WebSocket & ceklis Tahap B Divisi 5).
 
-[TUGAS SEKARANG]
-Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `decy13_mqtt_kit/web_hmi/index.html` (atau bagian kode terkait) serta `config_hardware.json` / `UJI_DIVISI_5_WEB_HMI.md` lebih dulu agar tidak merusak fungsi yang sudah ada, lalu berikan kode yang jelas untuk saya salin ke VS Code. Pertahankan mode State-Driven saat `state.mqttConnected === true`, jaga kesesuaian `setpoint_limits`, dan bantu saya menyempurnakan UI SCADA, grafik, atau simulasi 2D. Setelah selesai, verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
+[TUGAS SEKARANG & KEWAJIBAN TAMPILKAN PERUBAHAN (SHOW CHANGES + TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 5: `README.md`, `tools/jobdesk_divisi.json` (field `current_announcement` & `current_tasks` Divisi 5), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`.
+- Jika kamu **AI IDE/CLI**, jalankan `python tools/raspi_preflight.py --divisi 5 --no-save` & baca file di atas. Jika kamu **AI Web (browser)** tanpa akses lokal, minta saya melampirkan `decy13_mqtt_kit/web_hmi/index.html` serta file pengumuman/konfigurasi di atas lebih dulu agar tidak merusak fungsi yang sudah ada.
+- Pertahankan mode State-Driven saat `state.mqttConnected === true`, jaga kesesuaian `setpoint_limits`, dan bantu saya menyempurnakan UI SCADA, grafik, atau simulasi 2D.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:**
+  1. **📢 Pengumuman Ketua & Tugas Baru Divisi 5:** Ringkaskan pengumuman terbaru (termasuk `setpoint_limits`) & daftar tugas baru Divisi 5 saat ini.
+  2. **🔍 Show Perubahan Kode (`git status` / `git diff --stat`):** Tunjukkan bagian `web_hmi/index.html` atau file apa yang berubah dan mengapa diubah.
+  3. **🤖 Apa yang Dilakukan oleh AI:** Jelaskan dengan bahasa sederhana apa yang baru saja kamu (AI) kerjakan agar saya paham.
+  4. **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang:** Berikan langkah uji (`python tools/cek_integrasi_dan_announcer.py --ci`, tes browser Mini PC) & perintah `git add`/`commit`/`push` manual untuk saya jalankan sendiri.
 ```
 
 </details>
@@ -242,9 +272,15 @@ Sistem menggunakan Mosquitto (`1883` TCP & `9001` WebSocket) dengan topic `decy1
 [PERSIAPAN UJI JARINGAN KE RPi 3B+ (TAHAP B)]
 Sebelum tes di RPi Ketua/anggota: jalankan `bash tools/raspi_bootstrap.sh` (bila RPi baru) dan `python3 tools/raspi_preflight.py --divisi 6` (cek port `1883`/`9001` & tampilkan checklist perintah QA).
 
-[TUGAS SEKARANG]
-1. Sesuaikan 3 catatan audit pasca-merge + `setpoint_limits`: (a) di `--auto`, tunggu `pressure <= 1e-3 mbar` sebelum `SEQ-03` mengirim `TOGGLE_INTERLOCK` (atau `--cmd-timeout 10`); (b) cek apakah `--expected-stages` diselaraskan ke 6 nilai integer `stage` daemon (`0, 1, 4, 5, 6, 7`); (c) ingat host broker `flows_mqtt_decy13.json` diset ke IP RPi bila Node-RED berjalan di Mini PC terpisah; (d) patuhi `setpoint_limits` baru bila menguji `SET_PARAMS`.
-2. Bantu saya menguji langsung ke RPi + Mini PC nyata dan memperbarui `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `04_decy13_mqtt_daemon.py`, dan `UJI_DIVISI_6_MQTT_QA.md` lebih dulu; verifikasi akhir dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+[TUGAS SEKARANG & KEWAJIBAN TAMPILKAN PERUBAHAN (SHOW CHANGES + TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 6: `README.md`, `tools/jobdesk_divisi.json` (field `current_announcement` & `current_tasks` Divisi 6), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`.
+- Jika kamu **AI IDE/CLI**, jalankan `python tools/raspi_preflight.py --divisi 6 --no-save` & baca file di atas. Jika kamu **AI Web (browser)** tanpa akses lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `04_decy13_mqtt_daemon.py`, dan `UJI_DIVISI_6_MQTT_QA.md` lebih dulu.
+- Sesuaikan 3 catatan audit pasca-merge + `setpoint_limits` (`pressure <= 1e-3 mbar` sebelum `SEQ-03` `TOGGLE_INTERLOCK`, `--expected-stages` 6 nilai integer stage daemon `0,1,4,5,6,7`, host broker Node-RED, dan batas `setpoint_limits`), lalu bantu uji langsung ke RPi + Mini PC nyata.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:**
+  1. **📢 Pengumuman Ketua & Tugas Baru Divisi 6:** Ringkaskan pengumuman terbaru & daftar tugas baru Divisi 6 saat ini.
+  2. **🔍 Show Perubahan Kode (`git status` / `git diff --stat`):** Tunjukkan file apa yang berubah dan bagian fungsi/logika apa yang ditambah/diperbaiki.
+  3. **🤖 Apa yang Dilakukan oleh AI:** Jelaskan dengan bahasa sederhana apa yang baru saja kamu (AI) kerjakan agar saya paham.
+  4. **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang:** Berikan langkah uji (`python tools/cek_integrasi_dan_announcer.py --ci`, uji QA ke RPi) & perintah `git add`/`commit`/`push` manual untuk saya jalankan sendiri.
 ```
 
 </details>

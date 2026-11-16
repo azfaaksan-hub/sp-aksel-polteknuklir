@@ -276,7 +276,9 @@ def check_jobdesk_and_preflight(hw_summaries: List[Dict[str, object]]) -> Tuple[
             actual_b = len(d.get("tahap_b_commands", []))
             if expected_b != actual_b:
                 return False, f"Divisi {d.get('id')}: jumlah tahap_b_commands ({actual_b}) != ceklis Tahap B di {rf} ({expected_b})."
-        return True, "Valid (6 divisi, 5 milestone, preflight & bootstrap LF siap)."
+            if not d.get("current_announcement") or not d.get("current_tasks"):
+                return False, f"Divisi {d.get('id')}: current_announcement / current_tasks belum diisi di jobdesk_divisi.json."
+        return True, "Valid (6 divisi, pengumuman & tugas aktif, 5 milestone, preflight & bootstrap LF siap)."
     except Exception as e:
         return False, f"Gagal memvalidasi jobdesk_divisi.json: {e}"
 

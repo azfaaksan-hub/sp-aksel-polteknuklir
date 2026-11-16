@@ -106,10 +106,11 @@ Bantu saya menyempurnakan `mod_vacuum_safety.py` dan skrip uji mandiri `01_test_
 2. Mekanisme software debouncing pada pembacaan pin GPIO 22 (E-Stop) agar tidak terjadi false-trigger akibat induksi relay kipas 12V.
 3. Menu diagnostik interaktif yang lengkap pada `01_test_relay_buzzer.py` (termasuk tes pembacaan status tombol fisik E-Stop secara live di terminal).
 
-[6. VERIFICATION]
+[6. VERIFICATION & KEWAJIBAN TRANSPARANSI AI (SHOW PERUBAHAN & TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 2: `README.md`, `tools/jobdesk_divisi.json` (atau jalankan `python tools/raspi_preflight.py --divisi 2 --no-save`), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md`.
 - Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang isi file** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, dan `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` lebih dulu, lalu berikan kode utuh siap copy-paste ke VS Code.
 - ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) di `UJI_DIVISI_2_VAKUM_SAFETY.md` sebelum saya memberi bukti tes nyata di Raspi! Jika baru tes laptop atau masih ada kendala fisik saat push sementara, isi status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` dan tulis catatan di Bagian C.
-- Pastikan kode yang kamu tulis selalu lolos uji sintaks Python di laptop (mode fallback tanpa RPi) dengan menjalankan (atau mengarahkan saya menjalankan) `python tools/cek_integrasi_dan_announcer.py --ci` dan cek `README.md` untuk pengumuman/revisi terbaru.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:** (1) **📢 Pengumuman & Tugas Baru Divisi 2**, (2) **🔍 Show Perubahan Kode (`git status` / `git diff --stat`)**, (3) **🤖 Apa yang Dilakukan oleh AI**, dan (4) **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang** (termasuk `python tools/cek_integrasi_dan_announcer.py --ci` & Git manual).
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
@@ -151,10 +152,11 @@ Bantu saya memperbagus efek visual di `mod_led_ws2812b.py` dan alat kalibrasi `0
 3. Efek tembakan pulsa energi oranye-merah pada segmen `48..63` saat `state["exposureActive"] == True`, serta efek pendaran tumbukan di piksel ujung target (#63).
 4. Efek darurat kedip merah seluruh LED saat `state["emergency"] == True`, dan warna biru tenang di piksel #0 saat Standby (`power == True`, `beam == False`).
 
-[6. VERIFICATION]
+[6. VERIFICATION & KEWAJIBAN TRANSPARANSI AI (SHOW PERUBAHAN & TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 3: `README.md`, `tools/jobdesk_divisi.json` (atau jalankan `python tools/raspi_preflight.py --divisi 3 --no-save`), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md`.
 - Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang pin/class** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, dan `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` lebih dulu, lalu berikan kode utuh siap copy-paste.
 - ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) di `UJI_DIVISI_3_LED_WS2812B.md` sebelum saya memberi bukti tes nyata di LED fisik Raspi! Gunakan status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` bila masih simulasi atau revisi.
-- Pastikan kode aman dijalankan di laptop (mode simulasi tanpa `rpi_ws281x`) maupun di Raspberry Pi (`sudo python3`) serta lolos (atau arahkan saya menjalankan) `python tools/cek_integrasi_dan_announcer.py --ci`, dan cek tabel status/revisi di `README.md` sebelum mengubah kode.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:** (1) **📢 Pengumuman & Tugas Baru Divisi 3**, (2) **🔍 Show Perubahan Kode (`git status` / `git diff --stat`)**, (3) **🤖 Apa yang Dilakukan oleh AI**, dan (4) **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang** (termasuk `python tools/cek_integrasi_dan_announcer.py --ci` & Git manual).
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
@@ -192,10 +194,11 @@ Bantu saya mempercantik tampilan grafis lokal `mod_lcd_ili9341.py` dan skrip uji
 2. Menampilkan 4 baris informasi utama (`lcd_line1..4`), indikator kotak Safety Interlock (`LOCKED` / `OPEN`), serta 2 grafik batang (progress bar) untuk Level Kevakuman (logaritmik 1013 -> 1e-7 mbar) dan Energi Berkas (0 -> 13.0 MeV).
 3. Optimasi *dirty-check* (hanya mengirim frame SPI jika nilai berubah) agar CPU Raspberry Pi tetap ringan.
 
-[6. VERIFICATION]
+[6. VERIFICATION & KEWAJIBAN TRANSPARANSI AI (SHOW PERUBAHAN & TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 4: `README.md`, `tools/jobdesk_divisi.json` (atau jalankan `python tools/raspi_preflight.py --divisi 4 --no-save`), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md`.
 - Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, dan `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` lebih dulu, lalu berikan kode utuh siap copy-paste.
 - ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) di `UJI_DIVISI_4_LCD_ILI9341.md` sebelum ada bukti LCD fisik RPi menyala normal! Isi `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` jika belum diuji di Raspi.
-- Pastikan kode tetap aman ketika diimpor di laptop tanpa library `luma.lcd`, bebas bug, dan lolos (atau arahkan saya menjalankan) `python tools/cek_integrasi_dan_announcer.py --ci`. Cek juga `README.md` sebelum memberikan perubahan.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:** (1) **📢 Pengumuman & Tugas Baru Divisi 4**, (2) **🔍 Show Perubahan Kode (`git status` / `git diff --stat`)**, (3) **🤖 Apa yang Dilakukan oleh AI**, dan (4) **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang** (termasuk `python tools/cek_integrasi_dan_announcer.py --ci` & Git manual).
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
@@ -233,9 +236,11 @@ Format perintah JSON yang dikirim ke `decy13/hmi/cmd` TIDAK BOLEH diubah namanya
 - `{"cmd": "EMERGENCY_STOP"}`
 - `{"cmd": "SET_PARAMS", "magnet_a": 1450, "rf_mhz": 22.5, "rf_kv": 45, "beam_ua": 8.4}`
 
-[5. TECHNICAL OBJECTIVES]
-Bantu saya menyempurnakan tampilan, responsivitas, animasi Canvas 2D, fitur edukasi interaktif, efek suara Web Audio API, dan indikator Digital Twin di dalam `web_hmi/index.html` tanpa merusak kontrak MQTT di atas. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan/mem-paste `web_hmi/index.html`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`, dan `README.md` terlebih dahulu agar tidak merusak kode yang sudah ada; jika punya akses lokal, baca langsung lalu arahkan/verifikasi dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
-ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B (`UJI_DIVISI_5_WEB_HMI.md`) sebelum benar-benar tersambung ke broker MQTT Raspi nyata! Gunakan `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` bila baru simulasi laptop.
+[5. TECHNICAL OBJECTIVES & KEWAJIBAN TRANSPARANSI AI (SHOW PERUBAHAN & TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 5: `README.md`, `tools/jobdesk_divisi.json` (atau jalankan `python tools/raspi_preflight.py --divisi 5 --no-save`), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`.
+- Bantu saya menyempurnakan tampilan, responsivitas, animasi Canvas 2D, fitur edukasi interaktif, efek suara Web Audio API, dan indikator Digital Twin di dalam `web_hmi/index.html` tanpa merusak kontrak MQTT di atas (patuhi juga `setpoint_limits` di `config_hardware.json`). Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan/mem-paste `web_hmi/index.html`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`, dan `README.md` terlebih dahulu.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B (`UJI_DIVISI_5_WEB_HMI.md`) sebelum benar-benar tersambung ke broker MQTT Raspi nyata! Gunakan `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` bila baru simulasi laptop.
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:** (1) **📢 Pengumuman & Tugas Baru Divisi 5**, (2) **🔍 Show Perubahan Kode (`git status` / `git diff --stat`)**, (3) **🤖 Apa yang Dilakukan oleh AI**, dan (4) **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang** (termasuk `python tools/cek_integrasi_dan_announcer.py --ci` & Git manual).
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
@@ -264,8 +269,10 @@ Sistem menghubungkan Mini PC (Web HMI) dan Raspberry Pi 3B+ (Hardware Daemon) me
 [4. INTERFACE & STATE CONTRACT]
 Seluruh pengujian di `06_test_mqtt_healthcheck.py` dan flow `flows_mqtt_decy13.json` wajib memvalidasi 22 field telemetri dari `decy13/rpi/state` (`power`, `vacuum`, `rf`, `magnet`, `interlocks`, `beam`, `exposureActive`, `emergency`, `stage`, `mode`, `lcd_line1`..`4`, `pressure`, `beamEnergy`, `beamCurrent`, `targetCurrent`, `activeLedIdx`, `shootLedIdx`, `buzzerActive`, `logs`) serta mengirim format perintah standar ke `decy13/hmi/cmd`.
 
-[5. TECHNICAL OBJECTIVES]
-Bantu saya mengembangkan fitur automated test sequence (skenario uji otomatis Tahap 1 sampai Tahap 7 + uji Emergency Stop), laporan latensi/jitter paket MQTT di `06_test_mqtt_healthcheck.py`, serta penyempurnaan flow Node-RED dan checklist commissioning. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`, dan `README.md` lebih dulu sebelum mengedit, lalu berikan kode utuh siap copy-paste dan arahkan saya cek di terminal dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
-ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B di `UJI_DIVISI_6_MQTT_QA.md` sebelum dijalankan di jaringan nyata RPi <-> Mini PC!
+[5. TECHNICAL OBJECTIVES & KEWAJIBAN TRANSPARANSI AI (SHOW PERUBAHAN & TUGAS BARU)]
+- Lokasi file pengumuman & tugas baru Divisi 6: `README.md`, `tools/jobdesk_divisi.json` (atau jalankan `python tools/raspi_preflight.py --divisi 6 --no-save`), `laporan_uji/JOBDESK_DAN_DOD.md`, dan `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`.
+- Bantu saya mengembangkan fitur automated test sequence (skenario uji otomatis Tahap 1 sampai Tahap 7 + uji Emergency Stop), laporan latensi/jitter paket MQTT di `06_test_mqtt_healthcheck.py`, serta penyempurnaan flow Node-RED dan checklist commissioning. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`, dan `README.md` lebih dulu sebelum mengedit.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B di `UJI_DIVISI_6_MQTT_QA.md` sebelum dijalankan di jaringan nyata RPi <-> Mini PC!
+- **WAJIB TAMPILKAN 4 BLOK INI KEPADA SAYA SETIAP KALI EKSEKUSI PROMPT / SELESAI EDIT KODE:** (1) **📢 Pengumuman & Tugas Baru Divisi 6**, (2) **🔍 Show Perubahan Kode (`git status` / `git diff --stat`)**, (3) **🤖 Apa yang Dilakukan oleh AI**, dan (4) **🧑‍💻 Apa yang Harus Saya (Anggota) Lakukan Sendiri Sekarang** (termasuk `python tools/cek_integrasi_dan_announcer.py --ci` & Git manual).
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```

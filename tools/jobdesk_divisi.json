@@ -35,6 +35,12 @@
       "pic": "azfaaksan-hub",
       "branch": "main / core-raspi-backend",
       "report_file": "UJI_DIVISI_1_CORE_RASPI.md",
+      "current_announcement": "Update v1.5 aktif: Core Daemon sudah dilengkapi proteksi setpoint_limits, auto-reconnect MQTT, serta lulus uji bare-board di RPi 3B+ (3/5 Tahap B).",
+      "current_tasks": [
+        "Koordinasikan jadwal uji integrasi wiring fisik bersama Divisi 2 (Relay/Buzzer/E-Stop), Divisi 3 (LED GPIO 18), dan Divisi 4 (LCD SPI0).",
+        "Pantau push branch anggota dengan: python tools/cek_integrasi_dan_announcer.py --ci --cek-branch --fetch --simpan-audit",
+        "Selesaikan 2 butir sisa Tahap B pada laporan_uji/UJI_DIVISI_1_CORE_RASPI.md saat aktuator fisik dan Mini PC terhubung."
+      ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/04_decy13_mqtt_daemon.py",
         "decy13_mqtt_kit/raspi_cli/05_laptop_dryrun_simulator.py",
@@ -84,6 +90,13 @@
       "pic": "dzakimumtazi",
       "branch": "divisi-2-vacum-safety",
       "report_file": "UJI_DIVISI_2_VAKUM_SAFETY.md",
+      "current_announcement": "Kode Divisi 2 (66930bb) SUDAH DI-MERGE ke main dan lolos Tahap A (3/3 Laptop). Saat ini fokus beralih ke Tahap B (Uji Fisik RPi 3B+).",
+      "current_tasks": [
+        "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
+        "Jalankan bash tools/raspi_bootstrap.sh dan python3 tools/raspi_preflight.py --divisi 2 di Raspberry Pi 3B+.",
+        "Uji rangkaian fisik Relay Kipas (GPIO 21 Active-LOW), Buzzer (GPIO 17), dan tombol E-Stop (GPIO 22) memakai python3 01_test_relay_buzzer.py.",
+        "Tempelkan bukti output terminal RPi ke Bagian C laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md dan centang butir Tahap B yang benar-benar lulus."
+      ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py",
         "decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py",
@@ -130,6 +143,13 @@
       "pic": "blufiaa",
       "branch": "divisi-3-led-ws2812b-v13",
       "report_file": "UJI_DIVISI_3_LED_WS2812B.md",
+      "current_announcement": "PR #2 (ac21a27 pada divisi-3-led-ws2812b-v13) SUDAH DI-MERGE ke main dan lolos Tahap A (5/5 Laptop). Fokus sekarang adalah Tahap B (Uji Fisik LED WS2812B di RPi 3B+).",
+      "current_tasks": [
+        "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
+        "Di RPi 3B+, jalankan bash tools/raspi_bootstrap.sh (pastikan dtparam=audio=off + reboot) dan python3 tools/raspi_preflight.py --divisi 3.",
+        "Uji 64 piksel LED fisik di GPIO 18 dengan: sudo python3 03_test_led_pixel_finder.py --mode finder --hardware",
+        "Catat hasil pemetaan indeks/warna dan bukti terminal ke laporan_uji/UJI_DIVISI_3_LED_WS2812B.md (centang Tahap B hanya yang sudah terbukti di LED nyata)."
+      ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py",
         "decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py",
@@ -175,6 +195,12 @@
       "pic": "HDMrishiki (Anggota 4)",
       "branch": "divisi-4-lcd-ili9341",
       "report_file": "UJI_DIVISI_4_LCD_ILI9341.md",
+      "current_announcement": "Branch hmi+tft masih berada di v1.2 (045c321) dan belum ada commit kode baru untuk LCD ILI9341. Harap sinkronkan ke main v1.5 terlebih dahulu.",
+      "current_tasks": [
+        "Wajib tarik update main v1.5 dulu: git fetch origin && git merge origin/main",
+        "Sempurnakan tampilan 320x240 di mod_lcd_ili9341.py & 02_test_lcd_ili9341.py (pastikan aman di laptop tanpa luma.lcd), lalu isi Tahap A di laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md.",
+        "Saat uji di RPi 3B+, jalankan bash tools/raspi_bootstrap.sh && python3 tools/raspi_preflight.py --divisi 4 lalu tes layar SPI0 dengan python3 02_test_lcd_ili9341.py."
+      ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py",
         "decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py",
@@ -215,6 +241,12 @@
       "pic": "HDMrishiki (Anggota 5)",
       "branch": "divisi-5-web-hmi",
       "report_file": "UJI_DIVISI_5_WEB_HMI.md",
+      "current_announcement": "PENTING v1.5: Core Daemon kini menerapkan setpoint_limits di config_hardware.json (magnet_a: 400..2200, rf_mhz: 15..30, rf_kv: 0..120, beam_ua: 0..100) dan menolak nilai 0 saat reconnect.",
+      "current_tasks": [
+        "Wajib tarik update main v1.5 dulu: git fetch origin && git merge origin/main",
+        "Periksa web_hmi/index.html agar saat baru connect/reconnect ke MQTT tidak mengirim SET_PARAMS dengan magnet_a=0 atau nilai di luar setpoint_limits.",
+        "Uji tampilan & kanvas 2D di browser, centang Tahap A pada laporan_uji/UJI_DIVISI_5_WEB_HMI.md, lalu uji koneksi WebSocket ws://<IP_RPI>:9001 untuk Tahap B."
+      ],
       "allowed_files": [
         "decy13_mqtt_kit/web_hmi/index.html",
         "decy13_mqtt_kit/web_hmi/assets/*",
@@ -255,6 +287,12 @@
       "pic": "rekypurnomo",
       "branch": "divisi-6-mqtt-nodered-qa-testing",
       "report_file": "UJI_DIVISI_6_MQTT_QA.md",
+      "current_announcement": "Commit 4ed588d (06_test_mqtt_healthcheck.py) & b2b42f6 (flows_mqtt_decy13.json 18 node) SUDAH DI-MERGE ke main dan lolos uji bare-board 5 detik ke RPi (4.97 Hz, LULUS=10).",
+      "current_tasks": [
+        "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
+        "Selaraskan 3 poin minor di 06_test_mqtt_healthcheck.py: (a) tunggu pressure <= 1e-3 mbar sebelum SEQ-03 TOGGLE_INTERLOCK, (b) sesuaikan --expected-stages dengan 6 nilai integer stage daemon (0,1,4,5,6,7), (c) patuhi setpoint_limits baru.",
+        "Jalankan python3 tools/raspi_preflight.py --divisi 6 dan uji penuh --auto --estop ke RPi + Mini PC untuk melengkapi Tahap B di laporan_uji/UJI_DIVISI_6_MQTT_QA.md."
+      ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py",
         "decy13_mqtt_kit/nodered/flows_mqtt_decy13.json",

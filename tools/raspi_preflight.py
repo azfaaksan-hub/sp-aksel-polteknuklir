@@ -159,15 +159,61 @@ def run_environment_checks() -> List[Tuple[str, str, str]]:
     return results
 
 
+def _get_git_changes_summary() -> List[str]:
+    """Ambil daftar perubahan working tree dan selisih commit terhadap origin/main."""
+    out_lines: List[str] = []
+    try:
+        br = subprocess.check_output(
+            ["git", "-C", ROOT_DIR, "rev-parse", "--abbrev-ref", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        out_lines.append(f"Branch Aktif Lokal : {br}")
+        st = subprocess.check_output(
+            ["git", "-C", ROOT_DIR, "status", "-s"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        if st:
+            out_lines.append("File Berubah di Working Tree (belum di-commit):")
+            for line in st.splitlines()[:15]:
+                out_lines.append(f"  {line}")
+        else:
+            out_lines.append("Working Tree       : Bersih (tidak ada edit lokal yang belum di-commit)")
+
+        diff_stat = subprocess.check_output(
+            ["git", "-C", ROOT_DIR, "diff", "--stat", "origin/main..HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        if diff_stat:
+            out_lines.append("Selisih Commit Branch Ini vs origin/main:")
+            for line in diff_stat.splitlines()[-10:]:
+                out_lines.append(f"  {line}")
+    except Exception:
+        out_lines.append("Info Git tidak tersedia di lingkungan ini.")
+    return out_lines
+
+
 def format_division_guide(div: Dict[str, Any], env_checks: List[Tuple[str, str, str]]) -> str:
     lines: List[str] = []
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines.append("=" * 74)
-    lines.append(f"  PREFLIGHT & PENGINGAT UJI RASPI — DIVISI {div['id']}: {div['name'].upper()}")
+    lines.append(f"  PREFLIGHT, PENGUMUMAN & TUGAS DIVISI {div['id']}: {div['name'].upper()}")
     lines.append(f"  Waktu Cek   : {now_str}")
     lines.append(f"  PJ / Branch : {div['pic']}  |  Branch: {div['branch']}")
     lines.append(f"  Kartu Uji   : laporan_uji/{div['report_file']}")
     lines.append("=" * 74)
+
+    lines.append("\n[0] PENGUMUMAN KETUA & TUGAS BARU DIVISI INI (DARI tools/jobdesk_divisi.json):")
+    lines.append(f"  📢 Pengumuman : {div.get('current_announcement', '-')}")
+    lines.append("  📋 Tugas Baru yang Harus Dikerjakan Sekarang:")
+    for t_idx, task_str in enumerate(div.get("current_tasks", []), start=1):
+        lines.append(f"     {t_idx}. {task_str}")
+
+    lines.append("\n[0B] SHOW PERUBAHAN KODE SAAT INI (GIT STATUS & DIFF VS origin/main):")
+    for gline in _get_git_changes_summary():
+        lines.append(f"  {gline}")
 
     lines.append("\n[1] HASIL DETEKSI OTOMATIS LINGKUNGAN SAAT INI:")
     for name, status, detail in env_checks:
