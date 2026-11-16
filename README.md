@@ -27,8 +27,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 
 | Info | Keterangan |
 | :--- | :--- |
-| **Versi / Status `main`** | **`v1.2` — Modul Divisi 2 Resmi Di-Merge + Prompt Kompatibel AI Web & CLI** |
-| **Pengumuman Ketua** | Modul **Divisi 2 (`divisi-2-vacum-safety`) sudah di-merge ke `main`**! Seluruh prompt juga sudah mendukung **AI Web (ChatGPT/Gemini/Claude di browser)** maupun AI IDE/CLI. Wajib tarik update `main` terbaru sebelum lanjut ngoding! |
+| **Versi / Status `main`** | **`v1.3` — Divisi 2 & 6 Merged + Kartu Ceklis Uji Hardware Raspi (`laporan_uji/`) Aktif** |
+| **Pengumuman Ketua** | Modul **Divisi 2** & **Divisi 6** sudah di-merge ke `main`, dan **Kartu Ceklis Uji Hardware** di [`laporan_uji/`](laporan_uji/README.md) sekarang aktif! Kalau disuruh Ketua *"push dulu progresnya"*, isi status kartu dengan jujur (`DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE`). **AI DILARANG mencentang lolos Raspi sebelum dites di alat nyata!** |
 | **Cara Tarik Update Terbaru** | **GitHub Desktop:** Pastikan di branch divisimu → klik *Fetch origin* → menu *Branch* → *Update from main*.<br>**Terminal:** `git fetch origin` lalu `git merge origin/main` |
 
 ---
@@ -37,14 +37,22 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 
 Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (GitHub Actions)** (tanda ✅/❌) dan direview oleh Ketua sebelum di-*merge* ke `main`.
 
-| Divisi | Penanggung Jawab | Branch Wajib | File Eksklusif (Boleh Diedit) | Status Audit Saat Ini |
-| :--- | :--- | :--- | :--- | :--- |
-| **Divisi 1 (Ketua)** | `azfaaksan-hub` | `main` | `04_decy13_mqtt_daemon.py`, `05_laptop_dryrun_simulator.py`, `config_hardware.json`, `modules/base_module.py`, `tools/*` | ✅ **Core Aktif** |
-| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`<br>`decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py` | ✅ **Sudah Di-Merge ke `main`** *(Initial relay OFF, cleanup aman, menu tes E-Stop oke — tarik `main` terbaru jika lanjut kerja)* |
-| **Divisi 3** | `blufiaa` | `divisi-3-led-ws2812b` *(saat ini masih di `pacarjeno`)* | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`<br>`decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py` | ⚠️ **Perlu Revisi Sebelum Merge** *(Lihat tabel kesalahan & prompt perbaikan khusus Divisi 3 di bawah)* |
-| **Divisi 4** | *(Anggota 4)* | `divisi-4-lcd-ili9341` | `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`<br>`decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py` | ⏳ **Menunggu Push Pertama** |
-| **Divisi 5** | *(Anggota 5)* | `divisi-5-web-hmi` | `decy13_mqtt_kit/web_hmi/index.html` | ⏳ **Menunggu Push Pertama** |
-| **Divisi 6** | *(Anggota 6)* | `divisi-6-nodered-qa` | `decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py`, `nodered/flows_mqtt_decy13.json`, `instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt` | ⏳ **Menunggu Push Pertama** |
+| Divisi | Penanggung Jawab | Branch Wajib | File Eksklusif (Boleh Diedit) | Status Audit Kode / CI | Status Uji Hardware RPi |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Divisi 1 (Ketua)** | `azfaaksan-hub` | `main` / `core-raspi-backend` | `04_decy13_mqtt_daemon.py`, `05_laptop_dryrun_simulator.py`, `config_hardware.json`, `modules/base_module.py`, `tools/*`, `laporan_uji/UJI_DIVISI_1_CORE_RASPI.md` | ✅ **Core Aktif** | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_1_CORE_RASPI.md) *(3/3 Laptop, 0/5 RPi)* |
+| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` | ✅ **Sudah Di-Merge ke `main`** *(Initial relay OFF, cleanup aman, menu tes E-Stop oke)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) *(3/3 Laptop, 0/5 RPi — menunggu uji alat nyata)* |
+| **Divisi 3** | `blufiaa` | `divisi-3-led-ws2812b` | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` | ⚠️ **Kode Sudah Benar (`0137adb`), Tinggal Pindah Basis Branch ke `main`** *(Lihat tabel & perintah di bawah)* | 🔧 [`SEDANG_REVISI_HARDWARE`](laporan_uji/UJI_DIVISI_3_LED_WS2812B.md) *(0/5 Laptop, 0/5 RPi)* |
+| **Divisi 4** | *(Anggota 4 / `HDMrishiki`?)* | `divisi-4-lcd-ili9341` *(atau `hmi+tft`)* | `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` | ⏳ **Branch `hmi+tft` Terdeteksi (`045c321`) — Menunggu Commit Kode** | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md) *(0/4 Laptop, 0/4 RPi)* |
+| **Divisi 5** | *(Anggota 5 / `HDMrishiki`?)* | `divisi-5-web-hmi` *(atau `hmi+tft`)* | `decy13_mqtt_kit/web_hmi/index.html`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md` | ⏳ **Branch `hmi+tft` Terdeteksi (`045c321`) — Menunggu Commit Kode** | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_5_WEB_HMI.md) *(0/4 Laptop, 0/4 Alat)* |
+| **Divisi 6** | `rekypurnomo` | `divisi-6-mqtt-nodered-qa-testing` | `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `CHECKLIST_COMMISSIONING.txt`, `laporan_uji/UJI_DIVISI_6_MQTT_QA.md` | ✅ **Sudah Di-Merge ke `main`** *(Alat QA lengkap; cek 2 catatan minor `--auto` di bawah)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_6_MQTT_QA.md) *(3/3 Laptop, 0/4 Alat Nyata)* |
+
+### 🧪 Aturan "Push Dulu" vs "Lulus Uji Raspi" (`laporan_uji/`)
+Supaya tidak pernah terjadi *Merge Conflict* dan kita bisa tahu dengan jujur apakah kode teman yang baru di-push sudah dites di alat nyata atau masih ada bug:
+1. **Jangan edit `README.md` ini dari branch divisi!** Anggota + AI-nya cukup mengisi **1 file kartu ceklis milik divisinya sendiri** di folder [`laporan_uji/`](laporan_uji/README.md).
+2. **Kalau Ketua bilang "Push dulu progresmu" saat alat/kode belum 100% beres:**
+   - Isi `Status Push Saat Ini` dengan **`DRAFT_PUSH_LAPTOP`** *(baru lolos simulasi laptop)* atau **`SEDANG_REVISI_HARDWARE`** *(masih ada bug/kendala saat diuji)*.
+   - Centang **`[x]` pada Tahap A (Laptop)** saja jika sudah lolos, dan tulis detail masalah yang masih terjadi di **Bagian C** agar terbaca oleh Ketua dan sesi AI berikutnya.
+3. **Aturan Keras AI:** AI **DILARANG** mencentang **`[x]` pada Tahap B (Uji Fisik RPi)** atau menulis **`LULUS_UJI_FISIK`** sebelum anggota menempelkan bukti hasil tes nyata dari Raspberry Pi 3B+ / Mini PC! (*Alat `cek_integrasi_dan_announcer.py --ci` otomatis menolak status `LULUS_UJI_FISIK` jika kotak Tahap A/B masih ada yang kosong.*)
 
 ---
 
@@ -52,16 +60,21 @@ Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (
 
 *(Bagian ini hanya menampilkan divisi yang kodenya belum cocok dengan sistem utama agar langsung jelas apa yang harus diperbaiki.)*
 
-### 🔧 Audit Divisi 3 (Branch Saat Ini: `pacarjeno` → Seharusnya `divisi-3-led-ws2812b`)
+### 🔧 Audit Divisi 3 (Branch `divisi-3-led-ws2812b` @ `0137adb` — Tinggal Rapikan Basis Branch)
+
+> 🎉 **Apresiasi:** Pada commit `0137adb`, `blufiaa` **sudah memperbaiki seluruh isi kode** (`mod_led_ws2812b.py` & `03_test_led_pixel_finder.py`) menggunakan **`GPIO 18` (`rpi_ws281x` + `MemoryStrip`)**, membaca dinamis `config_hardware.json` (`64 LED`), dan class `LedStripModule(HardwareModule)` lulus tes simulasi! Satu-satunya masalah tersisa hanyalah **basis branch Git**-nya:
 
 | No | Bagian yang Salah | Masalah Teknis yang Ditemukan | Perbaikan yang Harus Dilakukan |
 | :---: | :--- | :--- | :--- |
-| **1** | **Titik Cabang & Nama Branch** | Branch `pacarjeno` dibuat dari `initial commit` lama (`b043fe0`) via web upload sebelum arsitektur modular `main` ada. | Buat branch baru **`divisi-3-led-ws2812b`** dari **`main` terbaru** (`git pull origin main` dulu), jangan upload lewat web ke folder terpisah. |
-| **2** | **Lokasi File & `__pycache__`** | File ditaruh di folder baru `divisi3_led/` dan ikut meng-upload file biner `__pycache__/*.pyc`. Core Daemon tidak membaca folder tersebut. | Wajib edit file resmi `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py` dan `03_test_led_pixel_finder.py`. Jangan upload `.pyc`! |
-| **3** | **Konflik Hardware SPI0 & Board** | Memakai `Pi5NeoStrip` (`pi5neo` di `/dev/spidev0.0` SPI0 untuk Raspberry Pi 5). Padahal instrumen memakai **Raspberry Pi 3B+ GPIO 18 (`rpi_ws281x`)**, dan **SPI0 dipakai LCD ILI9341 (Divisi 4)**. | Gunakan driver `rpi_ws281x` pada `GPIO 18` dengan `try/except ImportError` fallback `MemoryStrip` untuk pengujian di laptop Windows. |
-| **4** | **Hardcode 200 LED & Stage Beda** | Mengunci `LED_COUNT = 200` dan definisi `stage` sendiri, bukan membaca `config_hardware.json` (`total_leds: 64`, `0–47` spiral, `48–63` shoot). | Baca jumlah LED, indeks spiral, `rf_gap_indices`, dan indeks shoot secara dinamis dari `self.cfg["led_mapping"]` (`config_hardware.json`). |
-| **5** | **Kontrak Class Tidak Cocok** | Membuat class `CyclotronLED` terpisah, bukan `LedStripModule(HardwareModule)`. | Bungkus logika animasi komet (`_comet`) ke dalam class `LedStripModule(HardwareModule)` (`setup()`, `update(state, dt, now)`, `cleanup()`) & wajib update `state["activeLedIdx"]` + `state["shootLedIdx"]` untuk Web HMI! |
-| **✨** | **Nilai Plus (Pertahankan!)** | Algoritma ekor komet (`_comet`) dan simulator visual GUI (`tkinter`) di laptop sudah bagus. | Pertahankan logika efek komet + boleh menyertakan simulator visual di `03_test_led_pixel_finder.py` atau mode preview selama membaca `config_hardware.json`. |
+| **1** | **Basis Cabang Masih Lama (`2088dc0`)** | `0137adb` di-commit di atas history lama `pacarjeno` (`b043fe0`), bukan dari `origin/main` terbaru, sehingga memicu 2 *Merge Conflict* bila langsung di-merge. | Pindahkan branch `divisi-3-led-ws2812b` agar bercabang dari `origin/main` terbaru (`git checkout -B divisi-3-led-ws2812b origin/main`). |
+| **2** | **Terbawa `divisi3_led/` & `__pycache__/*.pyc`** | Commit lama `2088dc0` masih menempel di history branch itu, membawa folder `divisi3_led/` dan file biner `.pyc` yang membuat CI GitHub Actions gagal. | Ambil **hanya 2 file resmi** (`git checkout 0137adb -- decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py`), isi `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md`, lalu commit & push ulang. |
+
+### 📝 Catatan QA Minor Divisi 6 (Pasca-Merge `4ed588d`)
+
+| No | Bagian | Temuan Audit Terhadap `04_decy13_mqtt_daemon.py` | Penyesuaian yang Disarankan (Next Commit) |
+| :---: | :--- | :--- | :--- |
+| **1** | **`--auto` `SEQ-03` (`TOGGLE_INTERLOCK`)** | Setelah `TOGGLE_VACUUM`, skrip baru menunggu tekanan turun >50% lalu langsung kirim `TOGGLE_INTERLOCK`. Daemon asli menolak sampai `pressure <= 1e-3 mbar` (~6–7 detik), sehingga dengan default `--cmd-timeout 5.0` tahap ini bisa timeout. | Tunggu `pressure <= 1e-3` sebelum kirim `TOGGLE_INTERLOCK` (atau jalankan dengan `--cmd-timeout 10`). |
+| **2** | **`--expected-stages` Default `7`** | Integer `state["stage"]` di `04_decy13_mqtt_daemon.py` hanya melewati 6 nilai `{0, 1, 4, 5, 6, 7}` (tahap 2 & 3 berupa log teks), sehingga `SEQ-ST1` mencetak `WARN`. | Boleh sesuaikan default atau catatan pengecekan ke 6 integer `stage` aktif. |
 
 ---
 
@@ -77,18 +90,20 @@ Gunakan prompt di bawah ini **setiap kali kamu membuka chat AI baru** (atau sete
 <summary><b>🌀 DIVISI 2 — Prompt Lanjutan Konteks Terbaru (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.3]
 Saya adalah Anggota Divisi 2 (Sistem Vakum, Buzzer & Safety E-Stop) pada repo `sp-aksel-polteknuklir`.
-Status kode saya di branch `divisi-2-vacum-safety` sudah **RESMI DI-MERGE ke `main`** (initial pin relay OFF, cleanup aman menjaga relay tetap OFF, dan menu [4] Tes E-Stop di `01_test_relay_buzzer.py`).
+Status kode saya di branch `divisi-2-vacum-safety` sudah **RESMI DI-MERGE ke `main`** (initial pin relay OFF, cleanup aman menjaga relay tetap OFF, dan menu [4] Tes E-Stop di `01_test_relay_buzzer.py`), tetapi **Tahap B (Uji Fisik RPi 3B+)** masih menunggu bukti uji alat nyata di `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md`.
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
-- Branch aktif saya: `divisi-2-vacum-safety` (pastikan sudah `git merge origin/main` agar sinkron dengan `main` `v1.2`).
-- File yang BOLEH kamu baca sebagai referensi: `decy13_mqtt_kit/raspi_cli/config_hardware.json` dan `decy13_mqtt_kit/raspi_cli/modules/base_module.py`.
+- Branch aktif saya: `divisi-2-vacum-safety` (pastikan sudah `git merge origin/main` agar sinkron dengan `main` `v1.3`).
+- File yang BOLEH kamu baca sebagai referensi: `decy13_mqtt_kit/raspi_cli/config_hardware.json`, `decy13_mqtt_kit/raspi_cli/modules/base_module.py`, dan `laporan_uji/README.md`.
 - File yang BOLEH kamu edit HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`
   2. `decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py`
-- DILARANG mengedit file divisi lain (`04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, dll).
+  3. `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` (untuk update ceklis uji laptop & RPi!)
+- DILARANG mengedit `README.md` root atau file divisi lain (`04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, dll).
 - DILARANG menjalankan perintah `git commit` atau `git push` secara otomatis; saya akan menjalankan commit dan push sendiri.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) atau memberi status `LULUS_UJI_FISIK` di `UJI_DIVISI_2_VAKUM_SAFETY.md` sebelum saya memberi bukti output terminal / hasil tes nyata dari Raspberry Pi 3B+! Jika baru tes laptop atau masih ada kendala fisik saat saya ingin push dulu, catat status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` dan tulis masalahnya di Bagian C.
 
 [KONTRAK YANG WAJIB DIJAGA]
 Class `VacuumSafetyModule(HardwareModule)` wajib memiliki `setup() -> bool`, `update(state, dt, now)`, `cleanup()`, fallback `try/except ImportError` untuk `RPi.GPIO` agar aman jalan di laptop Windows, serta memenuhi pengecekan `python tools/cek_integrasi_dan_announcer.py --ci`.
@@ -101,36 +116,30 @@ Class `VacuumSafetyModule(HardwareModule)` wajib memiliki `setup() -> bool`, `up
 </details>
 
 <details open>
-<summary><b>💡 DIVISI 3 — Prompt Perbaikan Khusus & Migrasi dari Branch `pacarjeno` (Klik untuk buka & salin)</b></summary>
+<summary><b>💡 DIVISI 3 — Prompt Migrasi Bersih ke `main` & Persiapan Uji Raspi (`0137adb` Sudah Bagus!)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — PERBAIKAN KHUSUS DIVISI 3]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.3 DIVISI 3]
 Saya adalah Anggota Divisi 3 (Sistem LED Strip WS2812B) pada proyek Alat Peraga Siklotron DECY-13 (13 MeV H-) di Raspberry Pi 3 Model B+.
-Saya memulai sesi chat AI baru agar kamu memahami kondisi terbaru branch `main` dan catatan perbaikan dari Ketua Tim:
 
-[MASALAH PADA KODE LAMA SAYA YANG HARUS DIPERBAIKI]
-Pada branch lama saya (`pacarjeno` di folder `divisi3_led/`), terdapat ketidaksesuaian dengan Core Daemon:
-1. Kode lama memakai `Pi5NeoStrip` (`/dev/spidev0.0` SPI0 untuk Raspberry Pi 5). Itu SALAH karena sistem kita memakai **Raspberry Pi 3B+** dengan **`rpi_ws281x` di GPIO 18 (DMA PWM0)**, sedangkan SPI0 dipakai oleh Layar LCD ILI9341 (Divisi 4).
-2. Kode lama meng-hardcode `LED_COUNT = 200` (`0-149` spiral, `150-199` shoot). Seharusnya WAJIB membaca konfigurasi dinamis dari `config_hardware.json` (`self.cfg["led_mapping"]`: `total_leds`, `spiral_start_idx`, `spiral_end_idx`, `rf_gap_indices`, `shoot_start_idx`, `shoot_end_idx`).
-3. Kode lama memakai class `CyclotronLED` di folder baru `divisi3_led/` dan ikut meng-upload `__pycache__/*.pyc`. Seharusnya modul resmi berada di `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py` menggunakan class `LedStripModule(HardwareModule)`!
-4. Core Daemon (`04_decy13_mqtt_daemon.py`) memanggil `setup()`, `update(state, dt, now)`, dan `cleanup()`, serta membaca `state["activeLedIdx"]` dan `state["shootLedIdx"]` untuk dikirim ke Web HMI melalui MQTT.
-
-[HAL BAGUS YANG INGIN SAYA PERTAHANKAN]
-Saya ingin mempertahankan logika efek ekor komet halus (`_comet`), pewarnaan per tahap (`stage` 0..7 dari `state["stage"]`), serta dukungan simulasi visual di laptop Windows (jika library `rpi_ws281x` tidak ada, gunakan mode virtual/simulasi tanpa error!).
+[HASIL AUDIT KODE SAYA (COMMIT `0137adb`)]
+Kabar baik: kode `mod_led_ws2812b.py` dan `03_test_led_pixel_finder.py` saya di `0137adb` SUDAH BENAR (memakai `GPIO 18`, `rpi_ws281x` + `MemoryStrip`, membaca dinamis `config_hardware.json`, dan lulus uji simulasi `LedStripModule`).
+Namun branch `divisi-3-led-ws2812b` masih bercabang dari commit lama (`2088dc0`) dan masih membawa folder `divisi3_led/` + `__pycache__/*.pyc`, sehingga tidak bisa di-merge sebelum dipindah ke basis `origin/main` terbaru.
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
-- Branch kerja saya yang benar adalah `divisi-3-led-ws2812b` (dibuat dari `main` terbaru, BUKAN `pacarjeno`).
-- File referensi yang BOLEH dibaca: `decy13_mqtt_kit/raspi_cli/config_hardware.json`, `decy13_mqtt_kit/raspi_cli/modules/base_module.py`, `decy13_mqtt_kit/raspi_cli/04_decy13_mqtt_daemon.py`.
-- File yang BOLEH kamu edit/tulis HANYA:
+- Branch kerja saya: `divisi-3-led-ws2812b` (harus dibuat ulang dari `origin/main` terbaru agar bersih dari `divisi3_led/` & `.pyc`).
+- File referensi yang BOLEH dibaca: `decy13_mqtt_kit/raspi_cli/config_hardware.json`, `decy13_mqtt_kit/raspi_cli/modules/base_module.py`, `laporan_uji/README.md`.
+- File yang BOLEH kamu edit HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`
   2. `decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py`
-- JANGAN membuat folder `divisi3_led/` baru, JANGAN edit `04_decy13_mqtt_daemon.py` atau `config_hardware.json`, dan JANGAN jalankan `git commit` / `git push` otomatis (saya yang akan commit & push sendiri).
+  3. `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md`
+- DILARANG mengedit `README.md` root, `04_decy13_mqtt_daemon.py`, atau `config_hardware.json`, dan DILARANG jalankan `git commit` / `git push` otomatis.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (`UJI_DIVISI_3_LED_WS2812B.md`) sebelum saya memberi bukti hasil tes pada LED WS2812B fisik di Raspberry Pi 3B+! Setelah memindah 2 file resmi ke basis `main`, centang Tahap A (jika lolos `--ci`) dan set `Status Push Saat Ini` menjadi `DRAFT_PUSH_LAPTOP`.
 
 [TUGAS SEKARANG]
-0. **Khusus jika kamu AI Web (browser):** jika tidak punya akses membaca file lokal, **JANGAN mengarang pin atau isi file** — minta saya meng-upload/mem-paste isi `config_hardware.json`, `base_module.py`, `mod_led_ws2812b.py`, dan `03_test_led_pixel_finder.py` lebih dulu, dan sajikan kode **utuh per file** siap copy-paste ke VS Code.
-1. Baca isi `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py` dan `config_hardware.json` yang ada di `main` sekarang.
-2. Adaptasikan algoritma animasi komet & pewarnaan tahap saya ke dalam `LedStripModule(HardwareModule)` di `mod_led_ws2812b.py` agar 100% kompatibel dengan GPIO 18 (`rpi_ws281x`), mode fallback laptop Windows, membaca parameter dinamis dari `self.cfg["led_mapping"]`, dan tetap meng-update `state["activeLedIdx"]` & `state["shootLedIdx"]`.
-3. Setelah selesai, verifikasi (atau arahkan saya menjalankan sendiri di terminal) perintah `python tools/cek_integrasi_dan_announcer.py --ci` agar pasti lolos satpam GitHub Actions.
+1. Jika saya belum memindahkan 2 file dari commit `0137adb` ke branch `divisi-3-led-ws2812b` berbasis `origin/main`, pandu saya menjalankan perintah Git-nya secara manual (tanpa kamu eksekusi otomatis).
+2. Bantu saya memperbarui `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` (Tahap A `[x]` setelah `python tools/cek_integrasi_dan_announcer.py --ci` lulus, Tahap B tetap `[ ]` sampai tes alat fisik RPi, Status `DRAFT_PUSH_LAPTOP`).
+3. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya mem-paste `UJI_DIVISI_3_LED_WS2812B.md` dulu sebelum memberi revisi siap copy-paste.
 ```
 
 </details>
@@ -139,17 +148,19 @@ Saya ingin mempertahankan logika efek ekor komet halus (`_comet`), pewarnaan per
 <summary><b>📟 DIVISI 4 — Prompt Konteks Terbaru Layar LCD TFT SPI (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.3]
 Saya adalah Anggota Divisi 4 (Layar Status Lokal LCD TFT SPI ILI9341 320x240) pada Raspberry Pi 3 Model B+.
 Hardware LCD memakai SPI0 (`CE0=GPIO 8`, `MOSI=GPIO 10`, `SCLK=GPIO 11`, `DC=GPIO 24`, `RST=GPIO 25`) dengan `luma.lcd` & `Pillow`.
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
 - Branch kerja saya: `divisi-4-lcd-ili9341` (dibuat dari `main` terbaru).
-- File referensi yang BOLEH dibaca: `decy13_mqtt_kit/raspi_cli/config_hardware.json`, `decy13_mqtt_kit/raspi_cli/modules/base_module.py`.
+- File referensi yang BOLEH dibaca: `decy13_mqtt_kit/raspi_cli/config_hardware.json`, `decy13_mqtt_kit/raspi_cli/modules/base_module.py`, `laporan_uji/README.md`.
 - File yang BOLEH kamu edit HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`
   2. `decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py`
-- DILARANG mengedit file divisi lain (`04_decy13_mqtt_daemon.py`, `config_hardware.json`, dll) dan DILARANG menjalankan `git commit` / `git push` otomatis.
+  3. `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md`
+- DILARANG mengedit `README.md` root atau file divisi lain (`04_decy13_mqtt_daemon.py`, `config_hardware.json`, dll) dan DILARANG menjalankan `git commit` / `git push` otomatis.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) sebelum ada bukti tes di LCD SPI fisik RPi 3B+! Catat status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` dan kendala di Bagian C bila push sementara.
 
 [TUGAS SEKARANG]
 Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, dan `02_test_lcd_ili9341.py` dulu sebelum menulis kode (jangan mengarang!), dan beri kode utuh siap copy-paste. Jika punya akses lokal, baca file tersebut langsung. Pastikan background SPI render thread tetap non-blocking dan aman di Windows tanpa `luma.lcd`, lalu bantu saya menyempurnakan tampilan dashboard 320x240 LCD (warna tema per stage, indikator interlock, progress bar vakum & MeV). Verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
@@ -161,7 +172,7 @@ Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/
 <summary><b>🖥️ DIVISI 5 — Prompt Konteks Terbaru Web HMI SCADA & 2D Canvas (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.3]
 Saya adalah Anggota Divisi 5 (Web HMI SCADA & Live 2D Simulator) untuk Mini PC Ruang Kontrol.
 Web HMI berkomunikasi dengan RPi 3B+ via Mosquitto MQTT over WebSockets (port 9001):
 - Publish perintah ke `decy13/hmi/cmd` (`TOGGLE_POWER`, `TOGGLE_VACUUM`, `TOGGLE_INTERLOCK`, `AUTO_INIT`, `START_BEAM`, `SHOOT`, `EMERGENCY_STOP`, `SET_PARAMS`).
@@ -169,8 +180,11 @@ Web HMI berkomunikasi dengan RPi 3B+ via Mosquitto MQTT over WebSockets (port 90
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
 - Branch kerja saya: `divisi-5-web-hmi` (dibuat dari `main` terbaru).
-- File yang BOLEH kamu edit HANYA: `decy13_mqtt_kit/web_hmi/index.html` (dan aset di `decy13_mqtt_kit/web_hmi/assets/`).
-- DILARANG mengedit file Python di `raspi_cli/`, `config_hardware.json`, atau `nodered/`, dan DILARANG menjalankan `git commit` / `git push` otomatis.
+- File yang BOLEH kamu edit HANYA:
+  1. `decy13_mqtt_kit/web_hmi/index.html` (dan aset di `decy13_mqtt_kit/web_hmi/assets/`)
+  2. `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`
+- DILARANG mengedit `README.md` root, file Python di `raspi_cli/`, `config_hardware.json`, atau `nodered/`, dan DILARANG menjalankan `git commit` / `git push` otomatis.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (`UJI_DIVISI_5_WEB_HMI.md`) sebelum Web HMI benar-benar diuji terhubung ke broker MQTT RPi nyata! Jika baru tes simulasi browser di laptop, gunakan status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE`.
 
 [TUGAS SEKARANG]
 Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `decy13_mqtt_kit/web_hmi/index.html` (atau bagian kode terkait yang sedang saya kerjakan) lebih dulu agar tidak merusak fungsi yang sudah ada, lalu berikan bagian kode/perubahan yang jelas untuk saya salin ke VS Code. Pertahankan mode State-Driven saat `state.mqttConnected === true`, dan bantu saya menyempurnakan UI SCADA, grafik, atau simulasi 2D. Setelah selesai, verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
@@ -182,20 +196,24 @@ Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan 
 <summary><b>📡 DIVISI 6 — Prompt Konteks Terbaru MQTT QA, Node-RED & Commissioning (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.2]
-Saya adalah Anggota Divisi 6 (Jaringan MQTT, Node-RED & Commissioning QA) pada proyek DECY-13.
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.3 DIVISI 6]
+Saya adalah Anggota Divisi 6 (Jaringan MQTT, Node-RED & Commissioning QA) pada proyek DECY-13 (`rekypurnomo`).
+Commit `4ed588d` saya untuk `06_test_mqtt_healthcheck.py` sudah **RESMI DI-MERGE ke `main`** dan berstatus `DRAFT_PUSH_LAPTOP` di `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`.
 Sistem menggunakan Mosquitto (`1883` TCP & `9001` WebSocket) dengan topic `decy13/hmi/cmd` dan `decy13/rpi/state` (22 field JSON wajib).
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
-- Branch kerja saya: `divisi-6-nodered-qa` (dibuat dari `main` terbaru).
+- Branch kerja saya: `divisi-6-mqtt-nodered-qa-testing` (wajib `git merge origin/main` dulu agar tersinkron `v1.3`).
 - File yang BOLEH kamu edit HANYA:
   1. `decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py`
   2. `decy13_mqtt_kit/nodered/flows_mqtt_decy13.json`
   3. `instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt`
-- DILARANG mengedit `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html`, dan DILARANG menjalankan `git commit` / `git push` otomatis.
+  4. `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`
+- DILARANG mengedit `README.md` root, `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html`, dan DILARANG menjalankan `git commit` / `git push` otomatis.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B di `UJI_DIVISI_6_MQTT_QA.md` sebelum dijalankan terhadap `04_decy13_mqtt_daemon.py` asli di jaringan Raspberry Pi <-> Mini PC nyata!
 
 [TUGAS SEKARANG]
-Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/paste `06_test_mqtt_healthcheck.py` dan `flows_mqtt_decy13.json` saat ini lebih dulu sebelum mengedit, lalu berikan kode utuh siap copy-paste. Bantu saya menambahkan mode automated end-to-end test 7 tahap + pengukuran latensi MQTT, lalu verifikasi / arahkan saya menjalankan `python tools/cek_integrasi_dan_announcer.py --ci`.
+1. Sesuaikan 2 catatan minor QA hasil audit terhadap `04_decy13_mqtt_daemon.py` asli: (a) sebelum `SEQ-03` mengirim `TOGGLE_INTERLOCK`, tunggu `pressure <= 1e-3 mbar` karena daemon menolak jika tekanan masih tinggi (~6-7s dari atmosfer); (b) cek apakah `--expected-stages` perlu diselaraskan ke 6 nilai integer `stage` (`0, 1, 4, 5, 6, 7`) yang dipakai daemon.
+2. Bantu saya menguji langsung ke RPi + Mini PC nyata dan memperbarui `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `04_decy13_mqtt_daemon.py`, dan `UJI_DIVISI_6_MQTT_QA.md` lebih dulu; verifikasi akhir dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
 ```
 
 </details>
@@ -207,14 +225,14 @@ Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya meng-upload/
 ```powershell
 # 1. Tarik & cek branch anggota yang masuk
 git fetch origin
-git diff --stat main..origin/divisi-2-vacum-safety
+git diff --stat main..origin/<nama-branch-divisi>
 
 # 2. Merge branch yang sudah LULUS ke main
 git checkout main
-git merge origin/divisi-2-vacum-safety
+git merge origin/<nama-branch-divisi>
 
 # 3. Jalankan cek integrasi & buat teks pengumuman WhatsApp otomatis
-python tools/cek_integrasi_dan_announcer.py --versi "v1.2" --catatan "Divisi 2 sudah di-merge ke main"
+python tools/cek_integrasi_dan_announcer.py --versi "v1.4" --catatan "Merge <divisi> ke main"
 
 # 4. Update tabel status & prompt di README.md jika perlu, lalu commit & push sendiri ke main
 ```

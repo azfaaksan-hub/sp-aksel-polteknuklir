@@ -20,12 +20,12 @@ Setiap prompt di bawah ini dirancang dengan 6 komponen anatomi wajib:
 
 | Divisi | Peran Anggota | Nama Branch GitHub | File Eksklusif yang Boleh Diedit |
 | :--- | :--- | :--- | :--- |
-| **Divisi 1 (Kamu)** | **Lead & Raspi Core Backend** | `main` / `core-raspi-backend` | `raspi_cli/04_decy13_mqtt_daemon.py`<br>`raspi_cli/05_laptop_dryrun_simulator.py`<br>`raspi_cli/config_hardware.json`<br>`raspi_cli/modules/base_module.py`<br>`raspi_cli/modules/__init__.py` |
-| **Divisi 2** | **Sistem Vakum, Buzzer & Safety E-Stop** | `divisi-2-vakum-safety` | `raspi_cli/modules/mod_vacuum_safety.py`<br>`raspi_cli/01_test_relay_buzzer.py` |
-| **Divisi 3** | **Sistem LED Strip WS2812B (Spiral & Shoot)** | `divisi-3-led-ws2812b` | `raspi_cli/modules/mod_led_ws2812b.py`<br>`raspi_cli/03_test_led_pixel_finder.py` |
-| **Divisi 4** | **Sistem Layar LCD TFT SPI ILI9341** | `divisi-4-lcd-ili9341` | `raspi_cli/modules/mod_lcd_ili9341.py`<br>`raspi_cli/02_test_lcd_ili9341.py` |
-| **Divisi 5** | **Sistem Web HMI SCADA & Simulator 2D** | `divisi-5-web-hmi` | `web_hmi/index.html` |
-| **Divisi 6** | **Jaringan MQTT, Node-RED & Commissioning QA** | `divisi-6-nodered-qa` | `nodered/flows_mqtt_decy13.json`<br>`raspi_cli/06_test_mqtt_healthcheck.py`<br>`instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt` |
+| **Divisi 1 (Kamu)** | **Lead & Raspi Core Backend** | `main` / `core-raspi-backend` | `raspi_cli/04_decy13_mqtt_daemon.py`<br>`raspi_cli/05_laptop_dryrun_simulator.py`<br>`raspi_cli/config_hardware.json`<br>`raspi_cli/modules/base_module.py`<br>`raspi_cli/modules/__init__.py`<br>`laporan_uji/UJI_DIVISI_1_CORE_RASPI.md` |
+| **Divisi 2** | **Sistem Vakum, Buzzer & Safety E-Stop** | `divisi-2-vakum-safety` | `raspi_cli/modules/mod_vacuum_safety.py`<br>`raspi_cli/01_test_relay_buzzer.py`<br>`laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` |
+| **Divisi 3** | **Sistem LED Strip WS2812B (Spiral & Shoot)** | `divisi-3-led-ws2812b` | `raspi_cli/modules/mod_led_ws2812b.py`<br>`raspi_cli/03_test_led_pixel_finder.py`<br>`laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` |
+| **Divisi 4** | **Sistem Layar LCD TFT SPI ILI9341** | `divisi-4-lcd-ili9341` | `raspi_cli/modules/mod_lcd_ili9341.py`<br>`raspi_cli/02_test_lcd_ili9341.py`<br>`laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` |
+| **Divisi 5** | **Sistem Web HMI SCADA & Simulator 2D** | `divisi-5-web-hmi` | `web_hmi/index.html`<br>`laporan_uji/UJI_DIVISI_5_WEB_HMI.md` |
+| **Divisi 6** | **Jaringan MQTT, Node-RED & Commissioning QA** | `divisi-6-nodered-qa` | `nodered/flows_mqtt_decy13.json`<br>`raspi_cli/06_test_mqtt_healthcheck.py`<br>`instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt`<br>`laporan_uji/UJI_DIVISI_6_MQTT_QA.md` |
 
 ---
 
@@ -88,7 +88,8 @@ Proyek ini dikerjakan oleh 6 orang di GitHub menggunakan arsitektur modular Pyth
 - File yang BOLEH kamu edit/modifikasi HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`
   2. `decy13_mqtt_kit/raspi_cli/01_test_relay_buzzer.py`
-- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain agar tidak terjadi Merge Conflict di GitHub!
+  3. `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md`
+- DILARANG KERAS mengedit `README.md` root, `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain agar tidak terjadi Merge Conflict di GitHub!
 
 [4. INTERFACE & STATE CONTRACT]
 Di dalam `mod_vacuum_safety.py`, class `VacuumSafetyModule(HardwareModule)` WAJIB mempertahankan method:
@@ -106,7 +107,8 @@ Bantu saya menyempurnakan `mod_vacuum_safety.py` dan skrip uji mandiri `01_test_
 3. Menu diagnostik interaktif yang lengkap pada `01_test_relay_buzzer.py` (termasuk tes pembacaan status tombol fisik E-Stop secara live di terminal).
 
 [6. VERIFICATION]
-- Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang isi file** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_vacuum_safety.py`, dan `01_test_relay_buzzer.py` lebih dulu, lalu berikan kode utuh siap copy-paste ke VS Code.
+- Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang isi file** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, dan `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` lebih dulu, lalu berikan kode utuh siap copy-paste ke VS Code.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) di `UJI_DIVISI_2_VAKUM_SAFETY.md` sebelum saya memberi bukti tes nyata di Raspi! Jika baru tes laptop atau masih ada kendala fisik saat push sementara, isi status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` dan tulis catatan di Bagian C.
 - Pastikan kode yang kamu tulis selalu lolos uji sintaks Python di laptop (mode fallback tanpa RPi) dengan menjalankan (atau mengarahkan saya menjalankan) `python tools/cek_integrasi_dan_announcer.py --ci` dan cek `README.md` untuk pengumuman/revisi terbaru.
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
@@ -133,7 +135,8 @@ Proyek ini dikerjakan oleh 6 orang di GitHub. Core Daemon (`04_decy13_mqtt_daemo
 - File yang BOLEH kamu edit/modifikasi HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`
   2. `decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py`
-- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain!
+  3. `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md`
+- DILARANG KERAS mengedit `README.md` root, `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain!
 
 [4. INTERFACE & STATE CONTRACT]
 Di dalam `mod_led_ws2812b.py`, class `LedStripModule(HardwareModule)` WAJIB mempertahankan method:
@@ -149,7 +152,8 @@ Bantu saya memperbagus efek visual di `mod_led_ws2812b.py` dan alat kalibrasi `0
 4. Efek darurat kedip merah seluruh LED saat `state["emergency"] == True`, dan warna biru tenang di piksel #0 saat Standby (`power == True`, `beam == False`).
 
 [6. VERIFICATION]
-- Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang pin/class** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_led_ws2812b.py`, dan `03_test_led_pixel_finder.py` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang pin/class** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, dan `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) di `UJI_DIVISI_3_LED_WS2812B.md` sebelum saya memberi bukti tes nyata di LED fisik Raspi! Gunakan status `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` bila masih simulasi atau revisi.
 - Pastikan kode aman dijalankan di laptop (mode simulasi tanpa `rpi_ws281x`) maupun di Raspberry Pi (`sudo python3`) serta lolos (atau arahkan saya menjalankan) `python tools/cek_integrasi_dan_announcer.py --ci`, dan cek tabel status/revisi di `README.md` sebelum mengubah kode.
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
@@ -173,7 +177,8 @@ Proyek ini dikerjakan oleh 6 orang di GitHub. Core Daemon (`04_decy13_mqtt_daemo
 - File yang BOLEH kamu edit/modifikasi HANYA:
   1. `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`
   2. `decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py`
-- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain!
+  3. `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md`
+- DILARANG KERAS mengedit `README.md` root, `04_decy13_mqtt_daemon.py`, `config_hardware.json`, `web_hmi/index.html`, atau file milik divisi lain!
 
 [4. INTERFACE & STATE CONTRACT]
 Di dalam `mod_lcd_ili9341.py`, class `LcdDisplayModule(HardwareModule)` WAJIB mempertahankan method:
@@ -188,7 +193,8 @@ Bantu saya mempercantik tampilan grafis lokal `mod_lcd_ili9341.py` dan skrip uji
 3. Optimasi *dirty-check* (hanya mengirim frame SPI jika nilai berubah) agar CPU Raspberry Pi tetap ringan.
 
 [6. VERIFICATION]
-- Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, dan `02_test_lcd_ili9341.py` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- Khusus AI Web (browser): jika tidak bisa membaca folder lokal secara langsung, **JANGAN mengarang** — minta saya meng-upload/paste `config_hardware.json`, `base_module.py`, `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, dan `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` lebih dulu, lalu berikan kode utuh siap copy-paste.
+- ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` pada Tahap B (Uji Fisik RPi) di `UJI_DIVISI_4_LCD_ILI9341.md` sebelum ada bukti LCD fisik RPi menyala normal! Isi `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` jika belum diuji di Raspi.
 - Pastikan kode tetap aman ketika diimpor di laptop tanpa library `luma.lcd`, bebas bug, dan lolos (atau arahkan saya menjalankan) `python tools/cek_integrasi_dan_announcer.py --ci`. Cek juga `README.md` sebelum memberikan perubahan.
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
@@ -213,7 +219,8 @@ Prinsip utama: Saat `state.mqttConnected === true`, seluruh indikator, grafik, t
 - Branch kerja saya: `divisi-5-web-hmi`
 - File yang BOLEH kamu edit/modifikasi HANYA:
   1. `decy13_mqtt_kit/web_hmi/index.html` (dan aset di dalam folder `decy13_mqtt_kit/web_hmi/assets/` jika diperlukan)
-- DILARANG KERAS mengedit file Python di dalam `raspi_cli/`, `config_hardware.json`, atau `nodered/` agar tidak terjadi Merge Conflict dengan Divisi 1, 2, 3, 4, dan 6!
+  2. `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`
+- DILARANG KERAS mengedit `README.md` root, file Python di dalam `raspi_cli/`, `config_hardware.json`, atau `nodered/` agar tidak terjadi Merge Conflict dengan Divisi 1, 2, 3, 4, dan 6!
 
 [4. INTERFACE & STATE CONTRACT]
 Format perintah JSON yang dikirim ke `decy13/hmi/cmd` TIDAK BOLEH diubah namanya:
@@ -227,7 +234,8 @@ Format perintah JSON yang dikirim ke `decy13/hmi/cmd` TIDAK BOLEH diubah namanya
 - `{"cmd": "SET_PARAMS", "magnet_a": 1450, "rf_mhz": 22.5, "rf_kv": 45, "beam_ua": 8.4}`
 
 [5. TECHNICAL OBJECTIVES]
-Bantu saya menyempurnakan tampilan, responsivitas, animasi Canvas 2D, fitur edukasi interaktif, efek suara Web Audio API, dan indikator Digital Twin di dalam `web_hmi/index.html` tanpa merusak kontrak MQTT di atas. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan/mem-paste `web_hmi/index.html` (dan `README.md`) terlebih dahulu agar tidak merusak kode yang sudah ada; jika punya akses lokal, baca langsung lalu arahkan/verifikasi dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+Bantu saya menyempurnakan tampilan, responsivitas, animasi Canvas 2D, fitur edukasi interaktif, efek suara Web Audio API, dan indikator Digital Twin di dalam `web_hmi/index.html` tanpa merusak kontrak MQTT di atas. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan/mem-paste `web_hmi/index.html`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`, dan `README.md` terlebih dahulu agar tidak merusak kode yang sudah ada; jika punya akses lokal, baca langsung lalu arahkan/verifikasi dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B (`UJI_DIVISI_5_WEB_HMI.md`) sebelum benar-benar tersambung ke broker MQTT Raspi nyata! Gunakan `DRAFT_PUSH_LAPTOP` / `SEDANG_REVISI_HARDWARE` bila baru simulasi laptop.
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
 
@@ -250,12 +258,14 @@ Sistem menghubungkan Mini PC (Web HMI) dan Raspberry Pi 3B+ (Hardware Daemon) me
   1. `decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py` (Alat uji otomatis kontrak MQTT & stres-tes perintah)
   2. `decy13_mqtt_kit/nodered/flows_mqtt_decy13.json` (Dashboard alternatif Node-RED)
   3. `instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt` (Prosedur pengujian integrasi & commissioning)
-- DILARANG KERAS mengedit `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html` agar tidak konflik dengan divisi lain!
+  4. `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`
+- DILARANG KERAS mengedit `README.md` root, `04_decy13_mqtt_daemon.py`, `modules/*.py`, atau `web_hmi/index.html` agar tidak konflik dengan divisi lain!
 
 [4. INTERFACE & STATE CONTRACT]
 Seluruh pengujian di `06_test_mqtt_healthcheck.py` dan flow `flows_mqtt_decy13.json` wajib memvalidasi 22 field telemetri dari `decy13/rpi/state` (`power`, `vacuum`, `rf`, `magnet`, `interlocks`, `beam`, `exposureActive`, `emergency`, `stage`, `mode`, `lcd_line1`..`4`, `pressure`, `beamEnergy`, `beamCurrent`, `targetCurrent`, `activeLedIdx`, `shootLedIdx`, `buzzerActive`, `logs`) serta mengirim format perintah standar ke `decy13/hmi/cmd`.
 
 [5. TECHNICAL OBJECTIVES]
-Bantu saya mengembangkan fitur automated test sequence (skenario uji otomatis Tahap 1 sampai Tahap 7 + uji Emergency Stop), laporan latensi/jitter paket MQTT di `06_test_mqtt_healthcheck.py`, serta penyempurnaan flow Node-RED dan checklist commissioning. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, dan `README.md` lebih dulu sebelum mengedit, lalu berikan kode utuh siap copy-paste dan arahkan saya cek di terminal dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+Bantu saya mengembangkan fitur automated test sequence (skenario uji otomatis Tahap 1 sampai Tahap 7 + uji Emergency Stop), laporan latensi/jitter paket MQTT di `06_test_mqtt_healthcheck.py`, serta penyempurnaan flow Node-RED dan checklist commissioning. Jika kamu **AI Web (browser)** tanpa akses folder lokal, minta saya melampirkan `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `laporan_uji/UJI_DIVISI_6_MQTT_QA.md`, dan `README.md` lebih dulu sebelum mengedit, lalu berikan kode utuh siap copy-paste dan arahkan saya cek di terminal dengan `python tools/cek_integrasi_dan_announcer.py --ci`.
+ATURAN KERAS KARTU UJI: JANGAN mencentang `[x]` Tahap B di `UJI_DIVISI_6_MQTT_QA.md` sebelum dijalankan di jaringan nyata RPi <-> Mini PC!
 DILARANG KERAS menjalankan `git add`, `git commit`, atau `git push` otomatis atas nama saya — proses Git dikerjakan mandiri oleh saya sendiri.
 ```
