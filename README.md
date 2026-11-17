@@ -60,13 +60,14 @@ Supaya tidak pernah terjadi *Merge Conflict* dan kita bisa tahu dengan jujur apa
 
 *(Tidak ada divisi yang memicu konflik/error blocking saat ini — Divisi 3 sudah lolos & ter-merge bersih ke `main`! Berikut catatan penyelarasan ringan sebelum uji alat fisik:)*
 
-### 🛠️ Alat Auto-Setup & Preflight RPi untuk Anggota yang Pakai Raspi Sendiri
-Jika kamu mengetes modul memakai Raspberry Pi 3B+ sendiri (username/hostname bebas, bukan harus `pi@raspberrypi`), baca [`laporan_uji/JOBDESK_DAN_DOD.md`](laporan_uji/JOBDESK_DAN_DOD.md) dan jalankan 2 perintah ini di RPi setelah menarik kode terbaru:
-```bash
-bash tools/raspi_bootstrap.sh                    # auto-set SPI0, Audio OFF, Mosquitto 1883/9001, 6 paket Python
-python3 tools/raspi_preflight.py --divisi <1..6> # cek kesiapan OS + tampilkan batas file & perintah uji Tahap B divisimu
-```
-*(Skrip preflight otomatis menyimpan log ke `laporan_uji/bukti/` sebagai lampiran Bagian C tanpa pernah mencentang `[x]` otomatis.)*
+### 🛠️ Alat Auto-Setup, Preflight RPi, & Panduan Stasiun Uji Mini PC
+- **Jika menguji di Raspberry Pi 3B+ sendiri** (username/hostname bebas, bukan harus `pi@raspberrypi`), baca [`laporan_uji/JOBDESK_DAN_DOD.md`](laporan_uji/JOBDESK_DAN_DOD.md) dan jalankan 2 perintah ini di RPi setelah menarik kode terbaru:
+  ```bash
+  bash tools/raspi_bootstrap.sh                    # auto-set SPI0, Audio OFF, Mosquitto 1883/9001, 6 paket Python
+  python3 tools/raspi_preflight.py --divisi <1..6> # cek kesiapan OS + tampilkan batas file & perintah uji Tahap B divisimu
+  ```
+  *(Skrip preflight otomatis menyimpan log ke `laporan_uji/bukti/` sebagai lampiran Bagian C tanpa pernah mencentang `[x]` otomatis.)*
+- **Jika membuka repo dari Mini PC Ruang Kontrol (khususnya Windows 8) untuk uji langsung ↔ Raspberry Pi:** baca [`decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`](decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md) untuk pengaturan Ethernet ICS/SSH Win 8, tahapan uji fisik Divisi 3 (LED WS2812B), batas file anti-konflik, serta **Prompt AGY Mini PC siap *copy-paste***.
 
 ### 📡 Catatan Penyelarasan & Perubahan `config_hardware.json` (Pasca `v1.5`)
 

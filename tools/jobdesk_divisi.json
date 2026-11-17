@@ -90,12 +90,12 @@
       "pic": "dzakimumtazi",
       "branch": "divisi-2-vacum-safety",
       "report_file": "UJI_DIVISI_2_VAKUM_SAFETY.md",
-      "current_announcement": "Kode Divisi 2 (66930bb) SUDAH DI-MERGE ke main dan lolos Tahap A (3/3 Laptop). Saat ini fokus beralih ke Tahap B (Uji Fisik RPi 3B+).",
+      "current_announcement": "Kode Divisi 2 (66930bb) SUDAH DI-MERGE ke main dan lolos Tahap A (3/3 Laptop). Uji lapangan vakum sudah berjalan — menunggu konfirmasi & push update kartu laporan oleh Divisi 2.",
       "current_tasks": [
         "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
-        "Jalankan bash tools/raspi_bootstrap.sh dan python3 tools/raspi_preflight.py --divisi 2 di Raspberry Pi 3B+.",
-        "Uji rangkaian fisik Relay Kipas (GPIO 21 Active-LOW), Buzzer (GPIO 17), dan tombol E-Stop (GPIO 22) memakai python3 01_test_relay_buzzer.py.",
-        "Tempelkan bukti output terminal RPi ke Bagian C laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md dan centang butir Tahap B yang benar-benar lulus."
+        "Jika memakai unit RPi baru, jalankan bash tools/raspi_bootstrap.sh dan python3 tools/raspi_preflight.py --divisi 2.",
+        "Konfirmasikan hasil uji rangkaian fisik Relay Kipas (GPIO 21 Active-LOW), Buzzer (GPIO 17), dan tombol E-Stop (GPIO 22) dari python3 01_test_relay_buzzer.py.",
+        "Tempelkan bukti output terminal RPi ke Bagian C laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md dan centang butir Tahap B yang benar-benar lulus lalu push."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py",
@@ -172,19 +172,19 @@
         },
         {
           "item": "sudo python3 03_test_led_pixel_finder.py menyalakan piksel #0 s.d. #63 secara akurat",
-          "cmd": "cd ~/decy13/raspi_cli && sudo python3 03_test_led_pixel_finder.py --mode finder --hardware"
+          "cmd": "cd decy13_mqtt_kit/raspi_cli && sudo python3 03_test_led_pixel_finder.py --mode finder --hardware"
         },
         {
           "item": "Urutan warna LED RGB/GRB benar sesuai warna per tahap",
-          "cmd": "cd ~/decy13/raspi_cli && sudo python3 03_test_led_pixel_finder.py --mode demo --hardware"
+          "cmd": "Di dalam --mode finder --hardware: ketik s (spiral biru+kuning) lalu e (shoot oranye), cek apakah merah/hijau tertukar; atau jalankan --mode test"
         },
         {
           "item": "Animasi komet spiral (0..47), kilat RF Gap ([11,23,35,47]), dan Shoot (48..63) mulus tanpa flicker bersama LCD SPI0",
-          "cmd": "cd ~/decy13/raspi_cli && sudo python3 04_decy13_mqtt_daemon.py"
+          "cmd": "cd decy13_mqtt_kit/raspi_cli && sudo python3 04_decy13_mqtt_daemon.py"
         },
         {
           "item": "Saat Ctrl+C / cleanup(), seluruh LED padam total (Color(0,0,0))",
-          "cmd": "Tekan Ctrl+C pada skrip LED/daemon dan pastikan 64 piksel mati semua."
+          "cmd": "Tekan q di pixel finder atau Ctrl+C pada daemon dan pastikan ke-64 piksel mati semua."
         }
       ],
       "definition_of_done": "64 piksel WS2812B terpetakan akurat, warna sesuai tahap operasi, bebas flicker saat berjalan bersama LCD SPI0, dan padam bersih saat cleanup()."
