@@ -77,4 +77,4 @@ def main():
         print("GPIO dibersihkan (relay tetap OFF).")
 
 if __name__ == "__main__":
-    main()
+    main() 
