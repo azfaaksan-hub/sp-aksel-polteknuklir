@@ -16,7 +16,7 @@ Dokumen ini khusus dibuat untuk **Mini PC Ruang Kontrol** (termasuk **Windows 8 
 
 ## 2. Status Proyek Terkini Saat Dokumen Ini Ditulis
 
-- **Branch `main` aktif (`v1.5`):** sudah berisi modul lengkap **Divisi 2** (`66930bb`), **Divisi 3** (`ac21a27` via `divisi-3-led-ws2812b-v13`), dan **Divisi 6** (`4ed588d` + `b2b42f6`).
+- **Branch `main` aktif (`v1.5.1`):** sudah berisi modul lengkap **Divisi 2** (`66930bb`), **Divisi 3** (`ac21a27` via `divisi-3-led-ws2812b-v13`), dan **Divisi 6** (`4ed588d` + `b2b42f6`).
 - **Divisi 2 (Vakum, Relay Kipas 12V, Buzzer, E-Stop):** pengujian sistem vakum selesai di lapangan, namun masih dalam proses konfirmasi dan **belum di-push updatenya oleh `dzakimumtazi`**. **JANGAN** mengubah `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, atau `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` dari Mini PC.
 - **Fokus Pengujian Aktif Sekarang — Divisi 3 (LED Strip WS2812B, `GPIO 18`):**
   - Gunakan **`main`** (kode Divisi 3 versi terbaru `divisi-3-led-ws2812b-v13` sudah di-merge ke `main`; abaikan branch usang `origin/divisi-3-led-ws2812b`).

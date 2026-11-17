@@ -15,6 +15,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
    Buka file [`instruksi untuk projek sp/PANDUAN_GITHUB_DAN_TIM_AI.html`](instruksi%20untuk%20projek%20sp/PANDUAN_GITHUB_DAN_TIM_AI.html) dengan **Google Chrome / Microsoft Edge** (di GitHub web file HTML tampil berupa kode, jadi **download/clone dulu ke laptopmu** lalu klik kanan → *Open with Chrome*).
 3. **⚡ Panduan Cara Kerja & Wiring Alat:**
    Buka file [`instruksi untuk projek sp/PANDUAN_VISUAL.html`](instruksi%20untuk%20projek%20sp/PANDUAN_VISUAL.html) dengan **Google Chrome / Microsoft Edge**.
+4. **🖥️ Panduan Stasiun Uji Mini PC Ruang Kontrol (Windows 8/10/11 <-> Raspi):**
+   Buka [`decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`](decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md) untuk setting koneksi Mini PC Win 8 <-> Raspberry Pi, urutan uji lapangan terbaru, dan **Prompt AGY Mini PC siap *copy-paste***.
 
 > 🛡️ **ATURAN WAJIB KOLABORASI MANDIRI:**
 > 1. AI milikmu (ChatGPT / Claude / Cursor / Gemini) **HANYA** membantu menulis isi file milik divisimu.
@@ -27,9 +29,9 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 
 | Info | Keterangan |
 | :--- | :--- |
-| **Versi / Status `main`** | **`v1.5` — Core Hardening (`setpoint_limits` + Reconnect MQTT), Bootstrap & Preflight RPi, dan Uji Bare-Board RPi `3/5`!** |
-| **Pengumuman Ketua** | 1. **Perubahan `config_hardware.json` (`setpoint_limits`):** Core Daemon sekarang memvalidasi perintah `SET_PARAMS` terhadap batas `magnet_a` `[400..2200]`, `rf_mhz` `[15..30]`, `rf_kv` `[0..120]`, dan `beam_ua` `[0..100]` (nilai `0` atau di luar rentang ditolak otomatis). **Penting untuk Divisi 5 & Divisi 6!**<br>2. **Alat Baru untuk Tes di RPi Anggota:** Jalankan `bash tools/raspi_bootstrap.sh` & `python3 tools/raspi_preflight.py --divisi <1..6>` sebelum tes hardware! Lihat peta RACI & *Definition of Done* di [`laporan_uji/JOBDESK_DAN_DOD.md`](laporan_uji/JOBDESK_DAN_DOD.md).<br>3. Core RPi lolos uji *bare-board* (`4.97 Hz`, 0 paket hilang) — lanjut uji wiring aktuator bersama! |
-| **Cara Tarik Update Terbaru** | **GitHub Desktop:** Pastikan di branch divisimu → klik *Fetch origin* → menu *Branch* → *Update from main*.<br>**Terminal:** `git fetch origin` lalu `git merge origin/main` |
+| **Versi / Status `main`** | **`v1.5.1` — Panduan Stasiun Uji Mini PC Windows 8, Perbaikan Uji LED Divisi 3 (`--mode finder`), & Progres Uji Lapangan!** |
+| **Pengumuman Ketua** | 1. **Panduan Stasiun Uji Mini PC Windows 8 <-> RPi (`PANDUAN_MINI_PC_UJI_LAPANGAN.md`):** Dibuat khusus agar Mini PC Ruang Kontrol tinggal `git pull origin main` untuk mendapat panduan Ethernet ICS/Git Bash SSH Win 8, data yang harus disiapkan di Mini PC vs RPi, dan **Prompt AGY Mini PC**.<br>2. **Status Uji Lapangan Divisi 2 → Lanjut Divisi 3:** Pengujian sistem vakum Divisi 2 selesai di lapangan *(menunggu konfirmasi & push update kartu [`UJI_DIVISI_2_VAKUM_SAFETY.md`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) oleh `dzakimumtazi`)*. Fokus pengujian fisik sekarang berlanjut ke **Divisi 3 (LED WS2812B `GPIO 18`)**: jalankan `sudo python3 03_test_led_pixel_finder.py --mode finder --hardware` lalu ketik `s` (spiral) & `e` (shoot) — perintah Divisi 3 di `tools/jobdesk_divisi.json` sudah diperbaiki menggantikan `--mode demo`.<br>3. **Tetap Berlaku (`v1.5`):** Validasi `setpoint_limits` di `config_hardware.json` (`magnet_a` `[400..2200]`, `rf_mhz` `[15..30]`, `rf_kv` `[0..120]`, `beam_ua` `[0..100]`) dan cek OS RPi via `bash tools/raspi_bootstrap.sh` + `python3 tools/raspi_preflight.py --divisi <1..6>`. |
+| **Cara Tarik Update Terbaru** | **GitHub Desktop:** Pastikan di branch divisimu → klik *Fetch origin* → menu *Branch* → *Update from main*.<br>**Terminal / Git Bash:** `git fetch origin` lalu `git merge origin/main` *(di Mini PC/RPi cukup `git checkout main && git pull origin main`)* |
 
 ---
 
@@ -40,8 +42,8 @@ Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (
 | Divisi | Penanggung Jawab | Branch Wajib | File Eksklusif (Boleh Diedit) | Status Audit Kode / CI | Status Uji Hardware RPi |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Divisi 1 (Ketua)** | `azfaaksan-hub` | `main` / `core-raspi-backend` | `04_decy13_mqtt_daemon.py`, `05_laptop_dryrun_simulator.py`, `config_hardware.json`, `modules/base_module.py`, `tools/*`, `laporan_uji/UJI_DIVISI_1_CORE_RASPI.md` | ✅ **Core Aktif** *(`setpoint_limits`, `connect_async`, `SIGTERM`, bootstrap & preflight siap)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_1_CORE_RASPI.md) *(3/3 Laptop, **3/5 RPi bare-board** `192.168.137.66`)* |
-| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` | ✅ **Sudah Di-Merge ke `main`** *(Initial relay OFF, cleanup aman, menu tes E-Stop oke)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) *(3/3 Laptop, 0/5 RPi — menunggu uji alat nyata)* |
-| **Divisi 3** | `blufiaa` | `divisi-3-led-ws2812b-v13` | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` | ✅ **Sudah Di-Merge ke `main`** *(`ac21a27` — GPIO 18 `rpi_ws281x`, virtual test PASS)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_3_LED_WS2812B.md) *(5/5 Laptop, 0/5 RPi — lanjut uji fisik RPi)* |
+| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` | ✅ **Sudah Di-Merge ke `main`** *(Initial relay OFF, cleanup aman, menu tes E-Stop oke)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) *(3/3 Laptop, 0/5 RPi tercatat — uji vakum lapangan selesai; menunggu konfirmasi & push update dari Divisi 2)* |
+| **Divisi 3** | `blufiaa` | `divisi-3-led-ws2812b-v13` | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` | ✅ **Sudah Di-Merge ke `main`** *(`ac21a27` — GPIO 18 `rpi_ws281x`, virtual test PASS)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_3_LED_WS2812B.md) *(5/5 Laptop, 0/5 RPi — **fokus uji fisik LED `GPIO 18` sekarang**)* |
 | **Divisi 4** | *(Anggota 4 / `HDMrishiki`?)* | `divisi-4-lcd-ili9341` *(atau `hmi+tft`)* | `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` | ⏳ **Branch `hmi+tft` masih di `045c321` — Harap Merge `main` & Push Kode** | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md) *(0/4 Laptop, 0/4 RPi)* |
 | **Divisi 5** | *(Anggota 5 / `HDMrishiki`?)* | `divisi-5-web-hmi` *(atau `hmi+tft`)* | `decy13_mqtt_kit/web_hmi/index.html`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md` | ⏳ **Branch `hmi+tft` masih di `045c321` — Harap Merge `main` & Push Kode** | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_5_WEB_HMI.md) *(0/4 Laptop, 0/4 Alat)* |
 | **Divisi 6** | `rekypurnomo` | `divisi-6-mqtt-nodered-qa-testing` | `06_test_mqtt_healthcheck.py`, `flows_mqtt_decy13.json`, `CHECKLIST_COMMISSIONING.txt`, `laporan_uji/UJI_DIVISI_6_MQTT_QA.md` | ✅ **Sudah Di-Merge ke `main`** *(`4ed588d` + `b2b42f6`: QA & Node-RED `18 node` tanpa konflik GPIO)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_6_MQTT_QA.md) *(3/3 Laptop, 0/4 Alat Nyata)* |
@@ -141,12 +143,13 @@ Class `VacuumSafetyModule(HardwareModule)` wajib memiliki `setup() -> bool`, `up
 </details>
 
 <details>
-<summary><b>💡 DIVISI 3 — Prompt Lanjutan Uji Fisik LED WS2812B di RPi (`v1.5` Sudah Merged + Bootstrap/Preflight!)</b></summary>
+<summary><b>💡 DIVISI 3 — Prompt Lanjutan Uji Fisik LED WS2812B di RPi (`v1.5.1` Sudah Merged + Panduan Mini PC!)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.5 DIVISI 3]
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.5.1 DIVISI 3]
 Saya adalah Anggota Divisi 3 (Sistem LED Strip WS2812B) pada proyek Alat Peraga Siklotron DECY-13 (13 MeV H-) di Raspberry Pi 3 Model B+.
 Kode saya (`mod_led_ws2812b.py` & `03_test_led_pixel_finder.py` di commit `ac21a27`) sudah **RESMI DI-MERGE ke `main`**, lolos cek virtual (`ALL DIVISI 3 VIRTUAL TESTS PASSED`), dan Tahap A pada `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` sudah `5/5 [x]` (`DRAFT_PUSH_LAPTOP`).
+Catatan penting uji fisik: `03_test_led_pixel_finder.py` hanya menerima `--mode test` dan `--mode finder` (ditambah `--hardware`); di dalam `--mode finder --hardware`, gunakan `Enter` untuk cek piksel `#0..#63`, `s` untuk spiral (`0..47` + RF gap `[11,23,35,47]`), `e` untuk shoot (`48..63`), dan amati apakah urutan warna RGB/GRB sudah benar! Panduan uji dari Mini PC <-> RPi juga tersedia di `decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`.
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
 - Branch kerja saya: tarik `origin/main` terbaru (`git checkout -b divisi-3-uji-fisik origin/main` atau `git merge origin/main` di branch `divisi-3-led-ws2812b-v13`).

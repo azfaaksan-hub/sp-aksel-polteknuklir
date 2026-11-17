@@ -147,7 +147,7 @@
       "current_tasks": [
         "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
         "Di RPi 3B+, jalankan bash tools/raspi_bootstrap.sh (pastikan dtparam=audio=off + reboot) dan python3 tools/raspi_preflight.py --divisi 3.",
-        "Uji 64 piksel LED fisik di GPIO 18 dengan: sudo python3 03_test_led_pixel_finder.py --mode finder --hardware",
+        "Uji 64 piksel LED fisik di GPIO 18 dengan: sudo python3 03_test_led_pixel_finder.py --mode finder --hardware (tekan Enter untuk cek #0..#63, s untuk spiral, e untuk shoot, dan catat bila warna RGB/GRB tertukar).",
         "Catat hasil pemetaan indeks/warna dan bukti terminal ke laporan_uji/UJI_DIVISI_3_LED_WS2812B.md (centang Tahap B hanya yang sudah terbukti di LED nyata)."
       ],
       "allowed_files": [
