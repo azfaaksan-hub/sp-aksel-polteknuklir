@@ -51,4 +51,28 @@
       [ ] Klik Start Beam -> LED spiral berputar makin cepat
       [ ] Klik Shoot -> LED beamline menyala, buzzer beep
 
+
+HASIL PENGUJIAN DIVISI 6 - SIMULASI LOKAL
+Tanggal: 17 November 2026
+Lingkungan: Windows, Python Simulator, Mosquitto, Node-RED
+
+[PASS] NET-01 MQTT TCP 1883
+[PASS] NET-02 MQTT CONNACK
+[PASS] NET-03 MQTT WebSocket 9001
+[PASS] NET-04 MQTT Round-trip latency: rata-rata 0,6 ms
+[PASS] TLM-01 Telemetri: 149 paket / 29,7 detik
+[PASS] TLM-02 Kontrak JSON: 22/22 field
+[PASS] TLM-03 Frekuensi telemetri: 4,98 Hz
+[PASS] TLM-04 Jitter: interval rata-rata 201 ms, maksimum 202 ms
+[PASS] TLM-05 Payload JSON valid
+[PASS] NR-01 Node-RED port 1880
+[PASS] NR-02 Validasi struktur flow: 18 node
+
+RINGKASAN:
+LULUS=11, PERINGATAN=0, GAGAL=0, LEWATI=0
+
+CATATAN:
+Hasil diperoleh dari simulator lokal.
+Hardware Raspberry Pi belum diuji.
+
 ================================================================================
