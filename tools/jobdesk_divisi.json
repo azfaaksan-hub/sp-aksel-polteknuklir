@@ -90,12 +90,11 @@
       "pic": "dzakimumtazi",
       "branch": "divisi-2-vacum-safety",
       "report_file": "UJI_DIVISI_2_VAKUM_SAFETY.md",
-      "current_announcement": "Kode Divisi 2 (66930bb) SUDAH DI-MERGE ke main dan lolos Tahap A (3/3 Laptop). Uji lapangan vakum sudah berjalan — menunggu konfirmasi & push update kartu laporan oleh Divisi 2.",
+      "current_announcement": "Divisi 2 RESMI LULUS_UJI_FISIK (4/4 Tahap B, 7/7 Total): Relay Kipas 12V (GPIO 21), Buzzer (GPIO 17), serta cleanup() lulus uji fisik bersama Ketua & PJ Divisi 2. Catatan: saklar fisik E-Stop GPIO 22 tidak dipasang/diuji (N/A) karena fungsi E-Stop dipindah ke HTML Web HMI di Mini PC.",
       "current_tasks": [
-        "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
-        "Jika memakai unit RPi baru, jalankan bash tools/raspi_bootstrap.sh dan python3 tools/raspi_preflight.py --divisi 2.",
-        "Konfirmasikan hasil uji rangkaian fisik Relay Kipas (GPIO 21 Active-LOW), Buzzer (GPIO 17), dan tombol E-Stop (GPIO 22) dari python3 01_test_relay_buzzer.py.",
-        "Tempelkan bukti output terminal RPi ke Bagian C laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md dan centang butir Tahap B yang benar-benar lulus lalu push."
+        "Tarik update main terbaru ke branch divisi-2-vacum-safety: git fetch origin && git merge origin/main",
+        "Pertahankan hasil uji fisik Divisi 2 yang sudah lulus (Relay Kipas GPIO 21 & Buzzer GPIO 17) dan jangan ubah file divisi lain.",
+        "Siap mendampingi uji integrasi penuh M3 (04_decy13_mqtt_daemon.py serentak dengan LED Divisi 3 & LCD Divisi 4) dan verifikasi E-Stop via HTML Web HMI Mini PC."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py",
@@ -105,13 +104,13 @@
       "hardware_scope": [
         "GPIO 21 (Pin Fisik 40): Relay Kipas Vakum 12V (Active-LOW)",
         "GPIO 17 (Pin Fisik 11): Buzzer SFM-27 (Active-HIGH)",
-        "GPIO 22 (Pin Fisik 15): Tombol Fisik E-Stop (Input Pull-Up, Active-LOW)"
+        "E-Stop: Dilakukan melalui tombol HTML Web HMI di Mini PC (saklar fisik GPIO 22 tidak dipasang)"
       ],
       "dependencies": [1],
       "cross_division_warnings": [
         "GND Adaptor 12V Kipas WAJIB disatukan (common ground) dengan Pin GND RPi.",
         "Relay bersifat Active-LOW: initial setup() dan cleanup() wajib mengeset GPIO 21 ke HIGH agar kipas mati saat program berhenti.",
-        "Jika memakai saklar E-Stop jenis NC ke GND, sesuaikan estop_active_low melalui koordinasi dengan Ketua (Divisi 1)."
+        "Saklar fisik E-Stop GPIO 22 tidak dipasang; kendali E-Stop operasional dijalankan melalui tombol EMERGENCY_STOP pada HTML Web HMI Mini PC."
       ],
       "tahap_b_commands": [
         {
@@ -127,15 +126,11 @@
           "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 1 (Buzzer 1 detik)"
         },
         {
-          "item": "Menu [4] Tes E-Stop pada GPIO 22 terbaca akurat tanpa false-trigger saat kipas 12V hidup/mati",
-          "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 4 lalu tekan/lepas tombol fisik E-Stop"
-        },
-        {
           "item": "Saat program dihentikan (Ctrl+C / cleanup()), relay kipas dan buzzer langsung mati total",
           "cmd": "Ketik q atau tekan Ctrl+C dan pastikan kipas & buzzer tetap mati."
         }
       ],
-      "definition_of_done": "Relay kipas 12V, buzzer SFM-27, dan tombol E-Stop lulus uji isolasi (01_test_relay_buzzer.py) maupun uji terintegrasi bersama daemon tanpa false-trigger."
+      "definition_of_done": "Relay kipas 12V dan buzzer SFM-27 lulus uji isolasi (01_test_relay_buzzer.py) maupun uji terintegrasi bersama daemon; fungsi E-Stop dijalankan via HTML Web HMI Mini PC tanpa saklar fisik GPIO 22."
     },
     {
       "id": 3,

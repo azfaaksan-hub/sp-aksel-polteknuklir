@@ -29,8 +29,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 
 | Info | Keterangan |
 | :--- | :--- |
-| **Versi / Status `main`** | **`v1.5.1` — Progres Terverifikasi `34,7%` (`17/49` ceklis) • Divisi 6 (`6d3f8f5`) Sudah Merged! Fokus Uji Fisik LED Divisi 3, Konfirmasi Kartu Divisi 2, & Kejar Branch `hmi+tft`!** |
-| **Pengumuman Ketua** | 1. **Panduan Stasiun Uji Mini PC Windows 8 <-> RPi (`PANDUAN_MINI_PC_UJI_LAPANGAN.md`):** Dibuat khusus agar Mini PC Ruang Kontrol tinggal `git pull origin main` untuk mendapat panduan Ethernet ICS/Git Bash SSH Win 8, data yang harus disiapkan di Mini PC vs RPi, dan **Prompt AGY Mini PC**.<br>2. **Status Uji Lapangan Divisi 2 → Lanjut Divisi 3:** Pengujian sistem vakum Divisi 2 selesai di lapangan *(commit `41a3352` belum menyertakan update kartu — menunggu konfirmasi & push kartu [`UJI_DIVISI_2_VAKUM_SAFETY.md`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) oleh `dzakimumtazi` setelah `git merge origin/main`)*. Fokus pengujian fisik sekarang berlanjut ke **Divisi 3 (LED WS2812B `GPIO 18`)**: jalankan `sudo python3 03_test_led_pixel_finder.py --mode finder --hardware` lalu ketik `s` (spiral) & `e` (shoot).<br>3. **Update Branch Terbaru (`18 Nov`):** Branch `divisi-6-mqtt-nodered-qa-testing` (`b8605fb` — QA simulasi `11/11 PASS` & route Node-RED `/cyclotron`, CI ✅) **sudah di-merge ke `main`** (`6d3f8f5`). Branch **`origin/hmi+tft` (Divisi 4 & 5)** kini tertinggal **14 commit** (`045c321`).<br>4. **Tetap Berlaku (`v1.5`):** Validasi `setpoint_limits` di `config_hardware.json` (`magnet_a` `[400..2200]`, `rf_mhz` `[15..30]`, `rf_kv` `[0..120]`, `beam_ua` `[0..100]`) dan cek OS RPi via `bash tools/raspi_bootstrap.sh` + `python3 tools/raspi_preflight.py --divisi <1..6>`. |
+| **Versi / Status `main`** | **`v1.5.2` — Progres Terverifikasi `43,8%` (`21/48` ceklis) • Divisi 2 Resmi `LULUS_UJI_FISIK` (`7/7`)! Fokus Uji Fisik LED Divisi 3 & Kejar Branch `hmi+tft`!** |
+| **Pengumuman Ketua** | 1. **Divisi 2 Resmi `LULUS_UJI_FISIK` (`4/4` Tahap B, `7/7` Total):** Uji fisik Relay Kipas 12V (`GPIO 21`), Buzzer (`GPIO 17`), serta `cleanup()` pada RPi 3B+ telah diuji bersama seluruh tim (Ketua & PJ Divisi 2 `dzakimumtazi`) dan dilaporkan lulus di grup WhatsApp. *(Butir saklar fisik E-Stop `GPIO 22` dikecualikan/N/A karena tidak ada saklar fisik — fungsi E-Stop dipindah ke HTML Web HMI di Mini PC).*<br>2. **Fokus Uji Fisik Sekarang — Divisi 3 (LED WS2812B `GPIO 18`) & Stasiun Mini PC (`PANDUAN_MINI_PC_UJI_LAPANGAN.md`):** Jalankan `sudo python3 03_test_led_pixel_finder.py --mode finder --hardware` lalu ketik `s` (spiral) & `e` (shoot). Mini PC Windows 8 ruang kontrol cukup `git pull origin main` untuk panduan Ethernet ICS/SSH & **Prompt AGY Mini PC**.<br>3. **Update Branch Lain:** Branch `divisi-6-mqtt-nodered-qa-testing` (`b8605fb` — QA simulasi `11/11 PASS` & route Node-RED `/cyclotron`, CI ✅) **sudah di-merge ke `main`** (`6d3f8f5`). Branch **`origin/hmi+tft` (Divisi 4 & 5)** masih di commit `v1.2` (`045c321`) dan wajib `git merge origin/main`!<br>4. **Tetap Berlaku (`v1.5`):** Validasi `setpoint_limits` di `config_hardware.json` (`magnet_a` `[400..2200]`, `rf_mhz` `[15..30]`, `rf_kv` `[0..120]`, `beam_ua` `[0..100]`) dan cek OS RPi via `bash tools/raspi_bootstrap.sh` + `python3 tools/raspi_preflight.py --divisi <1..6>`. |
 | **Cara Tarik Update Terbaru** | **GitHub Desktop:** Pastikan di branch divisimu → klik *Fetch origin* → menu *Branch* → *Update from main*.<br>**Terminal / Git Bash:** `git fetch origin` lalu `git merge origin/main` *(di Mini PC/RPi cukup `git checkout main && git pull origin main`)* |
 
 ---
@@ -38,23 +38,23 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 ## 📊 Progres Nyata Proyek & Tabel Rapor 6 Divisi
 
 > **📈 Posisi Progres Nyata Proyek Saat Ini (Terukur dari 6 Kartu [`laporan_uji/`](laporan_uji/README.md)):**
-> - **Progres Total Terverifikasi (`Tahap A + Tahap B`):** **`34,7%` (`17 / 49` butir ceklis)** `[████░░░░░░]`
+> - **Progres Total Terverifikasi (`Tahap A + Tahap B`):** **`43,8%` (`21 / 48` butir ceklis)** `[████░░░░░░]`
 > - **Tahap A — Kesiapan Kode & Simulasi Laptop:** **`63,6%` (`14 / 22` butir)** *(Divisi 1, 2, 3, 6 sudah `100%` Tahap A; Divisi 4 & 5 masih `0/4` di kartu)*
-> - **Tahap B — Uji Fisik Alat Nyata (RPi 3B+ & Mini PC):** **`11,1%` (`3 / 27` butir)** *(baru `3/5` bare-board Core RPi Divisi 1; uji fisik vakum Divisi 2 & koneksi Mini PC belum tertulis di kartu divisi)*
+> - **Tahap B — Uji Fisik Alat Nyata (RPi 3B+ & Mini PC):** **`26,9%` (`7 / 26` butir)** *(Divisi 2 sudah `4/4` lulus uji fisik RPi; Divisi 1 `3/5` bare-board Core RPi; Divisi 3–6 belum selesai uji alat nyata)*
 >
 > **🧭 Posisi Milestone (`M1` s.d. `M5` — lihat [`JOBDESK_DAN_DOD.md`](laporan_uji/JOBDESK_DAN_DOD.md)):**
 > - **M1** *(Bootstrap, Preflight & Bare-Board RPi)*: ✅ **Tercapai di unit `sp-aksel`** (`4.97 Hz`, 0 packet drop; tinggal kestabilan daya/jaringan unit uji lab)
-> - **M2** *(Uji Isolasi Fisik Aktuator `01`, `02`, `03`)*: 🔄 **~25%** *(vakum lapangan menunggu push kartu Divisi 2; LED Divisi 3 mulai uji fisik; LCD Divisi 4 belum mulai)*
-> - **M3** *(Integrasi Penuh Daemon + Divisi 2, 3, 4 serentak di RPi)*: ⏳ **0%** *(menunggu M2 & update Divisi 4)*
+> - **M2** *(Uji Isolasi Fisik Aktuator `01`, `02`, `03`)*: 🔄 **~33%** *(Divisi 2 `01_test_relay_buzzer.py` & aktuator fisik `GPIO 21`/`17` selesai `LULUS_UJI_FISIK`; LED Divisi 3 mulai uji fisik; LCD Divisi 4 belum mulai)*
+> - **M3** *(Integrasi Penuh Daemon + Divisi 2, 3, 4 serentak di RPi)*: ⏳ **0%** *(menunggu M2 LED Divisi 3 & update LCD Divisi 4)*
 > - **M4** *(Integrasi Mini PC Web HMI & QA Healthcheck)*: 🔄 **~25%** *(simulasi Divisi 6 `11/11 PASS` & route `/cyclotron` sudah ter-merge `6d3f8f5`, tetapi kartu Tahap B Divisi 5 & 6 masih `0/4`)*
-> - **M5** *(Commissioning Final & 6/6 Kartu `LULUS_UJI_FISIK`)*: ⏳ **0%**
+> - **M5** *(Commissioning Final & 6/6 Kartu `LULUS_UJI_FISIK`)*: ⏳ **0%** *(1/6 kartu lulus penuh: Divisi 2)*
 
 Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (GitHub Actions)** (tanda ✅/❌) dan direview oleh Ketua sebelum di-*merge* ke `main`.
 
 | Divisi | Penanggung Jawab | Branch Wajib | File Eksklusif (Boleh Diedit) | Status Audit Kode / CI | Status Uji Hardware RPi & Progres Kartu |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Divisi 1 (Ketua)** | `azfaaksan-hub` | `main` / `core-raspi-backend` | `04_decy13_mqtt_daemon.py`, `05_laptop_dryrun_simulator.py`, `config_hardware.json`, `modules/base_module.py`, `tools/*`, `laporan_uji/UJI_DIVISI_1_CORE_RASPI.md` | ✅ **Core Aktif** *(`setpoint_limits`, `connect_async`, `SIGTERM`, bootstrap & preflight siap)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_1_CORE_RASPI.md) **`75%` (`6/8`)** *(3/3 Laptop, **3/5 RPi bare-board** `192.168.137.66`)* |
-| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` | ✅ **Merged ke `main`** *(Catatan: push baru `41a3352` hanya 1 spasi & belum merge `main`)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) **`37,5%` (`3/8`)** *(3/3 Laptop, 0/5 RPi tercatat — uji vakum lapangan menunggu konfirmasi & push kartu)* |
+| **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` | ✅ **Merged ke `main`** *(siap integrasi M3)* | 🟢 [`LULUS_UJI_FISIK`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) **`100%` (`7/7`)** *(3/3 Laptop, **4/4 RPi fisik** bersama tim; E-Stop via Web HMI HTML — tanpa saklar fisik `GPIO 22`)* |
 | **Divisi 3** | `blufiaa` | `divisi-3-led-ws2812b-v13` | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` | ✅ **Sudah Di-Merge ke `main`** *(`ac21a27` — GPIO 18 `rpi_ws281x`, virtual test PASS)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_3_LED_WS2812B.md) **`50%` (`5/10`)** *(5/5 Laptop, 0/5 RPi — **fokus uji fisik LED `GPIO 18` sekarang**)* |
 | **Divisi 4** | *(Anggota 4 / `HDMrishiki`?)* | `divisi-4-lcd-ili9341` *(atau `hmi+tft`)* | `decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` | ⏳ **Branch `hmi+tft` masih di `045c321` (tertinggal 14 commit) — Harap Merge `main` & Push** | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md) **`0%` (`0/8`)** *(0/4 Laptop, 0/4 RPi)* |
 | **Divisi 5** | *(Anggota 5 / `HDMrishiki`?)* | `divisi-5-web-hmi` *(atau `hmi+tft`)* | `decy13_mqtt_kit/web_hmi/index.html`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md` | ⏳ **Branch `hmi+tft` masih di `045c321` (tertinggal 14 commit) — Harap Merge `main` & Push** | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_5_WEB_HMI.md) **`0%` (`0/8`)** *(0/4 Laptop, 0/4 Alat)* |
@@ -118,10 +118,11 @@ Setiap kali prompt dieksekusi, AI milikmu diinstruksikan membaca **3 sumber peng
 <summary><b>🌀 DIVISI 2 — Prompt Lanjutan Konteks Terbaru (Klik untuk buka & salin)</b></summary>
 
 ```text
-[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.5]
-Saya adalah Anggota Divisi 2 (Sistem Vakum, Buzzer & Safety E-Stop) pada repo `sp-aksel-polteknuklir`.
-Status kode saya di branch `divisi-2-vacum-safety` sudah **RESMI DI-MERGE ke `main`** (initial pin relay OFF, cleanup aman menjaga relay tetap OFF, dan menu [4] Tes E-Stop di `01_test_relay_buzzer.py`), tetapi **Tahap B (Uji Fisik RPi 3B+)** masih menunggu bukti uji alat nyata di `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md`.
-Core Raspi (`v1.5`) juga sudah lolos uji bare-board RPi 3B+ dan menyediakan alat bantu baru (`tools/raspi_bootstrap.sh`, `tools/raspi_preflight.py`, & `laporan_uji/JOBDESK_DAN_DOD.md`).
+[KONTEKS TERBARU PROYEK SIKLOTRON DECY-13 — UPDATE v1.5.2]
+Saya adalah Anggota Divisi 2 (Sistem Vakum & Buzzer Indikator) pada repo `sp-aksel-polteknuklir`.
+Status kode saya di branch `divisi-2-vacum-safety` sudah **RESMI DI-MERGE ke `main`** dan kartu `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` kini berstatus **`LULUS_UJI_FISIK` (`7/7`: `3/3` Tahap A, `4/4` Tahap B)** setelah diuji langsung oleh seluruh tim (Ketua & PJ Divisi 2).
+Catatan desain: **tidak ada saklar E-Stop fisik (`GPIO 22`)** yang dipasang — fungsi Emergency Stop dijalankan melalui tombol HTML Web HMI di Mini PC.
+Fokus berikutnya adalah mendampingi uji integrasi penuh M3 (`04_decy13_mqtt_daemon.py` bersama LED Divisi 3 & LCD Divisi 4) setelah menyinkronkan branch ke `main`.
 
 [BATAS KERJA & ATURAN GIT MANDIRI]
 - Branch aktif saya: `divisi-2-vacum-safety` (pastikan sudah `git merge origin/main` agar sinkron dengan `main` `v1.5`).

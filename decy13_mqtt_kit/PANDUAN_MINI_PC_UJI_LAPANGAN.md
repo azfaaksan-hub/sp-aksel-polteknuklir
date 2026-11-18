@@ -16,8 +16,8 @@ Dokumen ini khusus dibuat untuk **Mini PC Ruang Kontrol** (termasuk **Windows 8 
 
 ## 2. Status Proyek Terkini Saat Dokumen Ini Ditulis
 
-- **Branch `main` aktif (`v1.5.1`):** sudah berisi modul lengkap **Divisi 2** (`66930bb`), **Divisi 3** (`ac21a27` via `divisi-3-led-ws2812b-v13`), dan **Divisi 6** (`4ed588d` + `b2b42f6`).
-- **Divisi 2 (Vakum, Relay Kipas 12V, Buzzer, E-Stop):** pengujian sistem vakum selesai di lapangan, namun masih dalam proses konfirmasi dan **belum di-push updatenya oleh `dzakimumtazi`**. **JANGAN** mengubah `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, atau `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` dari Mini PC.
+- **Branch `main` aktif (`v1.5.2`):** sudah berisi modul lengkap **Divisi 2** (`66930bb`, sudah **`LULUS_UJI_FISIK`**), **Divisi 3** (`ac21a27` via `divisi-3-led-ws2812b-v13`), dan **Divisi 6** (`4ed588d` + `b2b42f6`).
+- **Divisi 2 (Vakum, Relay Kipas 12V, Buzzer):** sudah **`LULUS_UJI_FISIK`** (`7/7` ceklis: Relay Kipas `GPIO 21`, Buzzer `GPIO 17`, & `cleanup()` lulus uji fisik bersama Ketua dan PJ Divisi 2 `dzakimumtazi`; E-Stop dilakukan via HTML Web HMI Mini PC tanpa saklar fisik `GPIO 22`). **JANGAN** mengubah `mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, atau `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` dari Mini PC.
 - **Fokus Pengujian Aktif Sekarang — Divisi 3 (LED Strip WS2812B, `GPIO 18`):**
   - Gunakan **`main`** (kode Divisi 3 versi terbaru `divisi-3-led-ws2812b-v13` sudah di-merge ke `main`; abaikan branch usang `origin/divisi-3-led-ws2812b`).
 - **Divisi 4 (`LCD ILI9341`) & Divisi 5 (`Web HMI SCADA`):** branch `origin/hmi+tft` masih tertinggal di `045c321` dan menunggu anggota (`HDMrishiki`) menarik `origin/main` serta men-push update mereka.
@@ -137,7 +137,7 @@ Saya Ketua Tim (Divisi 1 / `azfaaksan-hub`) sedang menguji alat langsung dari Mi
 Baca file `decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`, `README.md`, dan jalankan `python tools/raspi_preflight.py --divisi 3 --no-save` (serta `git status -sb`).
 Patuhi seluruh aturan di `PANDUAN_MINI_PC_UJI_LAPANGAN.md`:
 - Mini PC hanya sebagai Stasiun Uji (JANGAN edit file Divisi 2–6 atau menjalankan git commit/push otomatis).
-- Divisi 2 (Vakum) masih proses konfirmasi & belum di-push oleh Divisi 2 -> JANGAN sentuh file Divisi 2.
+- Divisi 2 (Vakum & Buzzer) sudah LULUS_UJI_FISIK (`7/7`, E-Stop via HTML Web HMI Mini PC) -> JANGAN sentuh file Divisi 2.
 - Fokus sekarang memandu uji fisik Divisi 3 (LED WS2812B GPIO 18) di RPi + integrasinya dengan Web HMI di Mini PC Windows 8 (pakai Git Bash & IP angka RPi, tanpa .local).
 Tampilkan: (1) status repo Mini PC & hal yang perlu dicek, (2) panduan langkah berikutnya di RPi dan Mini PC, dan (3) perintah terminal/SSH persis untuk saya jalankan sendiri.
 ```
