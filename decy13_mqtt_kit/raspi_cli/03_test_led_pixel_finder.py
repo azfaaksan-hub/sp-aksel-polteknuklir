@@ -461,116 +461,192 @@ def test_module(config):
 # 4. PIXEL FINDER
 # ============================================
 
-def pixel_finder(config, hardware=False,
-                 total=448, spiral_count=400, brightness=20):
+
+def pixel_finder(config, hardware=False, total=448,
+                 spiral_count=400, brightness=10,
+                 auto=False, buzzer_pin=23,
+                 sound=True, power_ok=False):
 
     if hardware:
         ws = importlib.import_module("rpi_ws281x")
-        strip = ws.PixelStrip(total, 18, 800000, 10,
-                              False, brightness, 0)
+        strip = ws.PixelStrip(
+            total, config["pins_bcm"]["led_ws2812b"],
+            800000, 10, False, brightness, 0
+        )
         strip.begin()
     else:
         strip = MemoryStrip(total)
 
+    GPIO = None
+    if hardware and sound:
+        GPIO = importlib.import_module("RPi.GPIO")
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(buzzer_pin, GPIO.OUT, initial=GPIO.LOW)
+
+    ready = False
     gaps = {spiral_count*k//4-1 for k in range(1, 5)}
 
-    def show(p={}):
+    def show(p=None):
+        p = p or {}
         for i in range(total):
             strip.setPixelColor(i, p.get(i, 0))
         strip.show()
 
-    def all_on(c):
-        show({i: c for i in range(total)})
+    def beep(n=1, duration=0.045):
+        if not sound:
+            return
+        if GPIO is None:
+            print(f"[SIMULASI] Buzzer x{n}")
+            return
+        for _ in range(n):
+            GPIO.output(buzzer_pin, GPIO.HIGH)
+            time.sleep(duration)
+            GPIO.output(buzzer_pin, GPIO.LOW)
+            time.sleep(0.045)
 
-    def move(a, b, c, d1, d2, rf=False):
+    def move(a, b, color, d1, d2, rf=False):
         for i in range(a, b):
-            x = (i-a)/max(1, b-a-1)
-            head = Color(255,220,55) if rf and i in gaps else c
-            p = {i: head}
+            t = (i-a)/max(1, b-a-1)
+            c = Color(255,220,50) if rf and i in gaps else color
+            p = {i: c}
             if i > a:
-                p[i-1] = Color(0,50,90) if rf else Color(90,25,0)
+                p[i-1] = Color(0,35,55) if rf else Color(60,20,0)
             show(p)
-            time.sleep(d1+(d2-d1)*x)
+            time.sleep(d1+(d2-d1)*t)
         show()
-
-    def spiral():
-        move(0, spiral_count, Color(0,170,255),
-             0.04, 0.015, True)
-
-    def beam():
-        move(spiral_count, total, Color(255,100,0),
-             0.04, 0.025)
 
     def individual():
         for i in range(total):
             show({i: Color(255,255,255)})
             print("LED", i, flush=True)
-            time.sleep(0.05)
+            time.sleep(0.045)
+        show()
+
+    def fill(c, delay):
+        if hardware and not power_ok:
+            raise RuntimeError(
+                "All ON/RGB memerlukan --power-ok setelah PSU diverifikasi"
+            )
+        show({i: c for i in range(total)})
+        time.sleep(delay)
+        show()
 
     def rgb():
-        for c in [Color(255,0,0), Color(0,255,0),
-                  Color(0,0,255), Color(255,255,255)]:
-            all_on(c)
-            time.sleep(1.5)
+        for name,c in [
+            ("RED", Color(255,0,0)),
+            ("GREEN", Color(0,255,0)),
+            ("BLUE", Color(0,0,255)),
+            ("WHITE", Color(255,255,255))
+        ]:
+            print(name, flush=True)
+            fill(c, 1)
 
-    def repeat():
-        for _ in range(3):
-            spiral()
-            beam()
+    def charge():
+        nonlocal ready
+        ready = False
+        for n in range(1, 21):
+            show({i: Color(255,135,0)
+                  for i in range(spiral_count-20,
+                                 spiral_count-20+n)})
+            if n % 5 == 0:
+                beep(1, 0.025)
+            time.sleep(0.13)
 
-    def final_shot():
-        spiral()
-        beam()
-        for v in [30,100,200,255,200,100,30,0]:
+        ready = True
+        print("ENERGY READY 100% (simulasi visual)")
+        beep(2, 0.09)
+        time.sleep(0.7)
+
+    def shoot():
+        nonlocal ready
+        if not ready:
+            charge()
+
+        beep(1, 0.28)
+        for i in range(spiral_count, total):
+            p = {j: Color(70,30,0)
+                 for j in range(spiral_count-20,spiral_count)}
+            p[i] = Color(255,180,0)
+            if i > spiral_count:
+                p[i-1] = Color(100,35,0)
+            show(p)
+            time.sleep(0.03)
+
+        for v in [40,100,200,255,100,0]:
             show({i: Color(0,v,0)
                   for i in range(total-8,total)})
-            time.sleep(0.15)
+            time.sleep(0.13)
 
-    def all_test():
-        individual()                       # 1
-        all_on(Color(255,255,255))         # 2
-        time.sleep(3)
-        rgb()                              # 3
-        spiral()                           # 4
-        beam()                             # 5
-        repeat()                           # 6
-        final_shot()                       # 7
-        show()                             # 8
+        ready = False
+        show()
 
-    commands = {
-        "t": individual,
-        "a": lambda: (all_on(Color(255,255,255)), time.sleep(3), show()),
-        "r": rgb,
-        "s": spiral,
-        "e": beam,
-        "p": repeat,
-        "b": final_shot,
-        "f": all_test
-    }
+    tests = [
+        ("ALL OFF AWAL", lambda: (show(), time.sleep(.4))),
+        ("INDIVIDUAL LED", individual),
+        ("ALL LED ON", lambda: fill(Color(255,255,255), 2)),
+        ("RGB COLOR TEST", rgb),
+        ("SPIRAL ACCELERATION",
+         lambda: move(0,spiral_count,Color(0,170,255),
+                      .04,.018,True)),
+        ("EXTRACTION / SHOOT",
+         lambda: move(spiral_count,total,Color(255,100,0),
+                      .04,.025)),
+        ("ENERGY CHARGING", charge),
+        ("FINAL BEAM SHOT", shoot),
+        ("ALL OFF FINAL", show)
+    ]
+
+    def run_one(n):
+        name, fn = tests[n-1]
+        print(f"TEST {n}/9 - {name}", flush=True)
+        beep(n)
+        fn()
 
     try:
         show()
-        i = 0
-        print("DECY-13 | 400 SPIRAL + 48 BEAM")
-        print("t/a/r/s/e/p/b/f = test | q = off")
-        while True:
-            cmd = input(f"LED #{i} > ").strip().lower()
-            if cmd in ("q", "o"):
-                break
-            elif cmd in commands:
-                commands[cmd]()
-            elif cmd == "":
-                show({i: Color(0,180,255)})
-                i = (i+1) % total
-            elif cmd.isdecimal() and int(cmd) < total:
-                i = int(cmd)
-                show({i: Color(0,180,255)})
-            else:
-                print("Perintah tidak dikenal")
+        print(f"DECY-13 | {spiral_count} SPIRAL + "
+              f"{total-spiral_count} BEAM")
+        print(f"BUZZER GPIO{buzzer_pin}")
+
+        if auto:
+            for n in range(1,10):
+                run_one(n)
+        else:
+            print("f=semua | s=spiral | e=beam")
+            print("b=charge+shot | q=keluar")
+            idx = 0
+            while True:
+                cmd = input(f"LED #{idx} > ").strip().lower()
+                if cmd == "q":
+                    break
+                elif cmd == "f":
+                    for n in range(1,10):
+                        run_one(n)
+                elif cmd == "s":
+                    run_one(5)
+                elif cmd == "e":
+                    run_one(6)
+                elif cmd == "b":
+                    run_one(7)
+                    run_one(8)
+                elif cmd == "" or cmd.isdecimal():
+                    idx = (idx+1)%total if cmd == "" else int(cmd)
+                    if 0 <= idx < total:
+                        show({idx: Color(0,180,255)})
+                    else:
+                        print("Indeks di luar jangkauan")
+                else:
+                    print("Perintah tidak dikenal")
+
+    except KeyboardInterrupt:
+        print("\nPengujian dihentikan")
+
     finally:
         show()
-        time.sleep(0.2)
-        show()
+        if GPIO is not None:
+            GPIO.output(buzzer_pin, GPIO.LOW)
+            GPIO.cleanup(buzzer_pin)
         print("ALL OFF - SELESAI")
 
 
@@ -579,22 +655,33 @@ def main():
     parser.add_argument("--mode", choices=["test","finder"],
                         default="test")
     parser.add_argument("--hardware", action="store_true")
+    parser.add_argument("--auto", action="store_true")
     parser.add_argument("--total-leds", type=int, default=448)
     parser.add_argument("--spiral-leds", type=int, default=400)
-    parser.add_argument("--brightness", type=int, default=20)
+    parser.add_argument("--brightness", type=int, default=10)
+    parser.add_argument("--buzzer-pin", type=int, default=17)
+    parser.add_argument("--no-buzzer", action="store_true")
+    parser.add_argument("--power-ok", action="store_true")
     args = parser.parse_args()
 
-    if not 1 <= args.spiral_leds < args.total_leds:
-        parser.error("Pemetaan LED tidak valid")
+    if not 20 <= args.spiral_leds <= args.total_leds-8:
+        parser.error("Pemetaan spiral/beam tidak valid")
     if not 1 <= args.brightness <= 255:
-        parser.error("Brightness tidak valid")
+        parser.error("Brightness harus 1..255")
+    if args.buzzer_pin != 17:
+        parser.error("Buzzer bersama harus GPIO17 (pin fisik 11)")
+    if (args.hardware or args.auto) and args.mode != "finder":
+        parser.error("--hardware/--auto hanya untuk finder")
 
     config = load_config()
     if args.mode == "test":
         test_module(config)
     else:
-        pixel_finder(config, args.hardware, args.total_leds,
-                     args.spiral_leds, args.brightness)
+        pixel_finder(
+            config, args.hardware, args.total_leds,
+            args.spiral_leds, args.brightness, args.auto,
+            args.buzzer_pin, not args.no_buzzer, args.power_ok
+        )
 
 
 if __name__ == "__main__":
