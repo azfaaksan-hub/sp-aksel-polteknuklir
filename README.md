@@ -100,6 +100,139 @@ Supaya tidak pernah terjadi *Merge Conflict* dan kita bisa tahu dengan jujur apa
 
 ---
 
+## ⚡ Rangkaian Keseluruhan (Full Wiring Integration) & Audit Anti-Tabrakan I/O
+
+### 🔍 Apakah I/O Saling Tabrakan Ketika Semua Wiring Disatukan?
+**Jawabannya: TIDAK TABRAKAN (`0` Konflik Pin GPIO & `0` Konflik Bus Periferal).**
+Seluruh modul perangkat keras dari **Divisi 2, Divisi 3, dan Divisi 4** telah dirancang agar dapat dipasang dan dijalankan **serentak** pada satu unit **Raspberry Pi 3 Model B+** oleh `04_decy13_mqtt_daemon.py`:
+
+1. **Bebas Tabrakan Pin Fisik & GPIO (BCM):**
+   - **Divisi 2 (Vakum & Safety):** memakai `GPIO 17` (`Pin 11`), `GPIO 21` (`Pin 40`), dan reservasi `GPIO 22` (`Pin 15`).
+   - **Divisi 3 (LED WS2812B):** memakai `GPIO 18` (`Pin 12`).
+   - **Divisi 4 (LCD TFT ILI9341):** memakai `GPIO 8` (`Pin 24`), `GPIO 10` (`Pin 19`), `GPIO 11` (`Pin 23`), `GPIO 24` (`Pin 18`), `GPIO 25` (`Pin 22`), serta reservasi `SPI0 MISO` pada `GPIO 9` (`Pin 21`).
+   - **Pin Daya & Ground (`GND`):** Header 40-pin RPi 3B+ menyediakan **2 pin `3.3V`**, **2 pin `5V`**, dan **8 pin `GND`**, sehingga kabel tiap divisi mendapat pin header masing-masing tanpa menumpuk di satu lubang pin.
+2. **Bebas Tabrakan Bus Internal SoC (`PWM0/DMA10` vs `Hardware SPI0`):**
+   - **LED Strip WS2812B (Divisi 3)** digerakkan oleh **`PWM0` + `DMA Channel 10`** (`rpi_ws281x`, `800 kHz`) pada `GPIO 18` — **bukan** lewat bus SPI.
+   - **Layar LCD ILI9341 (Divisi 4)** digerakkan oleh **`Hardware SPI0`** (`luma.lcd`, `16 MHz`) pada `GPIO 8/10/11` + kontrol `GPIO 24/25`.
+   - **Potensi Konflik Audio Onboard Sudah Ditutup:** Secara bawaan, audio analog RPi (`snd_bcm2835`) memakai jalur `PWM0` yang sama dengan `GPIO 18`. Skrip `bash tools/raspi_bootstrap.sh` otomatis mengeset **`dtparam=audio=off`** dan **`dtparam=spi=on`** di `/boot/config.txt` (`/boot/firmware/config.txt`), sehingga jalur `PWM0/DMA10` murni eksklusif untuk LED WS2812B (bebas *flicker*).
+3. **Bebas Tabrakan Loop & Threading (*Non-Blocking*):**
+   - Loop utama Core Daemon (`5 Hz` / `200 ms`), *worker thread* animasi LED (`40 FPS` / `25 ms`), dan *worker thread* render SPI LCD (`~4 FPS` / `250 ms` dengan *dirty-signature check*) berjalan paralel menggunakan `threading.Lock()` tanpa saling memblokir.
+
+---
+
+### 🗺️ Skema Rangkaian Keseluruhan Sistem DECY-13 (6 Divisi)
+
+```text
++======================================================================================+
+|                    MINI PC RUANG KONTROL (DIVISI 5 & DIVISI 6)                       |
+|  - Web HMI SCADA & Simulator 2D (Browser -> ws://192.168.137.1:9001)                 |
+|  - Tombol E-Stop Operasional (HTML EMERGENCY_STOP -> decy13/hmi/cmd)                 |
+|  - Dashboard Node-RED (/cyclotron) & QA Healthcheck (tcp://192.168.137.1:1883)       |
++==========================================+===========================================+
+                                           |
+                        LAN Ethernet (ICS) / Wi-Fi Lokal
+                   MQTT TCP :1883  &  MQTT over WebSocket :9001
+                                           |
++==========================================v===========================================+
+|                RASPBERRY PI 3 MODEL B+ — CORE BACKEND (DIVISI 1)                     |
+|         Mosquitto Broker + 04_decy13_mqtt_daemon.py (State & Physics Loop 5 Hz)      |
+|             Konfigurasi OS: dtparam=audio=off  |  dtparam=spi=on                     |
++-----------------------+--------------------------+-----------------------------------+
+                        |                          |
+        +---------------+                          +-------------------+
+        |                                                              |
+        v (GPIO Digital: RPi.GPIO)             (PWM0 + DMA10: 800kHz)  v
++-------+--------------------------------+   +-------------------------+---------------+
+|   DIVISI 2: VAKUM, BUZZER & SAFETY     |   |   DIVISI 3: LED STRIP WS2812B (64 LED)  |
+|                                        |   |                                         |
+| - Pin 11 (GPIO 17) --> (+) Buzzer      |   | - Pin 12 (GPIO 18) --[R 330-470 Ohm]--+ |
+| - Pin 09 (GND)     --> (-) Buzzer      |   |                                       v |
+|                                        |   |   DIN Strip WS2812B (#0..#47 Spiral,    |
+| - Pin 02 (5V)      --> VCC Modul Relay |   |   RF Gap [11,23,35,47], #48..#63 Shoot) |
+| - Pin 40 (GPIO 21) --> IN Relay        |   |                                         |
+|                        (Active-LOW)    |   | - PSU Eksternal 5V 3A:                  |
+| - Pin 39 (GND)     --> GND Modul Relay |   |   (+) 5V  --> VCC (5V) LED Strip        |
+|                                        |   |   (-) GND --> GND LED Strip             |
+|   [Sisi Kontak Saklar Relay Terisolasi]|   |               + Pin 06 (GND RPi)        |
+|   Adaptor 12V (+) ---> COM Relay       |   |               (WAJIB COMMON GROUND!)    |
+|   Kipas 12V   (+) <--- NO  Relay       |   +-----------------------------------------+
+|   Kipas 12V   (-) ---> Adaptor 12V (-) |
+|                                        |             (Hardware SPI0: 16 MHz)
+| - Pin 15 (GPIO 22) & Pin 14 (GND):     |   +-----------------------------------------+
+|   Reservasi E-Stop Fisik (Pull-Up;     |   |   DIVISI 4: LCD TFT SPI ILI9341 320x240 |
+|   N/A karena E-Stop via Web HMI HTML)  |   |                                         |
++----------------------------------------+   | - Pin 17 (3.3V)    --> VCC LCD          |
+                                             |                    --> LED Backlight    |
+                                             |                        (via R 100 Ohm)  |
+                                             | - Pin 20 (GND)     --> GND LCD          |
+                                             | - Pin 24 (GPIO 8)  --> CS  (SPI0 CE0)   |
+                                             | - Pin 19 (GPIO 10) --> SDI/MOSI (SPI0)  |
+                                             | - Pin 23 (GPIO 11) --> SCK/SCLK (SPI0)  |
+                                             | - Pin 18 (GPIO 24) --> DC / RS          |
+                                             | - Pin 22 (GPIO 25) --> RESET            |
+                                             | - Pin 21 (GPIO 9)  --> SDO/MISO (Ops.)  |
+                                             +-----------------------------------------+
+```
+
+---
+
+### 📌 Peta Distribusi 40-Pin Header Raspberry Pi 3B+ (Semua Divisi Terpasang)
+
+Setiap pin daya (`3.3V`/`5V`), `GND`, dan `GPIO` di bawah ini sudah dibagi agar **tidak ada dua modul yang berebut pin fisik yang sama**:
+
+```text
+                     RASPBERRY PI 3B+ (40-PIN HEADER)
+            Sisi Kiri (Pin Ganjil)      Sisi Kanan (Pin Genap)
+            ----------------------      ----------------------
+               (Cadangan) 3.3V [01] || [02] 5V  ---> [DIV 2] VCC Modul Relay Kipas
+             (I2C1 SDA) GPIO 2 [03] || [04] 5V  ---> (Cadangan / Jangan bebani 64 LED!)
+             (I2C1 SCL) GPIO 3 [05] || [06] GND ---> [DIV 3] Common GND LED & PSU 5V 3A
+                        GPIO 4 [07] || [08] GPIO 14 (UART TXD)
+  [DIV 2] (-) Buzzer <---  GND [09] || [10] GPIO 15 (UART RXD)
+  [DIV 2] (+) Buzzer <- GPIO17 [11] || [12] GPIO 18 ---> [DIV 3] LED WS2812B DIN (via R 330-470Ω)
+                       GPIO 27 [13] || [14] GND     ---> [DIV 2] Reservasi COM E-Stop
+  [DIV 2] (Res. E-Stop) GPIO22 [15] || [16] GPIO 23
+  [DIV 4] VCC & BL LCD <- 3.3V [17] || [18] GPIO 24 ---> [DIV 4] LCD DC (Data/Command)
+  [DIV 4] LCD MOSI <--- GPIO10 [19] || [20] GND     ---> [DIV 4] GND Layar LCD ILI9341
+  [DIV 4] (MISO Ops.) <- GPIO9 [21] || [22] GPIO 25 ---> [DIV 4] LCD RST (Reset)
+  [DIV 4] LCD SCLK <--- GPIO11 [23] || [24] GPIO 8  ---> [DIV 4] LCD CS (SPI0 CE0)
+               (Cadangan)  GND [25] || [26] GPIO 7  (SPI0 CE1 - Bebas)
+             (ID_SD)    GPIO 0 [27] || [28] GPIO 1  (ID_SC)
+                        GPIO 5 [29] || [30] GND     (Cadangan)
+                        GPIO 6 [31] || [32] GPIO 12
+                       GPIO 13 [33] || [34] GND     (Cadangan)
+                       GPIO 19 [35] || [36] GPIO 16
+                       GPIO 26 [37] || [38] GPIO 20
+  [DIV 2] GND Relay  <---  GND [39] || [40] GPIO 21 ---> [DIV 2] IN Relay Kipas 12V (Active-LOW)
+```
+
+---
+
+### 📋 Tabel Master Pemetaan Pin & Audit Konflik Seluruh Divisi (`config_hardware.json`)
+
+| Divisi | Komponen & Sinyal | GPIO (BCM) | Pin Fisik RPi | Pasangan Daya & Pin `GND` | Bus / Periferal SoC | Status Audit Konflik |
+| :--- | :--- | :---: | :---: | :--- | :--- | :--- |
+| **Divisi 2** | **Buzzer SFM-27 (`+`)** | `GPIO 17` | **Pin `11`** | `GND` di **Pin `09`** | Digital Output (`Active-HIGH`) | ✅ **Aman** (Eksklusif Divisi 2) |
+| **Divisi 2** | **IN Modul Relay Kipas 12V** | `GPIO 21` | **Pin `40`** | `VCC 5V` di **Pin `02`**, `GND` di **Pin `39`** *(Kontak `COM`/`NO` ke PSU `12V` Kipas)* | Digital Output (`Active-LOW`, `initial=HIGH`) | ✅ **Aman** (Eksklusif Divisi 2; jalur `12V` terisolasi kontak relay) |
+| **Divisi 2** | **Reservasi Tombol E-Stop** | `GPIO 22` | **Pin `15`** | `GND` di **Pin `14`** *(Tidak dipasang fisik; E-Stop via Web HMI HTML)* | Digital Input (`PUD_UP` internal pull-up) | ✅ **Aman** (Idle `HIGH`, tidak memicu interupsi palsu) |
+| **Divisi 3** | **Data IN (`DIN`) 64 LED WS2812B** | `GPIO 18` | **Pin `12`** *(via R `330–470 Ω`)* | `VCC 5V` dari **PSU Eksternal `5V 3A`**, `Common GND` di **Pin `06`** | **`PWM0` + `DMA Ch. 10`** (`800 kHz`, `rpi_ws281x`) | ✅ **Aman** (Tidak memakai SPI; wajib `dtparam=audio=off`) |
+| **Divisi 4** | **LCD `CS` (Chip Select)** | `GPIO 8` | **Pin `24`** | `VCC 3.3V` di **Pin `17`**, `GND` di **Pin `20`** | **Hardware `SPI0 CE0`** (`16 MHz`, `luma.lcd`) | ✅ **Aman** (Bus `SPI0` terpisah dari `PWM0` LED) |
+| **Divisi 4** | **LCD `SDI / MOSI` (Data SPI)** | `GPIO 10` | **Pin `19`** | *(Sama dengan atas)* | **Hardware `SPI0 MOSI`** (`16 MHz`) | ✅ **Aman** (Eksklusif `SPI0`) |
+| **Divisi 4** | **LCD `SCK / SCLK` (Clock SPI)** | `GPIO 11` | **Pin `23`** | *(Sama dengan atas)* | **Hardware `SPI0 SCLK`** (`16 MHz`) | ✅ **Aman** (Eksklusif `SPI0`) |
+| **Divisi 4** | **LCD `DC / RS` (Data/Cmd)** | `GPIO 24` | **Pin `18`** | *(Sama dengan atas)* | Digital Output (`luma.lcd`) | ✅ **Aman** (Eksklusif Divisi 4) |
+| **Divisi 4** | **LCD `RESET`** | `GPIO 25` | **Pin `22`** | *(Sama dengan atas)* | Digital Output (`luma.lcd`) | ✅ **Aman** (Eksklusif Divisi 4) |
+| **Divisi 4** | **LCD `SDO / MISO` *(Opsional)*** | `GPIO 9` | **Pin `21`** | *(Sama dengan atas)* | **Hardware `SPI0 MISO`** | ✅ **Aman** (Tidak dipakai divisi lain) |
+
+---
+
+### ⚠️ 4 Aturan Keselamatan Elektrik Saat Semua Wiring Disatukan (`Milestone M3`)
+1. **Wajib *Common Ground* (`GND` RPi ↔ `GND` PSU 5V LED):** Hubungkan kutub **`(-)` PSU Eksternal 5V 3A** ke **`GND` LED Strip** sekaligus ke **Pin Fisik `06` (`GND` RPi)**. Tanpa *common ground*, sinyal data `3.3V` dari `GPIO 18` (`Pin 12`) akan mengambang (*floating*) dan menyebabkan LED berkedip acak (*flicker*).
+2. **Jangan Cabang `+5V` PSU Eksternal ke Pin `5V` RPi:** Kutub **`(+)` PSU Eksternal 5V 3A** hanya dihubungkan ke **`VCC (5V)` LED Strip WS2812B** (jangan disambung ke `Pin 02` atau `Pin 04` RPi apabila RPi sudah mendapat daya dari adaptor Micro-USB sendiri, agar dua regulator 5V tidak saling bertabrakan).
+3. **Isolasi Tegangan `+12V` Kipas Vakum:** Tegangan `+12V` dari adaptor kipas **hanya boleh masuk ke terminal saklar `COM` dan `NO` pada modul relay** (sisi tegangan tinggi). Jangan pernah menghubungkan jalur `12V` ke pin header RPi.
+4. **Pastikan `dtparam=audio=off` & `dtparam=spi=on` Aktif Sebelum Uji Serentak:** Jalankan `python3 tools/raspi_preflight.py --divisi 1` di RPi untuk memastikan `/dev/spidev0.0` aktif dan modul audio analog tidak merebut `PWM0` (`GPIO 18`) saat `sudo python3 04_decy13_mqtt_daemon.py` dijalankan.
+
+---
+
 ## 🤖 Prompt Konteks Terbaru per Divisi (Siap Copy-Paste untuk Chat AI Baru!)
 
 Gunakan prompt di bawah ini **setiap kali kamu membuka chat AI baru** (atau setelah Ketua mengumumkan update `main` di WhatsApp) agar AI kamu tidak kehilangan konteks proyek!
