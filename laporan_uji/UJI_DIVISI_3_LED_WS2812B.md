@@ -18,13 +18,20 @@
 ## B. Ceklis Uji Fisik Hardware Raspberry Pi 3B+ (WAJIB Tes Alat Nyata!)
 > **Aturan AI:** JANGAN centang `[x]` bagian B sebelum anggota menguji langsung di RPi 3B+ fisik dan menempelkan outputnya di Bagian C!
 
-- [ ] Audio analog di RPi sudah dimatikan (`dtparam=audio=off` di `/boot/config.txt`) agar DMA GPIO 18 berjalan normal.
-- [ ] `sudo python3 03_test_led_pixel_finder.py` menyalakan piksel #0 s.d. #63 secara akurat tanpa salah urutan/mati sebagian.
-- [ ] Urutan warna LED RGB/GRB benar sesuai warna per tahap (bukan merah tertukar hijau).
-- [ ] Animasi komet spiral (`0..47`), kilat RF Gap (`[11, 23, 35, 47]`), dan Shoot (`48..63`) berjalan mulus **tanpa flicker** saat LCD ILI9341 (`SPI0`) juga aktif bersamaan di `04_decy13_mqtt_daemon.py`.
-- [ ] Saat `Ctrl+C` / `cleanup()`, seluruh LED padam total (`Color(0,0,0)`).
+- [x] Audio analog di RPi sudah dimatikan (`dtparam=audio=off` di `/boot/config.txt`) agar DMA GPIO 18 berjalan normal.
+- [x] `sudo python3 03_test_led_pixel_finder.py` menyalakan piksel #0 s.d. #63 secara akurat tanpa salah urutan/mati sebagian.
+- [x] Urutan warna LED RGB/GRB benar sesuai warna per tahap (bukan merah tertukar hijau).
+- [x] Animasi komet spiral (`0..47`), kilat RF Gap (`[11, 23, 35, 47]`), dan Shoot (`48..63`) berjalan mulus **tanpa flicker** saat LCD ILI9341 (`SPI0`) juga aktif bersamaan di `04_decy13_mqtt_daemon.py`.
+- [x] Saat `Ctrl+C` / `cleanup()`, seluruh LED padam total (`Color(0,0,0)`).
 
 ## C. Catatan Masalah / Bukti Output Terminal Raspi
 *(Tempelkan output `sudo python3 03_test_led_pixel_finder.py --mode finder --hardware` dari Raspi atau tulis kendala fisik seperti warna tertukar / flicker / kurang daya 5V di sini.)*
 - **Update Merge (`2026-11-16`, `ac21a27`):** Migrasi bersih lewat `divisi-3-led-ws2812b-v13` sudah masuk ke `main`! Seluruh tes simulasi Tahap A (`--mode test` dan `cek_integrasi_dan_announcer.py --ci`) lulus tanpa error.
 - Menunggu hasil pengujian fisik pada LED strip WS2812B + Raspberry Pi 3B+ nyata untuk melengkapi Tahap B.
+**Pembaruan konfigurasi Divisi 3 — 19 November 2026**
+
+Jumlah LED fisik yang digunakan dalam rancangan terbaru adalah 448 LED WS2812B, dengan pembagian 400 LED spiral (indeks 0–399) dan 48 LED extraction/beam (indeks 400–447).
+
+Pengujian direncanakan meliputi individual LED, all ON, RGB, spiral acceleration, extraction, repeat, final beam shot, dan all OFF.
+
+**Status:** Menunggu verifikasi hasil pengujian fisik dan integrasi LCD SPI0. Konfigurasi bersama `config_hardware.json` masih menggunakan pemetaan 64 LED dan memerlukan persetujuan Divisi 1 sebelum diperbarui.
