@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1105" width="1400" height="1105" role="img" aria-labelledby="title desc">
+  <title id="title">Skema Full Wiring Hardware dan Jaringan Siklotron DECY-13 v1.6</title>
+  <desc id="desc">Diagram wiring terintegrasi 6 divisi tanpa tabrakan I/O antara Mini PC Ruang Kontrol, Raspberry Pi 3B+, Relay dan Buzzer Divisi 2, 448 LED WS2812B Divisi 3, serta 3 Arduino Uno dan 3 Shield TFT via Powered USB Hub Divisi 4.</desc>
+
+  <defs>
+    <style>
+      .bg { fill: #0b1120; }
+      .header-box { fill: #111c33; stroke: #38bdf8; stroke-width: 2; rx: 12; }
+      .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 21px; font-weight: 700; fill: #f8fafc; }
+      .subtitle { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; fill: #94a3b8; }
+
+      .card-pc { fill: #131c31; stroke: #3b82f6; stroke-width: 2; rx: 10; }
+      .card-rpi { fill: #111b2e; stroke: #a855f7; stroke-width: 2.2; rx: 12; }
+      .card-div2 { fill: #13221d; stroke: #22c55e; stroke-width: 2; rx: 10; }
+      .card-div3 { fill: #10212b; stroke: #06b6d4; stroke-width: 2; rx: 10; }
+      .card-div4 { fill: #211912; stroke: #f59e0b; stroke-width: 2; rx: 10; }
+      .subbox { fill: #0f172a; stroke: #334155; stroke-width: 1.4; rx: 8; }
+      .warnbox { fill: #2b1215; stroke: #ef4444; stroke-width: 1.6; rx: 7; }
+      .hubbox { fill: #1e1b2e; stroke: #fbbf24; stroke-width: 2; rx: 8; }
+      .unobox { fill: #161d2f; stroke: #f59e0b; stroke-width: 1.5; rx: 8; }
+      .pinframe { fill: #0a101f; stroke: #475569; stroke-width: 1.6; rx: 8; }
+      .footerbox { fill: #111827; stroke: #334155; stroke-width: 1.5; rx: 8; }
+
+      .sec-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: 700; fill: #f8fafc; }
+      .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12.5px; font-weight: 700; fill: #e2e8f0; }
+      .txt { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11.2px; fill: #cbd5e1; }
+      .txt-sm { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10.5px; fill: #94a3b8; }
+      .mono-sm { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.2px; fill: #cbd5e1; }
+      .warn-txt { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10.8px; font-weight: 700; fill: #fca5a5; }
+      .ok-badge { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10.5px; font-weight: 700; fill: #4ade80; }
+      .wire-lbl { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.5px; font-weight: 700; }
+
+      .wire-5v { stroke: #ef4444; stroke-width: 2.5; fill: none; }
+      .wire-gnd { stroke: #94a3b8; stroke-width: 2.4; fill: none; stroke-dasharray: 6 3; }
+      .wire-gpio21 { stroke: #22c55e; stroke-width: 2.6; fill: none; }
+      .wire-gpio17 { stroke: #fb923c; stroke-width: 2.6; fill: none; }
+      .wire-gpio18 { stroke: #22d3ee; stroke-width: 2.8; fill: none; }
+      .wire-usb { stroke: #facc15; stroke-width: 3; fill: none; }
+      .wire-net { stroke: #60a5fa; stroke-width: 2.6; fill: none; }
+    </style>
+
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#60a5fa" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#22c55e" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#fb923c" />
+    </marker>
+    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#22d3ee" />
+    </marker>
+    <marker id="arrow-yellow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#facc15" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect class="bg" x="0" y="0" width="1400" height="1105" />
+
+  <!-- Top Header -->
+  <rect class="header-box" x="24" y="16" width="1352" height="62" />
+  <text class="title" x="44" y="43">SKEMA INTEGRASI FULL WIRING HARDWARE &amp; JARINGAN — SIKLOTRON DECY-13 (v1.6)</text>
+  <text class="subtitle" x="44" y="65">Politeknik Teknologi Nuklir Indonesia (BRIN)  •  0 Konflik Pin GPIO, Bus RPi, &amp; Topik MQTT  •  Acuan main @ 18c2603</text>
+  <rect x="1125" y="29" width="232" height="34" rx="17" fill="#064e3b" stroke="#22c55e" stroke-width="1.5" />
+  <text x="1241" y="50" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="12" font-weight="700" fill="#86efac">STATUS: 0 TABRAKAN I/O</text>
+
+  <!-- ==================== LAYER 1: MINI PC ==================== -->
+  <rect class="card-pc" x="40" y="94" width="1320" height="118" />
+  <text class="sec-title" x="60" y="118">1. MINI PC RUANG KONTROL — WINDOWS 8 / 10 / 11 (DIVISI 5 &amp; DIVISI 6)</text>
+
+  <!-- PC Box 1: Web HMI Offline -->
+  <rect class="subbox" x="60" y="128" width="430" height="72" />
+  <text class="box-title" x="74" y="147" fill="#93c5fd">Web HMI 100% Offline (Divisi 5)</text>
+  <text class="mono-sm" x="74" y="164">python -m http.server 8000 --directory decy13_mqtt_kit/web_hmi</text>
+  <text class="txt-sm" x="74" y="180">Browser: http://localhost:8000 -&gt; ws://&lt;IP_RASPI&gt;:9001</text>
+  <text class="txt-sm" x="74" y="194">Aset lokal: console.css + mqtt.min.js + usb-panel.js + EMERGENCY_STOP</text>
+
+  <!-- PC Box 2: Node-RED & QA Divisi 6 -->
+  <rect class="subbox" x="506" y="128" width="424" height="72" />
+  <text class="box-title" x="520" y="147" fill="#93c5fd">Node-RED &amp; QA Commissioning (Divisi 6 — qa_divisi6)</text>
+  <text class="mono-sm" x="520" y="164">Dashboard: http://127.0.0.1:1880/cyclotron &amp; /api/usb/status</text>
+  <text class="txt-sm" x="520" y="180">QA API: qa_readonly_api.ps1 | CLI: 06_test_mqtt_healthcheck.py</text>
+  <text class="warn-txt" x="520" y="194">WAJIB saat uji alat asli: Stop-Service mosquitto di Mini PC!</text>
+
+  <!-- PC Box 3: LAN / Wi-Fi Link -->
+  <rect class="subbox" x="946" y="128" width="394" height="72" />
+  <text class="box-title" x="960" y="147" fill="#93c5fd">Koneksi LAN ICS / Wi-Fi Sekelas (Tanpa .local)</text>
+  <text class="mono-sm" x="960" y="164">ICS Win: 192.168.137.1 &lt;-&gt; IP RPi (arp -a / hostname -I)</text>
+  <text class="txt-sm" x="960" y="180">SSH Win 8 via Git Bash / PuTTY: ssh &lt;user_rpi&gt;@&lt;IP_RASPI&gt;</text>
+  <text class="txt-sm" x="960" y="194">Forward Node-RED: ssh -N -L 127.0.0.1:1883:127.0.0.1:1883</text>
+
+  <!-- Network Arrows PC <-> RPi -->
+  <line class="wire-net" x1="360" y1="212" x2="360" y2="264" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)" />
+  <rect x="200" y="224" width="320" height="24" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1" />
+  <text class="wire-lbl" x="360" y="240" text-anchor="middle" fill="#93c5fd">WebSocket :9001 (decy13/rpi/* &amp; decy13/usb/*)</text>
+
+  <line class="wire-net" x1="1010" y1="212" x2="1010" y2="264" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)" />
+  <rect x="850" y="224" width="320" height="24" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1" />
+  <text class="wire-lbl" x="1010" y="240" text-anchor="middle" fill="#93c5fd">MQTT TCP :1883 (Node-RED &amp; 06_test_mqtt_healthcheck)</text>
+
+  <!-- ==================== LAYER 2: RASPBERRY PI 3B+ ==================== -->
+  <rect class="card-rpi" x="40" y="266" width="1320" height="316" />
+  <text class="sec-title" x="60" y="292">2. RASPBERRY PI 3 MODEL B+ — CORE DAEMON, BROKER &amp; USB HUB HOST (DIVISI 1)</text>
+  <rect x="945" y="276" width="395" height="22" rx="6" fill="#3b0764" stroke="#c084fc" stroke-width="1" />
+  <text x="1142" y="291" text-anchor="middle" font-family="'Consolas', monospace" font-size="11" fill="#f3e8ff">/boot/config.txt: dtparam=audio=off | dtparam=spi=on</text>
+
+  <!-- RPi Software Processes -->
+  <rect class="subbox" x="56" y="308" width="390" height="258" />
+  <text class="box-title" x="70" y="330" fill="#d8b4fe">Layanan &amp; Proses Aktif di Raspberry Pi 3B+</text>
+
+  <rect x="70" y="342" width="362" height="58" rx="6" fill="#172554" stroke="#60a5fa" stroke-width="1.2" />
+  <text class="box-title" x="80" y="361" fill="#bae6fd">A. Broker Pusat: Mosquitto (raspi_bootstrap.sh)</text>
+  <text class="mono-sm" x="80" y="378">listener 1883 (TCP) | listener 9001 (WebSocket)</text>
+  <text class="txt-sm" x="80" y="393">allow_anonymous true  •  1 broker untuk semua divisi</text>
+
+  <rect x="70" y="408" width="362" height="72" rx="6" fill="#1e1b4b" stroke="#a855f7" stroke-width="1.2" />
+  <text class="box-title" x="80" y="427" fill="#e9d5ff">B. Terminal SSH 1: Core Daemon Siklotron (5 Hz)</text>
+  <text class="mono-sm" x="80" y="444">sudo python3 raspi_cli/04_decy13_mqtt_daemon.py</text>
+  <text class="txt-sm" x="80" y="460">• Auto-Fallback ke 127.0.0.1:1883 saat Mosquitto PC mati</text>
+  <text class="txt-sm" x="80" y="474">• Kontrol GPIO 21 (Relay), GPIO 17 (Buzz), GPIO 18 (LED)</text>
+
+  <rect x="70" y="488" width="362" height="68" rx="6" fill="#271d0f" stroke="#f59e0b" stroke-width="1.2" />
+  <text class="box-title" x="80" y="507" fill="#fde68a">C. Terminal SSH 2: Bridge USB 3-TFT (Divisi 4)</text>
+  <text class="mono-sm" x="80" y="524">python3 AKSEL-DECY13/raspi/accelerator_hub.py \</text>
+  <text class="mono-sm" x="80" y="538">  --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control</text>
+  <text class="txt-sm" x="80" y="551">Topik: decy13/usb/state | decy13/usb/cmd | decy13/usb/ack</text>
+
+  <!-- RPi 40-Pin Header Visual Map (Wider: x=458..1068, center=763) -->
+  <rect class="pinframe" x="458" y="308" width="610" height="258" />
+  <text class="box-title" x="763" y="329" text-anchor="middle" fill="#e2e8f0">PETA PIN FISIK HEADER 40-PIN RASPBERRY PI 3B+ (AKTIF &amp; CADANGAN)</text>
+
+  <text class="txt-sm" x="720" y="348" text-anchor="end">Sisi Kiri (Pin Ganjil)</text>
+  <text class="txt-sm" x="806" y="348" text-anchor="start">Sisi Kanan (Pin Genap)</text>
+
+  <!-- Row 1: Pin 01 / Pin 02 -->
+  <circle cx="742" cy="364" r="6" fill="#64748b" />
+  <text class="mono-sm" x="730" y="368" text-anchor="end">[01] 3.3V (Cadangan)</text>
+  <circle cx="784" cy="364" r="6" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5" />
+  <text class="mono-sm" x="796" y="368" fill="#fca5a5">[02] 5V  --&gt; VCC Relay Kipas 12V (Div 2)</text>
+
+  <!-- Row 2: Pin 05 / Pin 06 -->
+  <circle cx="742" cy="388" r="6" fill="#475569" />
+  <text class="mono-sm" x="730" y="392" text-anchor="end">[05] GPIO 3 (Bebas)</text>
+  <circle cx="784" cy="388" r="6" fill="#94a3b8" stroke="#f8fafc" stroke-width="1.5" />
+  <text class="mono-sm" x="796" y="392" fill="#f8fafc">[06] GND --&gt; Common GND PSU 5V LED (Div 3)</text>
+
+  <!-- Row 3: Pin 09 / Pin 10 -->
+  <circle cx="742" cy="412" r="6" fill="#94a3b8" stroke="#f8fafc" stroke-width="1.5" />
+  <text class="mono-sm" x="730" y="416" text-anchor="end" fill="#f8fafc">(-) Buzzer (Div 2) &lt;-- GND [09]</text>
+  <circle cx="784" cy="412" r="6" fill="#475569" />
+  <text class="mono-sm" x="796" y="416">[10] GPIO 15 (UART RX - Bebas)</text>
+
+  <!-- Row 4: Pin 11 / Pin 12 -->
+  <circle cx="742" cy="438" r="6.5" fill="#fb923c" stroke="#fed7aa" stroke-width="1.5" />
+  <text class="mono-sm" x="730" y="442" text-anchor="end" fill="#fdba74">(+) Buzzer (Div 2/3) &lt;-- GPIO17 [11]</text>
+  <circle cx="784" cy="438" r="6.5" fill="#22d3ee" stroke="#a5f3fc" stroke-width="1.5" />
+  <text class="mono-sm" x="796" y="442" fill="#67e8f9">[12] GPIO18 (PWM0) --&gt; R 330-470Ω -&gt; LED</text>
+
+  <!-- Row 5: Pin 15 / Pin 14 -->
+  <circle cx="742" cy="464" r="6" fill="#c084fc" />
+  <text class="mono-sm" x="730" y="468" text-anchor="end" fill="#e9d5ff">Res. E-Stop (HMI) &lt;- GPIO22 [15]</text>
+  <circle cx="784" cy="464" r="6" fill="#64748b" />
+  <text class="mono-sm" x="796" y="468">[14] GND (Reservasi E-Stop)</text>
+
+  <!-- Row 6: SPI0 Backup Block -->
+  <circle cx="742" cy="490" r="6" fill="#64748b" />
+  <text class="mono-sm" x="730" y="494" text-anchor="end">[17,19,21,23] SPI0 MOSI/MISO/SCLK</text>
+  <circle cx="784" cy="490" r="6" fill="#64748b" />
+  <text class="mono-sm" x="796" y="494">[18,20,22,24] SPI0 Cadangan LCD DC/RST/CE0</text>
+
+  <!-- Row 7: Pin 39 / Pin 40 -->
+  <circle cx="742" cy="516" r="6" fill="#94a3b8" stroke="#f8fafc" stroke-width="1.5" />
+  <text class="mono-sm" x="730" y="520" text-anchor="end" fill="#f8fafc">GND Relay (Div 2) &lt;-- GND [39]</text>
+  <circle cx="784" cy="516" r="6.5" fill="#22c55e" stroke="#bbf7d0" stroke-width="1.5" />
+  <text class="mono-sm" x="796" y="520" fill="#86efac">[40] GPIO21 --&gt; IN Relay Active-LOW</text>
+
+  <!-- Center pin divider bar -->
+  <line x1="763" y1="354" x2="763" y2="528" stroke="#334155" stroke-width="2" />
+  <text class="txt-sm" x="763" y="551" text-anchor="middle" fill="#38bdf8">Catatan: Semua pin SPI0 ([17]..[24]) BEBAS 100% karena 3 LCD TFT Divisi 4 lewat USB Hub!</text>
+
+  <!-- RPi Right Box: USB-A Port -->
+  <rect class="subbox" x="1080" y="308" width="264" height="258" />
+  <text class="box-title" x="1094" y="330" fill="#fde68a">Port USB-A RPi (Divisi 4)</text>
+  <text class="txt" x="1094" y="352">1 kabel USB-A dari RPi masuk ke:</text>
+  <rect x="1094" y="362" width="236" height="44" rx="6" fill="#422006" stroke="#facc15" stroke-width="1.4" />
+  <text class="box-title" x="1212" y="381" text-anchor="middle" fill="#fef08a">POWERED USB HUB 5V &gt;= 2A</text>
+  <text class="txt-sm" x="1212" y="397" text-anchor="middle" fill="#fde68a">(Wajib adaptor USB Hub eksternal)</text>
+
+  <text class="box-title" x="1094" y="428" fill="#fde68a">Aturan Symlink udev (setup_udev.sh):</text>
+  <text class="mono-sm" x="1094" y="448">• /dev/arduino_hmi      (Uno 1)</text>
+  <text class="mono-sm" x="1094" y="466">• /dev/arduino_sensor   (Uno 2)</text>
+  <text class="mono-sm" x="1094" y="484">• /dev/arduino_actuator (Uno 3)</text>
+  <text class="txt-sm" x="1094" y="510">Serial: 115200 baud, 8N1 ASCII JSON</text>
+  <text class="txt-sm" x="1094" y="528">Ikat peran ke soket USB fisik agar</text>
+  <text class="txt-sm" x="1094" y="544">tidak tertukar saat RPi reboot.</text>
+
+  <!-- ==================== ROUTING BUS RPi -> HARDWARE ==================== -->
+  <!-- Divisi 2 Wire Bundle -->
+  <path class="wire-5v" d="M 80,582 L 80,638" />
+  <path class="wire-gpio21" d="M 148,582 L 148,638" marker-end="url(#arrow-green)" />
+  <path class="wire-gpio17" d="M 222,582 L 222,638" marker-end="url(#arrow-orange)" />
+  <path class="wire-gnd" d="M 304,582 L 304,638" />
+
+  <rect x="46" y="593" width="68" height="30" rx="5" fill="#0f172a" stroke="#ef4444" stroke-width="1" />
+  <text class="wire-lbl" x="80" y="606" text-anchor="middle" fill="#fca5a5">Pin 02</text>
+  <text class="wire-lbl" x="80" y="619" text-anchor="middle" fill="#fca5a5">5V</text>
+
+  <rect x="116" y="593" width="64" height="30" rx="5" fill="#0f172a" stroke="#22c55e" stroke-width="1" />
+  <text class="wire-lbl" x="148" y="606" text-anchor="middle" fill="#4ade80">Pin 40</text>
+  <text class="wire-lbl" x="148" y="619" text-anchor="middle" fill="#4ade80">GPIO21</text>
+
+  <rect x="190" y="593" width="64" height="30" rx="5" fill="#0f172a" stroke="#fb923c" stroke-width="1" />
+  <text class="wire-lbl" x="222" y="606" text-anchor="middle" fill="#fdba74">Pin 11</text>
+  <text class="wire-lbl" x="222" y="619" text-anchor="middle" fill="#fdba74">GPIO17</text>
+
+  <rect x="266" y="593" width="76" height="30" rx="5" fill="#0f172a" stroke="#94a3b8" stroke-width="1" />
+  <text class="wire-lbl" x="304" y="606" text-anchor="middle" fill="#cbd5e1">Pin 09/39</text>
+  <text class="wire-lbl" x="304" y="619" text-anchor="middle" fill="#cbd5e1">GND</text>
+
+  <!-- Divisi 3 Wire Bundle -->
+  <path class="wire-gpio18" d="M 465,582 L 465,638" marker-end="url(#arrow-cyan)" />
+  <path class="wire-gnd" d="M 615,582 L 615,638" />
+  <rect x="382" y="595" width="166" height="24" rx="5" fill="#0f172a" stroke="#22d3ee" stroke-width="1" />
+  <text class="wire-lbl" x="465" y="611" text-anchor="middle" fill="#67e8f9">Pin 12 (GPIO18 PWM0)</text>
+  <rect x="554" y="595" width="144" height="24" rx="5" fill="#0f172a" stroke="#94a3b8" stroke-width="1" />
+  <text class="wire-lbl" x="626" y="611" text-anchor="middle" fill="#f8fafc">Pin 06 (Common GND)</text>
+
+  <!-- Divisi 4 USB Wire -->
+  <path class="wire-usb" d="M 1212,582 L 1212,638" marker-end="url(#arrow-yellow)" />
+  <rect x="1084" y="595" width="256" height="24" rx="5" fill="#0f172a" stroke="#facc15" stroke-width="1" />
+  <text class="wire-lbl" x="1212" y="611" text-anchor="middle" fill="#fde047">Port USB-A RPi --&gt; Powered USB Hub</text>
+
+  <!-- ==================== LAYER 3 BOTTOM CARDS ==================== -->
+  <!-- CARD 1: DIVISI 2 -->
+  <rect class="card-div2" x="40" y="644" width="320" height="360" />
+  <text class="sec-title" x="56" y="670" fill="#4ade80">3A. DIVISI 2 — VAKUM &amp; SAFETY</text>
+  <text class="ok-badge" x="56" y="688">STATUS: LULUS_UJI_FISIK (7/7 Ceklis)</text>
+
+  <!-- Buzzer Box -->
+  <rect class="subbox" x="56" y="700" width="288" height="58" />
+  <text class="box-title" x="70" y="719" fill="#fdba74">Buzzer Aktif SFM-27 (Active-HIGH)</text>
+  <text class="mono-sm" x="70" y="736">(+) Merah  &lt;-- Pin 11 (GPIO 17)</text>
+  <text class="mono-sm" x="70" y="751">(-) Hitam  &lt;-- Pin 09 (GND)</text>
+
+  <!-- Relay & 12V Fan Box -->
+  <rect class="subbox" x="56" y="768" width="288" height="156" />
+  <text class="box-title" x="70" y="787" fill="#86efac">Modul Relay 5V + Kipas Vakum 12V</text>
+  <text class="mono-sm" x="70" y="805">VCC Relay  &lt;-- Pin 02 (5V RPi)</text>
+  <text class="mono-sm" x="70" y="821">IN Relay   &lt;-- Pin 40 (GPIO 21 Active-LOW)</text>
+  <text class="mono-sm" x="70" y="837">GND Relay  &lt;-- Pin 39 (GND RPi)</text>
+  <line x1="70" y1="848" x2="330" y2="848" stroke="#334155" stroke-width="1" stroke-dasharray="4 3" />
+  <text class="box-title" x="70" y="865" fill="#fda4af">Sisi Kontak Terisolasi (Adaptor 12V):</text>
+  <text class="mono-sm" x="70" y="882" fill="#fda4af">Adaptor 12V (+) --&gt; Terminal COM Relay</text>
+  <text class="mono-sm" x="70" y="898" fill="#fda4af">Terminal NO     --&gt; (+) Kipas Vakum 12V</text>
+  <text class="mono-sm" x="70" y="914">(-) Kipas 12V   --&gt; (-) Adaptor 12V</text>
+
+  <!-- E-Stop & GPIO17 Share Note -->
+  <rect class="subbox" x="56" y="934" width="288" height="58" />
+  <text class="txt-sm" x="70" y="952" fill="#e9d5ff">• E-Stop: lewat tombol HTML Web HMI Mini PC</text>
+  <text class="txt-sm" x="70" y="967">• GPIO 17 dibagi bergantian waktu dengan</text>
+  <text class="txt-sm" x="70" y="981">  03_test_led_pixel_finder.py (saat daemon mati)</text>
+
+  <!-- CARD 2: DIVISI 3 -->
+  <rect class="card-div3" x="376" y="644" width="320" height="360" />
+  <text class="sec-title" x="392" y="670" fill="#22d3ee">3B. DIVISI 3 — 448 LED WS2812B</text>
+  <text class="txt-sm" x="392" y="688" fill="#a5f3fc">Uji Fisik 448 px + 9 Tes &amp; Buzzer (18c2603)</text>
+
+  <!-- Resistor & DIN -->
+  <rect class="subbox" x="392" y="700" width="288" height="58" />
+  <text class="box-title" x="406" y="719" fill="#67e8f9">Jalur Data PWM0 + DMA Ch.10 @ 800 kHz</text>
+  <text class="mono-sm" x="406" y="737">Pin 12 (GPIO 18) --&gt; [R 330-470 Ω] --&gt; DIN</text>
+  <text class="txt-sm" x="406" y="751">Resistor seri wajib dekat awal kabel data LED</text>
+
+  <!-- LED Strip Mapping -->
+  <rect class="subbox" x="392" y="768" width="288" height="96" />
+  <text class="box-title" x="406" y="787" fill="#67e8f9">Pemetaan Fisik 448 Piksel WS2812B</text>
+  <rect x="406" y="798" width="196" height="22" rx="4" fill="#083344" stroke="#06b6d4" stroke-width="1.2" />
+  <text x="504" y="813" text-anchor="middle" font-family="'Consolas', monospace" font-size="10.5" fill="#cffafe">Spiral Dee: 0..399 (400px)</text>
+  <rect x="608" y="798" width="60" height="22" rx="4" fill="#431407" stroke="#fb923c" stroke-width="1.2" />
+  <text x="638" y="813" text-anchor="middle" font-family="'Consolas', monospace" font-size="10" fill="#fed7aa">400..447</text>
+  <text class="txt-sm" x="406" y="836">• RF Gap Spiral: {99, 199, 299, 399}</text>
+  <text class="txt-sm" x="406" y="852">• Finder br=10 + --power-ok | Daemon JSON=64px</text>
+
+  <!-- PSU Eksternal 5V + Common Ground Warning -->
+  <rect class="warnbox" x="392" y="874" width="288" height="118" />
+  <text class="box-title" x="406" y="893" fill="#fca5a5">PSU Eksternal 5V &amp; Common Ground</text>
+  <text class="mono-sm" x="406" y="912">(+) 5V PSU Eksternal --&gt; VCC (+5V) LED Strip</text>
+  <text class="mono-sm" x="406" y="929">(-) GND PSU Eksternal --&gt; GND Strip + Pin 06</text>
+  <text class="txt-sm" x="406" y="947" fill="#fde68a">Pin 06 (GND RPi) WAJIB nyambung ke GND PSU!</text>
+  <text class="warn-txt" x="406" y="967">BAHAYA: JANGAN sambungkan (+) 5V PSU</text>
+  <text class="warn-txt" x="406" y="982">eksternal ke pin 5V RPi (Pin 02 / 04)!</text>
+
+  <!-- CARD 3: DIVISI 4 -->
+  <rect class="card-div4" x="712" y="644" width="648" height="360" />
+  <text class="sec-title" x="728" y="670" fill="#fbbf24">3C. DIVISI 4 — 3 ARDUINO UNO + 3 SHIELD TFT 320x240 (AKSEL-DECY13)</text>
+  <text class="txt-sm" x="728" y="688" fill="#fde68a">USE_LOCAL_TFT = 1 • Shield TFT memakai D2-D9 &amp; A0-A4 • KOSONGKAN slot microSD Uno 2 &amp; Uno 3!</text>
+
+  <!-- Powered USB Hub Banner -->
+  <rect class="hubbox" x="728" y="698" width="616" height="42" />
+  <text class="box-title" x="1036" y="717" text-anchor="middle" fill="#fef08a">POWERED USB HUB 5V (&gt;= 2A) — ADAPTATOR EKSTERNAL WAJIB ON</text>
+  <text class="txt-sm" x="1036" y="732" text-anchor="middle" fill="#fde68a">Memecah 1 port USB-A RPi menjadi 3 kabel USB-B ke Uno 1, Uno 2, dan Uno 3 tanpa menguras daya 5V RPi</text>
+
+  <!-- Hub branches to 3 Unos -->
+  <line class="wire-usb" x1="825" y1="740" x2="825" y2="764" marker-end="url(#arrow-yellow)" />
+  <line class="wire-usb" x1="1036" y1="740" x2="1036" y2="764" marker-end="url(#arrow-yellow)" />
+  <line class="wire-usb" x1="1247" y1="740" x2="1247" y2="764" marker-end="url(#arrow-yellow)" />
+
+  <!-- UNO 1 -->
+  <rect class="unobox" x="728" y="766" width="196" height="226" />
+  <text class="box-title" x="826" y="786" text-anchor="middle" fill="#fef08a">UNO 1 — HMI</text>
+  <text class="mono-sm" x="826" y="802" text-anchor="middle" fill="#facc15">/dev/arduino_hmi</text>
+  <line x1="740" y1="812" x2="912" y2="812" stroke="#334155" stroke-width="1" />
+  <text class="txt-sm" x="740" y="830" fill="#e2e8f0">• node1_hmi.ino</text>
+  <text class="txt-sm" x="740" y="847">• Shield TFT MCUFRIEND 1</text>
+  <text class="mono-sm" x="740" y="863">  Pin tetap: D2-D9, A0-A4</text>
+  <text class="mono-sm" x="740" y="879">  Touch: XP=6, XM=A2,</text>
+  <text class="mono-sm" x="740" y="894">         YP=A1, YM=7</text>
+  <text class="txt-sm" x="740" y="914" fill="#86efac">• Tidak ada wiring tambahan</text>
+  <text class="txt-sm" x="740" y="931">  (cukup kabel USB ke Hub)</text>
+  <text class="txt-sm" x="740" y="952">• Layar 3 halaman: Dasbor,</text>
+  <text class="txt-sm" x="740" y="968">  Pengaturan, Keluaran USB</text>
+
+  <!-- UNO 2 -->
+  <rect class="unobox" x="938" y="766" width="196" height="226" />
+  <text class="box-title" x="1036" y="786" text-anchor="middle" fill="#fef08a">UNO 2 — SENSOR</text>
+  <text class="mono-sm" x="1036" y="802" text-anchor="middle" fill="#facc15">/dev/arduino_sensor</text>
+  <line x1="950" y1="812" x2="1122" y2="812" stroke="#334155" stroke-width="1" />
+  <text class="txt-sm" x="950" y="830" fill="#e2e8f0">• node2_sensor.ino</text>
+  <text class="txt-sm" x="950" y="846" fill="#fda4af">• Slot microSD KOSONG!</text>
+  <text class="box-title" x="950" y="866" fill="#93c5fd">IC 74HC4051 (Catu 5V):</text>
+  <text class="mono-sm" x="950" y="882">Z/COM -&gt; A5 | S0 -&gt; D11</text>
+  <text class="mono-sm" x="950" y="897">S1 -&gt; D13  | D10 = HIGH</text>
+  <text class="mono-sm" x="950" y="912">S2, INH, VEE, VSS -&gt; GND</text>
+  <text class="mono-sm" x="950" y="929">Y0..Y2 -&gt; 3 Potensio 0-5V</text>
+  <text class="mono-sm" x="950" y="944">Kontak Digital -&gt; D12 &amp; GND</text>
+  <text class="txt-sm" x="950" y="966">• Pin bebas dipakai aman,</text>
+  <text class="txt-sm" x="950" y="981">  0 tabrakan dgn TFT D2-D9</text>
+
+  <!-- UNO 3 -->
+  <rect class="unobox" x="1148" y="766" width="196" height="226" />
+  <text class="box-title" x="1246" y="786" text-anchor="middle" fill="#fef08a">UNO 3 — AKTUATOR</text>
+  <text class="mono-sm" x="1246" y="802" text-anchor="middle" fill="#facc15">/dev/arduino_actuator</text>
+  <line x1="1160" y1="812" x2="1332" y2="812" stroke="#334155" stroke-width="1" />
+  <text class="txt-sm" x="1160" y="830" fill="#e2e8f0">• node3_actuator.ino</text>
+  <text class="txt-sm" x="1160" y="846" fill="#fda4af">• Slot microSD KOSONG!</text>
+  <text class="box-title" x="1160" y="866" fill="#93c5fd">IC 74HC595 (Catu 5V):</text>
+  <text class="mono-sm" x="1160" y="882">DS -&gt; D11 | SHCP -&gt; D13</text>
+  <text class="mono-sm" x="1160" y="897">STCP -&gt; D12 | /MR -&gt; 5V</text>
+  <text class="mono-sm" x="1160" y="912" fill="#fde68a">/OE -&gt; D10 (+10kΩ -&gt; 5V)</text>
+  <text class="mono-sm" x="1160" y="929">Interlock NC -&gt; A5 &amp; GND</text>
+  <text class="mono-sm" x="1160" y="944">Q0..Q6 -&gt; Indikator Uji</text>
+  <text class="warn-txt" x="1160" y="966">JANGAN campur Q0..Q6 ke</text>
+  <text class="warn-txt" x="1160" y="981">Relay/Buzz GPIO 21/17 RPi!</text>
+
+  <!-- ==================== FOOTER SAFETY RULES ==================== -->
+  <rect class="footerbox" x="40" y="1018" width="1320" height="72" />
+  <text class="box-title" x="58" y="1039" fill="#fde047">4 ATURAN WAJIB SEBELUM MENYALAKAN POWER:</text>
+  <text class="txt" x="58" y="1058">1) Common Ground: hubungkan (-) PSU 5V LED ke Pin 06 RPi (jangan sambung +5V PSU ke Pin 02/04 RPi).    2) Powered USB Hub 5V &gt;= 2A wajib untuk 3 Uno + 3 Shield TFT.</text>
+  <text class="txt" x="58" y="1076">3) Pasang Pull-Up 10 kΩ dari /OE (D10) 74HC595 ke 5V &amp; kosongkan slot microSD Uno 2 dan Uno 3.       4) Output Q0..Q6 Uno 3 terpisah dari Relay/Buzzer GPIO 21/17 RPi.</text>
+</svg>

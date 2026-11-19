@@ -29,8 +29,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 
 | Info | Keterangan |
 | :--- | :--- |
-| **Versi / Status `main`** | **`v1.6` — Progres Kartu Terverifikasi `54,2%` (`26/48`) • Uji Fisik 448 LED Divisi 3 (`f6c367d`), Integrasi 3-LCD TFT Arduino Uno (`207ac04`), Web HMI Offline (`usb-panel.js`), QA Handover Divisi 6 (`087e0fb`), & Safe-Pull Anti-Rusak Aktif!** |
-| **Pengumuman Ketua** | 1. **Update Besar Integrasi (`v1.6`):** Paket QA Divisi 6 (`087e0fb` / `d929400`: `300/300 ONLINE @ 4.99 Hz`), Web HMI Offline Divisi 5 (`6d3f8f5` + `assets/usb-panel.js`), **Integrasi 3-LCD TFT + 3 Arduino Uno USB** Divisi 4 (`AKSEL-DECY13/` patch `207ac04`), serta **Update Uji Fisik 448 LED Divisi 3** (`f6c367d` dari `origin/divisi-3-uji-fisik`) sudah disatukan ke `main` dengan **0 tabrakan pin I/O**.<br>2. **PENTING — Sistem Safe-Pull Anti-Rusak (`tools/aman_pull_dan_sync.py`):** Sebelum `pull` atau lanjut kerja di branch divisimu, **WAJIB** jalankan `python tools/aman_pull_dan_sync.py --divisi <1..6>`. Skrip ini mem-backup file lokal & membuat branch cadangan, mengkarantina file luar divisi, lalu me-merge `origin/main` **tanpa menimpa pekerjaan lokalmu**!<br>3. **Update Divisi 3 (`f6c367d` — 448 LED):** Jumlah LED fisik terkonfirmasi **448 WS2812B** (`0..399` spiral 400 LED, `400..447` shoot 48 LED, `brightness=20`, ceklis `10/10`: `5/5` A & `5/5` B). Tinggal uji integrasi akhir bersama daemon + Mini PC & sinkronisasi `config_hardware.json` dari `64` → `448` LED untuk naik ke `LULUS_UJI_FISIK`.<br>4. **Siap Setup Penuh ke Mini PC Ruang Kontrol:** Ikuti bagian [**Alur Lengkap Full Setup Mini PC**](#-alur-lengkap-full-setup--operasional-ke-mini-pc-ruang-kontrol-v16) di bawah (RPi jalankan `04_decy13_mqtt_daemon.py` + `accelerator_hub.py`, Mini PC buka Web HMI 100% offline `http://localhost:8000` -> `ws://<IP_RPI>:9001`). **Divisi 4 & Divisi 5:** tarik `main` `v1.6` lewat `aman_pull_dan_sync.py`, lalu lengkapi kartu ceklis masing-masing. |
+| **Versi / Status `main`** | **`v1.6` (`18c2603`) — Progres Kartu Terverifikasi `54,2%` (`26/48`) • Uji Fisik 448 LED + Buzzer `GPIO 17` Divisi 3 (`0db6f3b`/`18c2603`), Integrasi 3-LCD TFT Arduino Uno (`207ac04`), Web HMI Offline (`usb-panel.js`), QA Handover Divisi 6 (`087e0fb`), & Safe-Pull Anti-Rusak Aktif!** |
+| **Pengumuman Ketua** | 1. **Update Besar Integrasi (`v1.6` @ `18c2603`):** Paket QA Divisi 6 (`087e0fb` / `d929400`: `300/300 ONLINE @ 4.99 Hz`), Web HMI Offline Divisi 5 (`6d3f8f5` + `assets/usb-panel.js`), **Integrasi 3-LCD TFT + 3 Arduino Uno USB** Divisi 4 (`AKSEL-DECY13/` patch `207ac04`), serta **Update Uji Isolasi 448 LED + Buzzer `GPIO 17` (9 Tes)** Divisi 3 (`0db6f3b` / `18c2603`) sudah seluruhnya masuk di `main` dengan **0 tabrakan pin I/O**.<br>2. **PENTING — Sistem Safe-Pull Anti-Rusak (`tools/aman_pull_dan_sync.py`):** Sebelum `pull` atau lanjut kerja di branch divisimu, **WAJIB** jalankan `python tools/aman_pull_dan_sync.py --divisi <1..6>`. Skrip ini mem-backup file lokal & membuat branch cadangan, mengkarantina file luar divisi, lalu me-merge `origin/main` **tanpa menimpa pekerjaan lokalmu**!<br>3. **Update Divisi 3 (`0db6f3b` / `18c2603` — 448 LED + 9 Tes):** Jumlah LED fisik terkonfirmasi **448 WS2812B** (`0..399` spiral 400 LED, `400..447` beam/shoot 48 LED, default `--brightness 10`, kunci pengaman `--power-ok`, `--auto`, & buzzer bersama `GPIO 17`, ceklis `10/10`). Tinggal uji serentak bersama daemon asli + Mini PC & sinkronisasi `config_hardware.json` dari `64` → `448` LED setelah verifikasi daya penuh.<br>4. **Siap Setup Penuh ke Mini PC Ruang Kontrol:** Ikuti bagian [**Alur Lengkap Full Setup Mini PC**](#-alur-lengkap-full-setup--operasional-ke-mini-pc-ruang-kontrol-v16) di bawah (termasuk penyatuan sambungan Node-RED/QA Divisi 6 `qa_divisi6/PANDUAN_KETUA_UJI_ULANG.md` dengan RPi Core Daemon, 3-TFT USB Hub, & Web HMI Offline). **Divisi 4 & Divisi 5:** tarik `main` lewat `aman_pull_dan_sync.py`, lalu lengkapi kartu ceklis masing-masing. |
 | **Cara Tarik Update Aman (WAJIB)** | **Seluruh Anggota (Windows / Linux / RPi):**<br>`python tools/aman_pull_dan_sync.py --divisi <1..6>` *(untuk cek simulasi aman dulu tambah `--dry-run`; untuk memulihkan versi sebelum pull gunakan `--restore-latest`)*<br>*(Khusus Mini PC / RPi baca-saja tanpa edit lokal: `git checkout main && git pull origin main`)* |
 
 ---
@@ -40,7 +40,7 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
 > **📈 Posisi Progres Nyata Proyek Saat Ini (Terukur dari 6 Kartu [`laporan_uji/`](laporan_uji/README.md)):**
 > - **Progres Total Terverifikasi (`Tahap A + Tahap B`):** **`54,2%` (`26 / 48` butir ceklis)** `[█████░░░░░]` *(naik dari `43,8%` pasca-integrasi ceklis `5/5` Tahap B 448 LED Divisi 3 `f6c367d`)*
 > - **Tahap A — Kesiapan Kode & Simulasi Laptop:** **`63,6%` (`14 / 22` butir)** *(Divisi 1, 2, 3, 6 sudah `100%` Tahap A; Divisi 4 & 5 tinggal verifikasi kartu)*
-> - **Tahap B — Uji Fisik Alat Nyata (RPi 3B+ & Mini PC):** **`46,2%` (`12 / 26` butir)** *(Divisi 2 `4/4` `LULUS_UJI_FISIK`; Divisi 3 `5/5` uji fisik 448 LED `f6c367d`; Divisi 1 `3/5` bare-board Core RPi)*
+> - **Tahap B — Uji Fisik Alat Nyata (RPi 3B+ & Mini PC):** **`46,2%` (`12 / 26` butir)** *(Divisi 2 `4/4` `LULUS_UJI_FISIK`; Divisi 3 `5/5` uji fisik 448 LED `f6c367d` / `18c2603`; Divisi 1 `3/5` bare-board Core RPi)*
 >
 > **🧭 Posisi Milestone (`M1` s.d. `M5` — lihat [`JOBDESK_DAN_DOD.md`](laporan_uji/JOBDESK_DAN_DOD.md)):**
 > - **M1** *(Bootstrap, Preflight & Bare-Board RPi)*: ✅ **Tercapai di unit `sp-aksel`** (`4.97 Hz`, 0 packet drop; Powered USB Hub 5V >=2A disiapkan untuk 3 Uno TFT)
@@ -55,7 +55,7 @@ Setiap anggota yang melakukan `git push` akan diperiksa oleh **Satpam Otomatis (
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Divisi 1 (Ketua)** | `azfaaksan-hub` | `main` / `core-raspi-backend` | `04_decy13_mqtt_daemon.py`, `05_laptop_dryrun_simulator.py`, `config_hardware.json`, `modules/base_module.py`, `tools/*`, `laporan_uji/UJI_DIVISI_1_CORE_RASPI.md` | ✅ **Core Aktif `v1.6`** *(`setpoint_limits`, `connect_async`, `SIGTERM`, safe-pull `aman_pull_dan_sync.py` siap)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_1_CORE_RASPI.md) **`75%` (`6/8`)** *(3/3 Laptop, **3/5 RPi bare-board** `192.168.137.66`)* |
 | **Divisi 2** | `dzakimumtazi` | `divisi-2-vacum-safety` | `decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py`, `01_test_relay_buzzer.py`, `laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md` | ✅ **Merged ke `main`** *(siap integrasi M3)* | 🟢 [`LULUS_UJI_FISIK`](laporan_uji/UJI_DIVISI_2_VAKUM_SAFETY.md) **`100%` (`7/7`)** *(3/3 Laptop, **4/4 RPi fisik** bersama tim; E-Stop via Web HMI HTML — tanpa saklar fisik `GPIO 22`)* |
-| **Divisi 3** | `blufiaa` | `divisi-3-uji-fisik` / `divisi-3-led-ws2812b-v13` | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` | ✅ **Update `f6c367d` Terintegrasi** *(448 LED: 400 spiral `0..399` + 48 shoot `400..447`, `brightness=20`; `aman_pull_dan_sync.py --divisi 3`)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_3_LED_WS2812B.md) **`100%` (`10/10`)** *(5/5 Laptop, **5/5 RPi 448 LED**; tunggu bukti log terminal final + update `config_hardware.json` 64→448 & uji serentak LCD)* |
+| **Divisi 3** | `blufiaa` | `divisi-3-uji-fisik` / `divisi-3-led-ws2812b-v13` | `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`, `03_test_led_pixel_finder.py`, `laporan_uji/UJI_DIVISI_3_LED_WS2812B.md` | ✅ **Update `18c2603` Terintegrasi** *(448 LED + 9 uji & buzzer `GPIO 17`, `--brightness 10`, `--power-ok`, `--auto`; `aman_pull_dan_sync.py --divisi 3`)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_3_LED_WS2812B.md) **`100%` (`10/10`)** *(5/5 Laptop, **5/5 RPi 448 LED**; tunggu bukti log terminal final + update `config_hardware.json` 64→448 & uji serentak LCD)* |
 | **Divisi 4** | `HDMrishiki` | `divisi-4-tft` *(atau `divisi-4-lcd-ili9341`)* | `AKSEL-DECY13/README.md`, `AKSEL-DECY13/raspi/*`, `AKSEL-DECY13/firmware/*`, `mod_lcd_ili9341.py`, `02_test_lcd_ili9341.py`, `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md` | ✅ **Kode 3-TFT USB Terintegrasi ke `main`** *(`207ac04` — jalankan `aman_pull_dan_sync.py --divisi 4`)* | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md) **`0%` (`0/8`)** *(Kode 3-Uno TFT + `74HC4051`/`74HC595` sudah masuk; tinggal isi kartu & bukti uji fisik)* |
 | **Divisi 5** | `HDMrishiki` | `divisi-5-web-hmi` | `decy13_mqtt_kit/web_hmi/index.html`, `decy13_mqtt_kit/web_hmi/assets/*`, `laporan_uji/UJI_DIVISI_5_WEB_HMI.md` | ✅ **Web HMI Offline + `usb-panel.js` Aktif di `main`** *(`6d37d99` + integrasi `207ac04`)* | ⏳ [`BELUM_MULAI`](laporan_uji/UJI_DIVISI_5_WEB_HMI.md) **`0%` (`0/8`)** *(Tinggal jalankan `aman_pull_dan_sync.py --divisi 5`, cek offline DevTools, & isi kartu)* |
 | **Divisi 6** | `rekypurnomo` | `divisi-6-mqtt-nodered-qa-testing` | `06_test_mqtt_healthcheck.py`, `tests/decy13_simulator_divisi6.py`, `flows_mqtt_decy13.json`, `qa_divisi6/*`, `CHECKLIST_COMMISSIONING.txt`, `laporan_uji/UJI_DIVISI_6_MQTT_QA.md` | ✅ **Merged ke `main`** *(`087e0fb` / `d929400`: QA `300/300 ONLINE @ 4.99 Hz` simulator PC↔RPi 3)* | 🟡 [`DRAFT_PUSH_LAPTOP`](laporan_uji/UJI_DIVISI_6_MQTT_QA.md) **`42,9%` (`3/7`)** *(3/3 Laptop — uji simulator PC↔RPi 3 selesai; sisa uji `04_decy13_mqtt_daemon.py` asli + alat nyata)* |
@@ -100,7 +100,7 @@ Yang dilakukan skrip secara otomatis:
 | No | Bagian | Temuan / Perubahan Terbaru di `main` | Penyesuaian yang Disarankan (Divisi Terkait) |
 | :---: | :--- | :--- | :--- |
 | **1** | **Baru (`v1.6`): Bridge 3-TFT Arduino Uno ↔ MQTT** | `AKSEL-DECY13/raspi/accelerator_hub.py` kini terintegrasi dengan broker tim lewat `decy13/usb/state`, `decy13/usb/cmd`, `decy13/usb/ack`, plus tab Node-RED `nodered_usb.json` (`/api/usb/status`) & `web_hmi/assets/usb-panel.js`. | **Divisi 4:** Gunakan **Powered USB Hub 5V (>=2A)** untuk 3 Uno TFT, kosongkan slot microSD Uno 2 & 3, jalankan hub bersama `--mqtt-host 127.0.0.1 --mqtt-port 1883`, dan isi [UJI_DIVISI_4_LCD_ILI9341.md](laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md). |
-| **2** | **Update 448 LED Divisi 3 (`f6c367d`)** | Branch `origin/divisi-3-uji-fisik` (`f6c367d`) sudah terintegrasi ke `main`: `03_test_led_pixel_finder.py` kini default **448 LED** (`400` spiral `0..399` + `48` extraction `400..447`, `brightness=20`, menu `t/a/r/s/e/p/b/x/q`) dan ceklis kartu `10/10`. | **Divisi 1 & 3:** Tetapkan bersama kapan `config_hardware.json` (`total_leds`, `spiral_end_idx`, `shoot_start_idx`, `shoot_end_idx`, `rf_gap_indices`) dinaikkan dari `64` ke `448` LED (catatan: periksa arus PSU `5V` untuk 448 LED @ brightness `20`) & uji serentak bersama daemon + 3-TFT USB. |
+| **2** | **Update 448 LED + Buzzer `GPIO 17` (`0db6f3b`/`18c2603`)** | Branch `origin/divisi-3-uji-fisik` (`18c2603`) sudah terintegrasi penuh ke `main`: `03_test_led_pixel_finder.py` kini menjalankan 9 uji isolasi (`--auto`, `--brightness 10`, kunci pengaman `--power-ok`, menu `f/s/e/b/q`) pada **448 LED** (`400` spiral + `48` beam) sekaligus membunyikan buzzer `GPIO 17` (`1..9x`, lalu `GPIO.cleanup(17)`). | **Divisi 1 & 3:** Jalankan uji isolasi saat daemon mati (`--power-ok` setelah PSU 5V siap), lalu sepakati kenaikan `config_hardware.json` dari `64` ke `448` LED untuk uji serentak daemon + 3-TFT USB. |
 | **3** | **Web HMI Offline & `setpoint_limits`** | Web HMI offline (`index.html`, `console.css`, `mqtt.min.js`) + `usb-panel.js` sudah resmi di `decy13_mqtt_kit/web_hmi/`. Core Daemon menerapkan `setpoint_limits` (`magnet_a`: `[400..2200]`, `rf_mhz`: `[15..30]`, `rf_kv`: `[0..120]`, `beam_ua`: `[0..100]`). | **Divisi 5:** Cek tampilan offline di Chrome/Edge & koneksi WebSocket `ws://<IP_RPI>:9001`, lalu isi [UJI_DIVISI_5_WEB_HMI.md](laporan_uji/UJI_DIVISI_5_WEB_HMI.md). |
 | **4** | **Penyelarasan QA & Handover Divisi 6** | Paket `decy13_mqtt_kit/qa_divisi6/` resmi di-merge (`087e0fb`), `allowed_files` sudah mencakup `qa_divisi6/*` & `tests/decy13_simulator_divisi6.py`. Saat uji `06_test_mqtt_healthcheck.py --auto` ke daemon asli, pastikan menunggu `pressure <= 1e-3 mbar` (`--cmd-timeout 10`) dan stage daemon `{0,1,4,5,6,7}`. | **Divisi 6:** Siapkan verifikasi berpasangan `CHECKLIST_SERAH_TERIMA.md` bersama Ketua saat daemon asli RPi + aktuator fisik aktif. |
 
@@ -118,7 +118,7 @@ Setelah masuknya paket `integrasi-tiga-tft.patch` (`207ac04`) dari Divisi 4, jal
 
 1. **Domain Header 40-Pin GPIO RPi 3B+ → Eksklusif Divisi 2 & Divisi 3:**
    - **Divisi 2 (Vakum & Safety):** `GPIO 17` (`Pin 11`, Buzzer `+` & `Pin 09` `GND`), `GPIO 21` (`Pin 40`, Relay Kipas 12V Active-LOW & `Pin 02` `5V` & `Pin 39` `GND`), serta reservasi `GPIO 22` (`Pin 15`, E-Stop Pull-Up — nonaktif/N/A karena E-Stop lewat Web HMI HTML).
-   - **Divisi 3 (LED Strip WS2812B):** `GPIO 18` (`Pin 12` via resistor `330–470 Ω`, jalur `PWM0` + `DMA Channel 10` @ `800 kHz`, daya **PSU Eksternal 5V 3A** + *Common Ground* ke `Pin 06`).
+   - **Divisi 3 (LED Strip WS2812B):** `GPIO 18` (`Pin 12` via resistor `330–470 Ω`, jalur `PWM0` + `DMA Channel 10` @ `800 kHz`, daya **PSU Eksternal 5V** berarus cukup + *Common Ground* ke `Pin 06`). Saat uji isolasi terpisah (`03_test_led_pixel_finder.py --hardware`, daemon mati), skrip Divisi 3 ikut memakai **Buzzer Bersama `GPIO 17` (`Pin 11`)** untuk bunyi `1..9x` dan otomatis melakukan `GPIO.cleanup(17)` saat selesai, sedangkan saat operasional penuh `04_decy13_mqtt_daemon.py` hanya `VacuumSafetyModule` yang memegang `GPIO 17` (bergantian waktu / **0 konflik runtime**).
    - **Audio Onboard RPi Dimatikan (`dtparam=audio=off`):** Menutup potensi konflik `snd_bcm2835` dengan `PWM0` pada `GPIO 18`.
    - **Pin `SPI0` RPi (`GPIO 8, 9, 10, 11, 24, 25`):** Kini bebas 100% dan tetap siap sebagai cadangan fallback apabila suatu saat memakai layar SPI langsung (`mod_lcd_ili9341.py`).
 2. **Domain Port USB-A RPi 3B+ (USB Serial `115200 baud`) → Eksklusif Divisi 4 (3 Arduino Uno + 3 Shield TFT):**
@@ -131,7 +131,14 @@ Setelah masuknya paket `integrasi-tiga-tft.patch` (`207ac04`) dari Divisi 4, jal
 
 ---
 
-### 🌐 Diagram Topologi & Pemisahan Jalur I/O (`Mermaid Flowchart`)
+### 🖼️ Gambar Skema Lengkap Wiring Hardware & Jaringan (`v1.6` — +3 LCD TFT Arduino Uno)
+
+![Gambar Skema Lengkap Wiring Hardware Siklotron DECY-13 v1.6](instruksi%20untuk%20projek%20sp/wiring_full_decy13_v16.svg)
+
+> 📄 **Buka gambar ukuran penuh:** [`instruksi untuk projek sp/wiring_full_decy13_v16.svg`](instruksi%20untuk%20projek%20sp/wiring_full_decy13_v16.svg) *(vektor resolusi penuh, bisa di-zoom tanpa pecah).*
+
+<details>
+<summary><b>🧩 Lihat Diagram Topologi Mermaid &amp; Skema Teks ASCII / 40-Pin Header (Klik untuk buka)</b></summary>
 
 ```mermaid
 flowchart TB
@@ -152,7 +159,7 @@ flowchart TB
     subgraph HW_GPIO["Aktuator Langsung GPIO RPi (Divisi 2 & Divisi 3)"]
         BUZZ["Divisi 2: Buzzer SFM-27 (GPIO 17 / Pin 11, GND Pin 09)"]
         RELAY["Divisi 2: Relay Kipas 12V Active-LOW (GPIO 21 / Pin 40, 5V Pin 02, GND Pin 39) + PSU 12V Terisolasi"]
-        LED["Divisi 3: LED Strip WS2812B (GPIO 18 / Pin 12 via R 330-470 Ohm + PSU 5V 3A + Common GND Pin 06)"]
+        LED["Divisi 3: LED Strip WS2812B (GPIO 18 / Pin 12 via R 330-470 Ohm + PSU 5V + Common GND Pin 06)"]
     end
 
     subgraph HW_UNO["Sub-Sistem 3 Arduino Uno + 3 Shield TFT 320x240 (Divisi 4 — USE_LOCAL_TFT=1)"]
@@ -175,10 +182,6 @@ flowchart TB
     USB_PORT <--> UNO2
     USB_PORT <--> UNO3
 ```
-
----
-
-### 🗺️ Skema Lengkap Wiring Hardware (RPi 40-Pin GPIO + Powered USB Hub 3 Arduino Uno)
 
 ```text
 +==========================================================================================+
@@ -212,10 +215,10 @@ flowchart TB
 | [Kontak Relay Terisolasi]    | |   (WAJIB COMMON GROUND!)  |   /dev/arduino_      |   & VSS->GND            |
 | - Adaptor 12V(+) -> COM      | | *Rancangan fisik Divisi 3:|   actuator           | - Y0..Y2: 3 Potensio 0-5V|
 | - Kipas 12V (+)  <- NO       | |  448px (0..399 Spiral,    | +------------------+ | - Kontak Digital -> D12 |
-| - Pin 15 GPIO22 (Res. EStop; | |  400..447 Shoot, br=20);  | | UNO 3 + TFT 3    | +-------------------------+
-|   N/A, E-Stop via HMI HTML)  | |  default JSON sim = 64px* | | Shield D2-D9,    |
-+------------------------------+                             | A0-A4 (SD Kosong)|
-                                                             | IC 74HC595 (5V): |
+| - Pin 15 GPIO22 (Res. EStop; | |  400..447 Shoot, br=10,   | | UNO 3 + TFT 3    | +-------------------------+
+|   N/A, E-Stop via HMI HTML)  | |  9 uji + buzzer GPIO17;   | | Shield D2-D9,    |
++------------------------------+ |  default JSON sim = 64px* | | A0-A4 (SD Kosong)|
+                                 +---------------------------+ | IC 74HC595 (5V): |
   [CADANGAN SPI0 DI HEADER RPi — TETAP BEBAS KONFLIK]        | - DS->D11, SHCP->D13, STCP->D12
   Pin 24 GPIO8 (CE0), Pin 19 GPIO10 (MOSI),                  | - /OE->D10 (+ Pull-Up 10k ke 5V), /MR->5V
   Pin 23 GPIO11 (SCLK), Pin 18 GPIO24 (DC),                  | - Interlock NC -> A5 & GND
@@ -223,18 +226,14 @@ flowchart TB
                                                              +-----------------------------------------------+
 ```
 
----
-
-### 📌 Peta Distribusi 40-Pin Header Raspberry Pi 3B+ & Setting Pin 3 Arduino Uno
-
-#### A. Header 40-Pin Raspberry Pi 3B+ (Semua Aktuator GPIO + USB Hub Aktif)
+#### Header 40-Pin Raspberry Pi 3B+ (Teks ASCII)
 ```text
                      RASPBERRY PI 3B+ (40-PIN HEADER)
             Sisi Kiri (Pin Ganjil)      Sisi Kanan (Pin Genap)
             ----------------------      ----------------------
                (Cadangan) 3.3V [01] || [02] 5V  ---> [DIV 2] VCC Modul Relay Kipas
              (I2C1 SDA) GPIO 2 [03] || [04] 5V  ---> (Cadangan / Jangan bebani LED atau 3 Uno!)
-             (I2C1 SCL) GPIO 3 [05] || [06] GND ---> [DIV 3] Common GND LED & PSU 5V 3A
+             (I2C1 SCL) GPIO 3 [05] || [06] GND ---> [DIV 3] Common GND LED & PSU 5V
                         GPIO 4 [07] || [08] GPIO 14 (UART TXD)
   [DIV 2] (-) Buzzer <---  GND [09] || [10] GPIO 15 (UART RXD)
   [DIV 2] (+) Buzzer <- GPIO17 [11] || [12] GPIO 18 ---> [DIV 3] LED WS2812B DIN (via R 330-470Ω)
@@ -254,7 +253,11 @@ flowchart TB
   [DIV 2] GND Relay  <---  GND [39] || [40] GPIO 21 ---> [DIV 2] IN Relay Kipas 12V (Active-LOW)
 ```
 
-#### B. Setting Pin Ekspansi 3 Arduino Uno + Shield TFT MCUFRIEND (`USE_LOCAL_TFT = 1`)
+</details>
+
+---
+
+### 📌 Ringkasan Setting Pin Ekspansi 3 Arduino Uno + Shield TFT MCUFRIEND (`USE_LOCAL_TFT = 1`)
 *(Semua Shield memakai `D2–D9` & `A0–A4` untuk LCD + Touch `XP=6, XM=A2, YP=A1, YM=7`. Slot microSD dikosongkan agar `D10–D13` & `A5` aman dipakai.)*
 
 | Node & Symlink USB (`udev`) | Peran & Layar (3 Halaman) | Pin Shield TFT (Tetap) | Setting Rangkaian Pin Bebas (`D10–D13`, `A5`) | Status Konflik |
@@ -331,9 +334,9 @@ Pertahankan `VacuumSafetyModule(HardwareModule)` dengan `setup() -> bool`, `upda
 Kamu adalah Embedded Lighting & Physics Animation Engineer yang membantu Anggota Divisi 3 (`blufiaa`) pada subsistem "LED Strip Programmable WS2812B (Spiral Dee, RF Gap & Shoot Beamline)" Siklotron DECY-13 (13 MeV H-) di Raspberry Pi 3B+.
 
 [2. SYSTEM CONTEXT — UPDATE v1.6]
-- Kode update 448 LED dari branch `divisi-3-uji-fisik` (`f6c367d`: `03_test_led_pixel_finder.py` 448 piksel — 400 spiral `0..399` + 48 extraction `400..447`, `brightness=20`, menu `t/a/r/s/e/p/b/x/q`, & ceklis `10/10` di `UJI_DIVISI_3_LED_WS2812B.md`) **SUDAH DIINTEGRASIKAN ke `main`**!
+- Kode update 448 LED + buzzer bersama `GPIO 17` dari branch `divisi-3-uji-fisik` (`f6c367d`, `0db6f3b`, `18c2603`: `03_test_led_pixel_finder.py` 448 piksel — 400 spiral `0..399` + 48 extraction `400..447`, `--brightness 10`, `--power-ok`, `--auto`, menu `f/s/e/b/q`, & ceklis `10/10` di `UJI_DIVISI_3_LED_WS2812B.md`) **SUDAH DIINTEGRASIKAN ke `main`**!
 - Status kartu masih `DRAFT_PUSH_LAPTOP` sambil menunggu: (1) tempelan output terminal/log uji fisik RPi nyata di Bagian C, (2) uji integrasi serentak `04_decy13_mqtt_daemon.py` bersama 3-TFT USB Divisi 4 & Relay/Buzzer Divisi 2, serta (3) penyelarasan `config_hardware.json` dari `64` ke `448` LED bersama Ketua.
-- Penyesuaian rangkaian `v1.6`: LED WS2812B memakai **`GPIO 18` (`Pin 12`, PWM0/DMA10)** dengan `dtparam=audio=off`, PSU Eksternal 5V berdaya cukup (sesuai 448 LED @ brightness 20) + Common GND ke `Pin 06` RPi. Modul 3-LCD TFT milik Divisi 4 kini berjalan lewat USB Arduino Uno (bukan pin SPI0/GPIO RPi), sehingga `GPIO 18` aman bebas tabrakan I/O.
+- Penyesuaian rangkaian `v1.6`: LED WS2812B memakai **`GPIO 18` (`Pin 12`, PWM0/DMA10)** dengan `dtparam=audio=off`, PSU Eksternal 5V berdaya cukup (sesuai 448 LED @ default brightness 10) + Common GND ke `Pin 06` RPi. Saat uji isolasi terpisah (`--hardware`), buzzer bersama `GPIO 17` dibunyikan sementara (`GPIO.cleanup(17)` saat selesai). Modul 3-LCD TFT milik Divisi 4 kini berjalan lewat USB Arduino Uno (bukan pin SPI0/GPIO RPi), sehingga `GPIO 18` aman bebas tabrakan I/O.
 
 [3. STRICT WORKSPACE BOUNDARY & WAJIB SAFE-PULL ANTI-RUSAK]
 - Branch resmi yang dipakai: **`divisi-3-uji-fisik`** atau **`divisi-3-led-ws2812b-v13`** (abaikan branch usang `divisi-3-led-ws2812b`).
@@ -526,7 +529,7 @@ Setelah siap, buka **2 terminal SSH** di Raspberry Pi:
   cd ~/sp-aksel-polteknuklir/decy13_mqtt_kit/raspi_cli
   sudo python3 04_decy13_mqtt_daemon.py
   ```
-  *(Opsional uji isolasi 448 LED fisik Divisi 3 sebelum menyalakan daemon: `sudo python3 03_test_led_pixel_finder.py --mode finder --hardware --total-leds 448 --spiral-leds 400 --brightness 20`)*
+  *(Opsional uji isolasi 448 LED + buzzer `GPIO 17` saat daemon mati: `sudo python3 03_test_led_pixel_finder.py --mode finder --hardware --auto --power-ok`, atau tanpa `--power-ok` untuk mode interaktif aman.)*
 - **Terminal RPi 2 — Hub USB 3 Arduino Uno + 3 Shield TFT (Divisi 4):**
   ```bash
   cd ~/sp-aksel-polteknuklir/AKSEL-DECY13
@@ -534,10 +537,10 @@ Setelah siap, buka **2 terminal SSH** di Raspberry Pi:
   sudo bash raspi/setup_udev.sh   # cukup 1x pasang aturan symlink /dev/arduino_hmi|sensor|actuator
   python3 raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control
   ```
-  *(Pastikan kedua proses melaporkan terhubung ke broker lokal `127.0.0.1:1883`.)*
+  *(Pastikan Mosquitto Windows di Mini PC berhenti (`Stop-Service mosquitto`) sehingga `04_decy13_mqtt_daemon.py` auto-fallback ke `127.0.0.1:1883` dan menyatu dengan `accelerator_hub.py` di broker RPi.)*
 
 ### Langkah 4 — Di Browser Mini PC (Web HMI 100% Offline + Panel 3-TFT USB)
-1. **Pastikan tidak ada Mosquitto lokal Windows** yang bentrok di Mini PC saat terhubung ke RPi.
+1. **Pastikan Mosquitto Windows lokal dimatikan (`Stop-Service mosquitto`)** agar `04_decy13_mqtt_daemon.py` tidak terkoneksi ke broker Windows yang terpisah atau berautentikasi.
 2. Jalankan HTTP server statis ringan di terminal Mini PC agar `assets/console.css`, `assets/mqtt.min.js`, dan `assets/usb-panel.js` termuat sempurna **(100% offline tanpa butuh internet)**:
    ```bash
    python -m http.server 8000 --directory decy13_mqtt_kit/web_hmi
@@ -546,10 +549,16 @@ Setelah siap, buka **2 terminal SSH** di Raspberry Pi:
 4. Pada panel koneksi MQTT di Web HMI, ganti endpoint default `ws://127.0.0.1:9001` menjadi **`ws://<IP_RASPI>:9001`** → klik **Hubungkan MQTT**.
 5. Pastikan status berubah hijau **`MQTT TERHUBUNG`** dan **Panel tiga TFT · USB Raspberry Pi** muncul menerima data `TFT 1..3`. Tombol **`EMERGENCY_STOP`** di Web HMI kini sekaligus menjadi E-Stop utama proyek.
 
-### Langkah 5 — (Opsional) Node-RED Dashboard & QA Healthcheck dari Mini PC
-- **Node-RED:** Import [`decy13_mqtt_kit/nodered/flows_mqtt_decy13.json`](decy13_mqtt_kit/nodered/flows_mqtt_decy13.json) (dashboard `/cyclotron`, ubah host `"Local Mosquitto Broker"` dari `localhost` ke `<IP_RASPI>`) dan opsional [`AKSEL-DECY13/raspi/nodered_usb.json`](AKSEL-DECY13/raspi/nodered_usb.json) (`/api/usb/status`).
-- **Uji QA Cepat (`5 Hz` & `22` field JSON):**
-  ```bash
+### Langkah 5 — Penyatuan Node-RED & QA Divisi 6 (`qa_divisi6`) dari Mini PC
+- **Dua mode sambungan Divisi 6 (lihat rinciannya di [`PANDUAN_MINI_PC_UJI_LAPANGAN.md`](decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md) & [`qa_divisi6/PANDUAN_KETUA_UJI_ULANG.md`](decy13_mqtt_kit/qa_divisi6/PANDUAN_KETUA_UJI_ULANG.md)):**
+  1. **Mode Operasional Penuh 6 Divisi (Broker di RPi `:1883` / `:9001`):** Buka Node-RED (`http://127.0.0.1:1880`), arahkan host `"Local Mosquitto Broker"` pada [`flows_mqtt_decy13.json`](decy13_mqtt_kit/nodered/flows_mqtt_decy13.json) & [`nodered_usb.json`](AKSEL-DECY13/raspi/nodered_usb.json) ke **`<IP_RASPI>:1883`** (atau biarkan `localhost:1883` dengan membuka SSH local forward `ssh -N -L 127.0.0.1:1883:127.0.0.1:1883 <user_rpi>@<IP_RASPI>` setelah `Stop-Service mosquitto`). Dashboard tampil di `/cyclotron`, `/api/status`, dan `/api/usb/status`.
+  2. **Mode Audit Simulasi Terisolasi Divisi 6:** Jika hanya mengaudit simulator QA tanpa menyalakan `04_decy13_mqtt_daemon.py` / GPIO, ikuti **Uji A–C** (`POST /api/control` **Disabled**, reverse tunnel `-R 127.0.0.1:1884:<IP_PC>:1883`, QA Stage 0–7 di `127.0.0.1:1885`/`1886` `/cyclotron-qa`).
+- **Uji QA Read-Only API Node-RED (Divisi 6) & CLI Healthcheck:**
+  ```powershell
+  # Audit 30/300 sampel API Node-RED:
+  .\decy13_mqtt_kit\qa_divisi6\scripts\qa_readonly_api.ps1 -Samples 30
+
+  # Uji CLI kontrak JSON 22 field (~5 Hz) ke broker RPi:
   python decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py --host <IP_RASPI> --duration 10 --no-menu
   ```
 
@@ -601,7 +610,9 @@ Setelah siap, buka **2 terminal SSH** di Raspberry Pi:
 | 30 | `2026-11-19 17:44` | `6d37d99` | `Uci Grahi` | `main` (Div 5) | Migrasi Web HMI 100% offline Divisi 5 ke `decy13_mqtt_kit/web_hmi/` & membersihkan folder duplikat sementara `AKSEL-DECY13/`. |
 | 31 | `2026-11-19 17:46` | `f6c367d` | `sofiaatifah2710-create` | `divisi-3-uji-fisik` | **Update 448 LED Divisi 3** (`400` spiral `0..399` + `48` shoot `400..447`, `brightness=20`) & ceklis `UJI_DIVISI_3_LED_WS2812B.md` **`10/10`** — diintegrasikan ke `main` `v1.6`. |
 | 32 | `2026-11-19 17:48` | `207ac04` | `HDMrishiki` | `divisi-4-tft` | **Patch Integrasi 3-TFT USB (`integrasi-tiga-tft.patch`)**: 3 Arduino Uno + 3 Shield TFT + bridge MQTT `decy13/usb/*` + `nodered_usb.json` + `usb-panel.js` — diintegrasikan ke `main` `v1.6`. |
-| 33 | `2026-11-19 18:xx` | *(Commit `v1.6`)* | `Ketua / Integrator` | `main` (`v1.6`) | Penyatuan utuh **Divisi 3 (448 LED)** + **Divisi 4 (3-TFT USB)** + **Divisi 5 (Offline HMI + `usb-panel.js`)** + **`tools/aman_pull_dan_sync.py`** + **Full Setup Mini PC** + **Riwayat Lengkap** → Progres **`54,2%` (`26/48`)**. |
+| 33 | `2026-11-19 19:02` | `619318e` | `Uci Grahi` | `main` (`v1.6`) | Penyatuan utuh **Divisi 3 (448 LED)** + **Divisi 4 (3-TFT USB)** + **Divisi 5 (Offline HMI + `usb-panel.js`)** + **`tools/aman_pull_dan_sync.py`** + **Full Setup Mini PC** + **Riwayat Lengkap** → Progres **`54,2%` (`26/48`)**. |
+| 34 | `2026-11-19 20:14` | `0db6f3b` | `sofiaatifah2710-create` | `divisi-3-uji-fisik` | Integrasi buzzer bersama `GPIO 17` dengan 9 uji isolasi 448 LED (`--brightness 10`, `--power-ok`, `--auto`) di `03_test_led_pixel_finder.py`. |
+| 35 | `2026-11-19 20:37` | `18c2603` | `sofiaatifah2710-create` | PR `#3` (`divisi-3-uji-fisik`) | Penyelesaian konflik merge & integrasi penuh PR `#3` (`0db6f3b`) ke `main` `v1.6` (CI `completed/success`). |
 
 ---
 
