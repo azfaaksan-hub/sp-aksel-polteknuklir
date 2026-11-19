@@ -1,0 +1,1005 @@
+diff --git a/AKSEL-DECY13/raspi/accelerator_hub.py b/AKSEL-DECY13/raspi/accelerator_hub.py
+--- a/AKSEL-DECY13/raspi/accelerator_hub.py
++++ b/AKSEL-DECY13/raspi/accelerator_hub.py
+@@ -8,6 +8,8 @@
+ import signal
+ import sys
+ import threading
++import os
++import re
+ import time
+ from collections import deque
+ from datetime import datetime, timezone
+@@ -175,25 +177,78 @@
+             self.stop.wait(1)
+ 
+ 
++class MqttUsb:
++    PREFIX = "decy13/usb"
++
++    def __init__(self, host, port, events, allow_commands):
++        from paho.mqtt import client as mqtt
++
++        self.events = events
++        self.session = 0
++        self.connected = False
++        self.allow_commands = allow_commands
++        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
++                                  client_id="decy13_usb_hub", clean_session=True)
++        username = os.environ.get("DECY13_USB_MQTT_USER")
++        if username:
++            self.client.username_pw_set(username, os.environ.get("DECY13_USB_MQTT_PASSWORD"))
++        self.client.on_connect = self.on_connect
++        self.client.on_disconnect = self.on_disconnect
++        self.client.on_message = self.on_message
++        self.client.reconnect_delay_set(1, 10)
++        self.client.connect_async(host, port, 15)
++
++    def on_connect(self, client, userdata, flags, reason, properties):
++        if reason == 0:
++            self.session += 1
++            self.connected = True
++            if self.allow_commands:
++                client.subscribe(self.PREFIX + "/cmd", qos=0)
++
++    def on_disconnect(self, client, userdata, flags, reason, properties):
++        self.connected = False
++
++    def on_message(self, client, userdata, message):
++        if message.retain or len(message.payload) > 256:
++            return
++        try:
++            pkt = json.loads(message.payload)
++            if not isinstance(pkt, dict) or not isinstance(pkt.get("request"), str):
++                return
++            if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", pkt["request"]):
++                return
++            self.events.put_nowait(("mqtt", self.session, CLOCK(), pkt))
++        except (ValueError, queue.Full, RecursionError):
++            pass
++
++    def publish(self, channel, packet):
++        if self.connected:
++            self.client.publish(self.PREFIX + "/" + channel, json.dumps(packet), qos=0, retain=False)
++
++
+ class Hub:
+-    def __init__(self, ports, writer):
++    def __init__(self, ports, writer, mqtt_usb=None):
+         self.ports, self.writer = ports, writer
+         self.sequence = 0
+         self.pending = {}
+         self.readings = {}
++        self.mqtt_usb = mqtt_usb
++        self.mqtt_requests = {}
+ 
+     def reply(self, source, session, dest, request, ok, code, extra=None):
+         packet = dict(node=dest, type="ack", id=request, ok=ok, code=code)
+         if extra:
+             packet.update(extra)
+-        LOG.info("ACK %s id=%d ok=%d code=%d", dest, request, ok, code)
++        LOG.info("ACK %s id=%s ok=%d code=%d", dest, request, ok, code)
++        if source == "mqtt" and self.mqtt_usb.session == session:
++            self.mqtt_usb.publish("ack", dict(request=request, ok=bool(ok), code=code))
+         if source == "hmi":
+             self.ports["hmi"].post(packet, session)
+ 
+     def command(self, source, session, packet):
+         action, val = packet.get("action"), packet.get("val")
+-        request = packet.get("id")
+-        if not integer(request, 1, 32767):
++        request = packet["request"] if source == "mqtt" else packet.get("id")
++        if source != "mqtt" and not integer(request, 1, 32767):
+             return
+         dest = "sensor" if source == "console" else "actuator"
+         ranges = {"CAL_TEMP": (-200, 200), "RESET": (1, 1)} if dest == "sensor" else ACTION_RANGES
+@@ -213,6 +268,15 @@
+         LOG.info("%s -> %s %s=%d id=%d", source, dest, action, val, wire_id)
+ 
+     def handle(self, role, session, arrived, packet):
++        if role == "mqtt":
++            if (not self.mqtt_usb.connected or session != self.mqtt_usb.session
++                    or CLOCK() - arrived >= 0.7):
++                return
++            request = packet["request"]
++            if request not in self.mqtt_requests and len(self.mqtt_requests) < 256:
++                self.mqtt_requests[request] = arrived + 30
++                self.command(role, session, packet)
++            return
+         if role == "console":
+             if CLOCK()-arrived < 0.7:
+                 self.command(role, session, packet)
+@@ -247,8 +311,20 @@
+                          if integer(packet.get(k), *bounds)}
+                 self.reply(source, origin_session, role, request, packet["ok"], code, extra)
+ 
++    def publish_usb(self):
++        now = CLOCK()
++        nodes = {}
++        for role, port in self.ports.items():
++            reading = self.readings.get(role)
++            online = bool(reading and port.generation() == reading[0] and now - reading[1] <= 1.2)
++            nodes[role] = dict(online=online, data=reading[2] if online else None)
++        self.mqtt_usb.publish("state", dict(version=1, nodes=nodes, commands=self.mqtt_usb.allow_commands))
++
+     def expire(self):
+         now = CLOCK()
++        for request, deadline in list(self.mqtt_requests.items()):
++            if now > deadline:
++                del self.mqtt_requests[request]
+         for key, (deadline, source, session, request) in list(self.pending.items()):
+             dest, dest_session, _ = key
+             if now > deadline or self.ports[dest].generation() != dest_session:
+@@ -280,7 +356,12 @@
+         args.add_argument("--" + role, default="/dev/arduino_" + role)
+     args.add_argument("--csv", type=Path, default=Path("accelerator_telemetry.csv"))
+     args.add_argument("--console", action="store_true", help="Aktifkan kalibrasi sensor dari stdin")
++    args.add_argument("--mqtt-host", help="Host broker DECY-13, misalnya 127.0.0.1")
++    args.add_argument("--mqtt-port", type=int, default=1883)
++    args.add_argument("--mqtt-control", action="store_true", help="Aktifkan kontrol Uno dari Mini PC")
+     opt = args.parse_args()
++    if opt.mqtt_control and not opt.mqtt_host:
++        args.error("--mqtt-control memerlukan --mqtt-host")
+     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+     paths = [str(Path(getattr(opt, role)).resolve()) for role in ROLES]
+     if len(set(paths)) != 3:
+@@ -293,7 +374,11 @@
+         writer = csv.DictWriter(stream, fieldnames=COLUMNS)
+         if not stream.tell():
+             writer.writeheader()
+-        hub = Hub(ports, writer)
++        mqtt_usb = MqttUsb(opt.mqtt_host, opt.mqtt_port, events, opt.mqtt_control) if opt.mqtt_host else None
++        hub = Hub(ports, writer, mqtt_usb)
++        if mqtt_usb:
++            mqtt_usb.client.loop_start()
++        next_mqtt = CLOCK()
+         for worker in ports.values():
+             worker.start()
+         if opt.console:
+@@ -305,6 +390,9 @@
+             except queue.Empty:
+                 pass
+             hub.expire()
++            if mqtt_usb and CLOCK() >= next_mqtt:
++                hub.publish_usb()
++                next_mqtt = CLOCK() + 0.2
+             if CLOCK() - summary >= 10:
+                 LOG.info("USB %s | CSV %s", " ".join(r+"="+("OK" if p.generation() else "--")
+                          for r,p in ports.items()), opt.csv)
+@@ -315,6 +403,9 @@
+                              data["vac_pa"], data["hv_v"], data["temp_dc"]/10, data["din"])
+                 summary = CLOCK()
+         stop.set()
++        if mqtt_usb:
++            mqtt_usb.client.disconnect()
++            mqtt_usb.client.loop_stop()
+         for worker in ports.values():
+             worker.join(2)
+ 
+diff --git a/AKSEL-DECY13/raspi/nodered_usb.json b/AKSEL-DECY13/raspi/nodered_usb.json
+new file mode 100644
+--- /dev/null
++++ b/AKSEL-DECY13/raspi/nodered_usb.json
+@@ -0,0 +1,84 @@
++[
++  {
++    "id": "ac13usb-flow",
++    "type": "tab",
++    "label": "DECY-13 · USB tiga TFT"
++  },
++  {
++    "id": "ac13usb-broker",
++    "type": "mqtt-broker",
++    "name": "Broker tim MQTT",
++    "broker": "127.0.0.1",
++    "port": "1883",
++    "protocolVersion": "4",
++    "keepalive": "30",
++    "cleansession": true
++  },
++  {
++    "id": "ac13usb-in",
++    "type": "mqtt in",
++    "z": "ac13usb-flow",
++    "name": "Telemetri USB",
++    "topic": "decy13/usb/state",
++    "qos": "0",
++    "datatype": "json",
++    "broker": "ac13usb-broker",
++    "x": 150,
++    "y": 80,
++    "wires": [
++      [
++        "ac13usb-store"
++      ]
++    ]
++  },
++  {
++    "id": "ac13usb-store",
++    "type": "function",
++    "z": "ac13usb-flow",
++    "name": "Simpan paket USB terbaru",
++    "func": "if (!msg.retain && msg.payload?.version === 1 && msg.payload.nodes) flow.set('usb', { at: Date.now(), nodes: msg.payload.nodes });\nreturn null;",
++    "outputs": 0,
++    "x": 380,
++    "y": 80,
++    "wires": []
++  },
++  {
++    "id": "ac13usb-http",
++    "type": "http in",
++    "z": "ac13usb-flow",
++    "name": "Status tiga TFT",
++    "url": "/api/usb/status",
++    "method": "get",
++    "x": 150,
++    "y": 150,
++    "wires": [
++      [
++        "ac13usb-status"
++      ]
++    ]
++  },
++  {
++    "id": "ac13usb-status",
++    "type": "function",
++    "z": "ac13usb-flow",
++    "name": "Hitung umur telemetri",
++    "func": "const usb = flow.get('usb');\nconst ageMs = usb ? Date.now() - usb.at : null;\nconst online = ageMs !== null && ageMs >= 0 && ageMs <= 2000;\nmsg.headers = { 'Cache-Control': 'no-store' };\nmsg.payload = { online, ageMs, nodes: online ? usb.nodes : null };\nreturn msg;",
++    "outputs": 1,
++    "x": 380,
++    "y": 150,
++    "wires": [
++      [
++        "ac13usb-response"
++      ]
++    ]
++  },
++  {
++    "id": "ac13usb-response",
++    "type": "http response",
++    "z": "ac13usb-flow",
++    "name": "JSON",
++    "x": 590,
++    "y": 150,
++    "wires": []
++  }
++]
+diff --git a/decy13_mqtt_kit/web_hmi/assets/usb-panel.js b/decy13_mqtt_kit/web_hmi/assets/usb-panel.js
+new file mode 100644
+--- /dev/null
++++ b/decy13_mqtt_kit/web_hmi/assets/usb-panel.js
+@@ -0,0 +1,85 @@
++/* Panel USB DECY-13. Memakai koneksi MQTT yang sudah dibuka HMI. */
++window.attachDecyUsbPanel = function (client) {
++  const key = 'decy-usb-panel';
++  document.getElementById(key)?.remove();
++  const panel = document.createElement('details');
++  panel.id = key;
++  panel.open = true;
++  panel.style.cssText = 'margin:16px;padding:14px;border:1px solid #425671;border-radius:10px;background:#151c30;color:#e5effa';
++  panel.innerHTML = `<summary>Panel tiga TFT · USB Raspberry Pi</summary>
++    <p data-link role="status"></p><p data-values></p>
++    <div style="display:flex;gap:8px;flex-wrap:wrap">
++      <button data-action="START">Mulai RPM simulasi</button>
++      <button data-action="STOP">Jeda keluaran</button>
++      <button data-action="LED">Ganti LED Uno</button>
++    </div>
++    <p data-result role="status"></p>`;
++  const header = document.querySelector('header');
++  if (header) header.after(panel);
++  else document.body.prepend(panel);
++  const prefix = 'decy13/usb/';
++  const link = panel.querySelector('[data-link]');
++  const values = panel.querySelector('[data-values]');
++  const result = panel.querySelector('[data-result]');
++  const buttons = [...panel.querySelectorAll('button')];
++  buttons.forEach(b => { b.style.cssText = 'padding:6px 10px;border:1px solid #7b94a9;border-radius:5px'; });
++  let snapshot = null, last = -Infinity, pending = null;
++  function render() {
++    const fresh = client.connected && performance.now() - last <= 2000;
++    const nodes = fresh ? snapshot.nodes : {};
++    const actuator = nodes.actuator?.online ? nodes.actuator.data : null;
++    const sensor = nodes.sensor?.online ? nodes.sensor.data : null;
++    link.textContent = fresh
++      ? ['hmi', 'sensor', 'actuator'].map((name, i) => 'TFT ' + (i + 1) + ' ' + (nodes[name]?.online ? 'online' : 'offline')).join(' · ')
++      : 'Menunggu telemetri hub USB';
++    values.textContent = [
++      actuator && Number.isInteger(actuator.bits) && `${actuator.rpm} / ${actuator.target} RPM · LED ${['mati','hijau','kuning','merah'][actuator.bits & 3]} · kipas ${actuator.bits & 4 ? 'nyala' : 'mati'} · relai ${actuator.bits & 16 ? 'nyala' : 'mati'} · alarm ${actuator.bits & 8 ? 'nyala' : 'mati'} · katup ${actuator.bits & 32 ? 'nyala' : 'mati'} · interlock ${actuator.guard ? 'siap' : 'terbuka'}`,
++      sensor && Number.isInteger(sensor.temp_dc) && `${sensor.vac_pa} Pa · ${sensor.hv_v} V simulasi · ${(sensor.temp_dc / 10).toFixed(1)} °C`
++    ].filter(Boolean).join(' | ');
++    if (pending && (!fresh || performance.now() >= pending.deadline)) {
++      result.textContent = 'Konfirmasi perangkat belum diterima.';
++      pending = null;
++    }
++    for (const button of buttons) {
++      button.disabled = !(actuator && snapshot.commands === true && !pending &&
++        (button.dataset.action === 'STOP' || (actuator.guard && actuator.link &&
++          (button.dataset.action !== 'LED' || actuator.mode !== 1))));
++      button.style.opacity = button.disabled ? '.5' : '1';
++    }
++    return actuator;
++  }
++  buttons.forEach(button => button.addEventListener('click', () => {
++    const actuator = render();
++    if (button.disabled || !actuator) return;
++    const action = button.dataset.action;
++    const val = action === 'LED' ? ((actuator.bits & 3) + 1) % 4 : 1;
++    const request = Array.from(crypto.getRandomValues(new Uint32Array(3)), n => n.toString(16).padStart(8, '0')).join('');
++    pending = { request, deadline: performance.now() + 2200 };
++    result.textContent = 'Menunggu konfirmasi Uno…';
++    client.publish(prefix + 'cmd', JSON.stringify({ request, target: 'actuator', action, val }), { qos: 0, retain: false });
++    render();
++  }));
++  client.on('connect', () => client.subscribe([prefix + 'state', prefix + 'ack'], { qos: 0 }));
++  client.on('message', (topic, payload, packet) => {
++    if (packet?.retain || ![prefix + 'state', prefix + 'ack'].includes(topic)) return;
++    let value;
++    try { value = JSON.parse(payload.toString()); } catch { return; }
++    if (!value || typeof value !== 'object') return;
++    if (topic === prefix + 'state' && value.version === 1 && value.nodes) {
++      snapshot = value;
++      last = performance.now();
++    }
++    if (topic === prefix + 'ack' && pending && value.request === pending.request) {
++      result.textContent = value.ok === true ? 'Perintah diterapkan oleh Uno.' :
++        'Perintah ditolak atau belum terkonfirmasi (' + Number(value.code) + ').';
++      pending = null;
++    }
++    render();
++  });
++  client.on('close', () => { last = -Infinity; render(); });
++  const timer = setInterval(() => {
++    if (!panel.isConnected) clearInterval(timer);
++    else render();
++  }, 250);
++  render();
++};
+diff --git a/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/assets/usb-panel.js b/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/assets/usb-panel.js
+new file mode 100644
+--- /dev/null
++++ b/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/assets/usb-panel.js
+@@ -0,0 +1,85 @@
++/* Panel USB DECY-13. Memakai koneksi MQTT yang sudah dibuka HMI. */
++window.attachDecyUsbPanel = function (client) {
++  const key = 'decy-usb-panel';
++  document.getElementById(key)?.remove();
++  const panel = document.createElement('details');
++  panel.id = key;
++  panel.open = true;
++  panel.style.cssText = 'margin:16px;padding:14px;border:1px solid #425671;border-radius:10px;background:#151c30;color:#e5effa';
++  panel.innerHTML = `<summary>Panel tiga TFT · USB Raspberry Pi</summary>
++    <p data-link role="status"></p><p data-values></p>
++    <div style="display:flex;gap:8px;flex-wrap:wrap">
++      <button data-action="START">Mulai RPM simulasi</button>
++      <button data-action="STOP">Jeda keluaran</button>
++      <button data-action="LED">Ganti LED Uno</button>
++    </div>
++    <p data-result role="status"></p>`;
++  const header = document.querySelector('header');
++  if (header) header.after(panel);
++  else document.body.prepend(panel);
++  const prefix = 'decy13/usb/';
++  const link = panel.querySelector('[data-link]');
++  const values = panel.querySelector('[data-values]');
++  const result = panel.querySelector('[data-result]');
++  const buttons = [...panel.querySelectorAll('button')];
++  buttons.forEach(b => { b.style.cssText = 'padding:6px 10px;border:1px solid #7b94a9;border-radius:5px'; });
++  let snapshot = null, last = -Infinity, pending = null;
++  function render() {
++    const fresh = client.connected && performance.now() - last <= 2000;
++    const nodes = fresh ? snapshot.nodes : {};
++    const actuator = nodes.actuator?.online ? nodes.actuator.data : null;
++    const sensor = nodes.sensor?.online ? nodes.sensor.data : null;
++    link.textContent = fresh
++      ? ['hmi', 'sensor', 'actuator'].map((name, i) => 'TFT ' + (i + 1) + ' ' + (nodes[name]?.online ? 'online' : 'offline')).join(' · ')
++      : 'Menunggu telemetri hub USB';
++    values.textContent = [
++      actuator && Number.isInteger(actuator.bits) && `${actuator.rpm} / ${actuator.target} RPM · LED ${['mati','hijau','kuning','merah'][actuator.bits & 3]} · kipas ${actuator.bits & 4 ? 'nyala' : 'mati'} · relai ${actuator.bits & 16 ? 'nyala' : 'mati'} · alarm ${actuator.bits & 8 ? 'nyala' : 'mati'} · katup ${actuator.bits & 32 ? 'nyala' : 'mati'} · interlock ${actuator.guard ? 'siap' : 'terbuka'}`,
++      sensor && Number.isInteger(sensor.temp_dc) && `${sensor.vac_pa} Pa · ${sensor.hv_v} V simulasi · ${(sensor.temp_dc / 10).toFixed(1)} °C`
++    ].filter(Boolean).join(' | ');
++    if (pending && (!fresh || performance.now() >= pending.deadline)) {
++      result.textContent = 'Konfirmasi perangkat belum diterima.';
++      pending = null;
++    }
++    for (const button of buttons) {
++      button.disabled = !(actuator && snapshot.commands === true && !pending &&
++        (button.dataset.action === 'STOP' || (actuator.guard && actuator.link &&
++          (button.dataset.action !== 'LED' || actuator.mode !== 1))));
++      button.style.opacity = button.disabled ? '.5' : '1';
++    }
++    return actuator;
++  }
++  buttons.forEach(button => button.addEventListener('click', () => {
++    const actuator = render();
++    if (button.disabled || !actuator) return;
++    const action = button.dataset.action;
++    const val = action === 'LED' ? ((actuator.bits & 3) + 1) % 4 : 1;
++    const request = Array.from(crypto.getRandomValues(new Uint32Array(3)), n => n.toString(16).padStart(8, '0')).join('');
++    pending = { request, deadline: performance.now() + 2200 };
++    result.textContent = 'Menunggu konfirmasi Uno…';
++    client.publish(prefix + 'cmd', JSON.stringify({ request, target: 'actuator', action, val }), { qos: 0, retain: false });
++    render();
++  }));
++  client.on('connect', () => client.subscribe([prefix + 'state', prefix + 'ack'], { qos: 0 }));
++  client.on('message', (topic, payload, packet) => {
++    if (packet?.retain || ![prefix + 'state', prefix + 'ack'].includes(topic)) return;
++    let value;
++    try { value = JSON.parse(payload.toString()); } catch { return; }
++    if (!value || typeof value !== 'object') return;
++    if (topic === prefix + 'state' && value.version === 1 && value.nodes) {
++      snapshot = value;
++      last = performance.now();
++    }
++    if (topic === prefix + 'ack' && pending && value.request === pending.request) {
++      result.textContent = value.ok === true ? 'Perintah diterapkan oleh Uno.' :
++        'Perintah ditolak atau belum terkonfirmasi (' + Number(value.code) + ').';
++      pending = null;
++    }
++    render();
++  });
++  client.on('close', () => { last = -Infinity; render(); });
++  const timer = setInterval(() => {
++    if (!panel.isConnected) clearInterval(timer);
++    else render();
++  }, 250);
++  render();
++};
+diff --git a/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/index.html b/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/index.html
+--- a/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/index.html
++++ b/AKSEL-DECY13/divisi-5-web-hmi/decy13_mqtt_kit/web_hmi/index.html
+@@ -6,6 +6,7 @@
+ <title>DECY-13 Cyclotron Control Center — Web HMI & Simulator Terpadu</title>
+ <link rel="stylesheet" href="assets/console.css">
+ <script src="assets/mqtt.min.js"></script>
++<script src="assets/usb-panel.js"></script>
+ <style>
+   :root {
+     color-scheme: dark;
+@@ -1388,12 +1389,13 @@
+     const clientId = 'hmi_decy13_' + Math.random().toString(16).substr(2, 8);
+     let mqttClient;
+     try {
+-      mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, reconnectPeriod: 3000 });
++      mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, queueQoSZero: false, reconnectPeriod: 3000 });
+     } catch (error) {
+       appendCommLog('ERR', 'Koneksi MQTT gagal: ' + error.message);
+       return;
+     }
+     state.mqttClient = mqttClient;
++    window.attachDecyUsbPanel?.(mqttClient);
+ 
+     mqttClient.on('connect', () => {
+       if (mqttClient !== state.mqttClient) return;
+diff --git a/AKSEL-DECY13/README.md b/AKSEL-DECY13/README.md
+--- a/AKSEL-DECY13/README.md
++++ b/AKSEL-DECY13/README.md
+@@ -1,6 +1,6 @@
+ # DECY-13 · Hub USB tiga Arduino Uno
+ 
+-Raspberry Pi 3B+ menghubungkan tiga Uno melalui USB serial 115200 baud. TFT menampilkan keadaan yang dikonfirmasi Node 3 dan pengukuran simulasi dari Node 2. Sistem ini bisa dijalankan sendiri tanpa daemon MQTT. Hub menjadi satu-satunya proses yang membuka ketiga port.
++Raspberry Pi 3B+ menghubungkan tiga Uno melalui USB serial 115200 baud. Setiap Uno memiliki satu TFT 320×240. TFT 1 menampilkan pengukuran dari Node 2 dan keadaan aktuator yang dikonfirmasi Node 3. TFT 2 dan TFT 3 menampilkan data lokal masing-masing. Sistem ini bisa dijalankan sendiri tanpa daemon MQTT. Hub menjadi satu-satunya proses yang membuka ketiga port.
+ 
+ ~~~text
+                             Raspberry Pi 3B+
+@@ -10,8 +10,8 @@
+             +--------------+       |       +------------------+
+             |                      |                          |
+      /dev/arduino_hmi       /dev/arduino_sensor       /dev/arduino_actuator
+-       Uno 1 + TFT             Uno 2 + input              Uno 3 + driver
+-       tap / geser             A0/A1/A2, D2               D2 interlock
++       Uno 1 + TFT 1           Uno 2 + TFT 2             Uno 3 + TFT 3
++       tap / geser             sensor via 4051           driver via 595
+        cmd -> Pi               telemetri -> Pi            cmd <- Pi
+        status <- Pi            kalibrasi <- Pi            ACK/status -> Pi
+ ~~~
+@@ -20,12 +20,22 @@
+ 
+ Ketiga sketch memakai kelas `CalibratedTouch` dengan rotasi landscape 1, pin XP=6, XM=A2, YP=A1, YM=7, serta pemetaan yang sama: `p.y: 920 → 187` untuk X=0–319 dan `p.x: 894 → 146` untuk Y=0–239. Pengukuran tersebut berasal dari shield Node 1. Jika memasang panel fisik lain, cek tekan-lepas di sisi kiri, tengah, dan kanan. Jika meleset, jalankan contoh `TouchScreen_Calibr_native` pada panel itu untuk membandingkan hasilnya.
+ 
+-Node 1 selalu menggunakan TFT. Node 2 dan Node 3 masing-masing memiliki pilihan `USE_LOCAL_TFT` di bagian atas sketch. Nilai awal **0** sesuai tabel kabel langsung di bawah. Untuk memasang layar di Uno tambahan, putuskan daya, pindahkan **semua** sambungan sensor/driver dari pin shield, siapkan rangkaian profil TFT berikut, lalu ubah `#define USE_LOCAL_TFT 0` menjadi `#define USE_LOCAL_TFT 1` pada sketch Uno tersebut. Dua profil bisa dipilih secara terpisah. Jangan memasang shield dengan kabel I/O dari profil langsung masih tersambung.
++Ketiga sketch langsung mengaktifkan TFT. Unggah satu sketch sesuai peran ke setiap Uno. Geser ke kiri/kanan atau ketuk **MODE >** di kanan atas untuk pindah halaman pada layar tersebut. Setiap layar memiliki nomor halaman 1/3 sampai 3/3 dan navigasi sendiri.
++
++| TFT | Halaman 1 | Halaman 2 | Halaman 3 |
++|---|---|---|---|
++| Uno 1 · HMI | Dasbor RPM dan sensor | Target, laju, mulai otomatis | Pemantauan dan uji keluaran lewat hub |
++| Uno 2 · Sensor | Pantau pengukuran dan kontak | Kalibrasi suhu awal, offset, dan hasil | Input ADC mentah tiga kanal dan kontak digital |
++| Uno 3 · Aktuator | Proses, kipas, relai, jeda | Keluaran dan uji lampu, alarm, katup | Interlok, heartbeat, watchdog dan jeda |
++
++[Pratinjau sembilan halaman TFT](simulasi/sembilan-halaman-tft.png)
++
++**Sebelum mengunggah ke Uno 2 atau 3 yang memakai rangkaian lama**, putuskan daya dan pindahkan sambungan sensor/driver ke profil TFT pada tabel berikut. Nilai bawaan `USE_LOCAL_TFT` sekarang **1**. Khusus Uno yang akan dipakai tanpa shield dan tetap memakai kabel langsung, pilih `#define USE_LOCAL_TFT 0` di sketch perannya sebelum unggah.
+ 
+ | Node | Rangkaian tambahan untuk profil TFT (1) | Aksi sentuh |
+ |---|---|---|
+ | 2 | **74HC4051** pada 5 V. Pin common/Z → A5; S0 → D11; S1 → D13; S2, INH, VEE dan GND/VSS → GND. Y0/Y1/Y2 menerima potensiometer vakum/tegangan/suhu (0–5 V). Kontak digital → D12 dan GND. D10 ditahan HIGH. | **−1 C**, **Nol**, **+1 C** mengatur offset suhu. Perubahan muncul di layar dan pada telemetri USB. |
+-| 3 | **74HC595** pada 5 V. DS/SER → D11; SHCP/SRCLK → D13; STCP/RCLK → D12; /OE → D10 dengan pull-up eksternal 10 kΩ ke 5 V; /MR (/SRCLR) → 5 V. **Interlock NC → A5 dan GND.** | **Kipas**, **Relai**, **Jeda**. Kipas dan relai memakai pemeriksaan heartbeat Pi, interlock, serta mode manual yang sama dengan perintah USB. Jeda mematikan keluaran. |
++| 3 | **74HC595** pada 5 V. DS/SER → D11; SHCP/SRCLK → D13; STCP/RCLK → D12; /OE → D10 dengan pull-up eksternal 10 kΩ ke 5 V; /MR (/SRCLR) → 5 V. **Interlock NC → A5 dan GND.** | **Kipas**, **Relai**, **Jeda**. Uji kipas, relai, lampu, alarm, dan katup memakai pemeriksaan heartbeat Pi, interlock, serta mode manual yang sama dengan perintah USB. Jeda mematikan keluaran. |
+ 
+ Pada Node 3 profil TFT, Q0–Q6 berturut-turut menuju input driver relai, katup, kipas, buzzer, LED hijau, kuning, merah. Q7 dicadangkan. Pertahankan input driver pada level OFF dengan resistor selama /OE HIGH (pull-down untuk driver aktif-HIGH). Beri catu dan GND bersama pada IC; ambil pin melalui stacking header/breakout jika tertutup shield. Kosongkan slot SD pada kedua shield tambahan: profil TFT memakai jalur D10–D13 untuk I/O. Shield standar memakai D2–D9 dan A0–A4 untuk LCD. [Peta pin MCUFRIEND](https://github.com/prenticedavid/MCUFRIEND_kbv/blob/master/utility/mcufriend_shield.h) · [74HC4051](https://www.ti.com/product/CD74HC4051) · [74HC595](https://www.ti.com/product/SN74HC595)
+ 
+@@ -95,6 +105,28 @@
+ 
+ Dengan `--console`, ketik `CAL_TEMP -15` lalu Enter untuk offset −1,5 °C. Rentangnya −200 sampai 200 dalam satuan 0,1 °C. Ketik `RESET` di konsol untuk menghapus offset **Node 2**. Kalibrasi disimpan di RAM. Tombol **ULANG** di TFT mereset proses **Node 3**. CSV ditambahi baris UTC untuk setiap telemetri yang diproses, termasuk kolom sumber. Status koneksi, perintah, ACK, dan ringkasan sensor tampil di terminal.
+ 
++## Integrasi dengan Mini PC dan Node-RED
++
++Jalankan hub Uno dan daemon MQTT tim di Raspberry Pi. Gunakan broker yang dipakai oleh daemon. Untuk pemasangan dengan broker di Pi, endpoint browser Mini PC adalah `ws://<IP_RASPI>:9001`. Untuk susunan QA dengan broker di Mini PC, gunakan alamat broker atau ujung tunnel yang sudah dikonfigurasi pada instalasi itu. Kedua HMI dalam repo memakai panel tiga TFT dari koneksi MQTT yang sama.
++
++~~~sh
++sudo apt install python3-serial python3-paho-mqtt
++python3 raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883
++~~~
++
++Hub memerlukan Paho MQTT 2.x untuk integrasi. Jalankan dari direktori `AKSEL-DECY13`. Untuk broker dengan autentikasi, atur variabel lingkungan `DECY13_USB_MQTT_USER` dan `DECY13_USB_MQTT_PASSWORD` pada proses hub. Gunakan `--mqtt-control` bila Mini PC perlu mengirim perintah ke Uno simulasi melalui broker yang mengatur akses tulis ke topik perintah.
++
++| Topik | Isi |
++|---|---|
++| `decy13/rpi/state` dan `decy13/hmi/cmd` | Kontrak daemon dan HMI siklotron milik tim |
++| `decy13/usb/state` | Status tiga node dan telemetri USB setiap 200 ms. Sensor memakai Pa, tegangan simulasi, dan suhu dalam 0,1 °C. |
++| `decy13/usb/cmd` | Permintaan web ke Uno aktuator dengan `request`, `target`, `action`, dan `val`. |
++| `decy13/usb/ack` | Konfirmasi dari hub berdasarkan hasil serial, dengan `request`, `ok`, dan `code`. |
++
++Hub menolak perintah MQTT retained dan membatasi umur antrean. Node 3 tetap memeriksa interlock dan watchdog. Panel USB mendeteksi telemetri kedaluwarsa setelah dua detik. Tombol siklotron di HMI tetap menggunakan kontrak daemon.
++
++Impor `raspi/nodered_usb.json` sebagai tab tambahan jika Node-RED perlu memantau tiga Uno. Pilih broker tim untuk node MQTT pada tab tersebut. Endpoint baca status tersedia di `/api/usb/status`. Flow tim tetap menyediakan `/cyclotron` dan `/api/status` untuk telemetri siklotron.
++
+ ## Operasi HMI
+ 
+ - **Dasbor.** MULAI mengirim START. JEDA mematikan keluaran dan menahan angka RPM. ULANG mengembalikan RPM ke nol dan mode siaga.
+diff --git a/AKSEL-DECY13/firmware/libraries/AcceleratorLink/src/NodePanel.h b/AKSEL-DECY13/firmware/libraries/AcceleratorLink/src/NodePanel.h
+--- a/AKSEL-DECY13/firmware/libraries/AcceleratorLink/src/NodePanel.h
++++ b/AKSEL-DECY13/firmware/libraries/AcceleratorLink/src/NodePanel.h
+@@ -1,72 +1,105 @@
+ #pragma once
+ #include <MCUFRIEND_kbv.h>
+ #include <CalibratedTouch.h>
++#include <avr/pgmspace.h>
+ #include <string.h>
+-#include <avr/pgmspace.h>
+ 
+-// Panel lokal untuk sensor dan aktuator.
++// Panel bersama untuk TFT sensor dan aktuator.
+ class NodePanel {
+   MCUFRIEND_kbv tft;
+   CalibratedTouch touch;
+-  char previous[4][26]={};
+-  byte pressed=0, next=0;
+-  unsigned long lastRow=0;
+-  static const uint16_t BG=0x0841, CYAN=0x05DF, WHITE=0xffff;
++  char previous[4][26] = {};
++  byte pageIndex = 0, framePart = 0, nextRow = 0;
++  byte pressed = 0, enabledKeys = 0;
++  unsigned long lastRow = 0;
++  static const uint16_t BG = 0x0841, CYAN = 0x05DF, WHITE = 0xffff;
+ 
+-  byte keyAt(int x,int y) const {
+-    if (y<184 || y>=230) return 0;
+-    for (byte i=0; i<3; ++i) {
+-      int left=8+i*104;
+-      if (x>=left && x<left+96) return i+1;
++  byte keyAt(int x, int y) const {
++    if (y < 32 && x >= 240) return 4;  // Tombol MODE di kanan atas.
++    if (framePart < 4 || y < 184 || y >= 230) return 0;
++    for (byte i = 0; i < 3; ++i) {
++      int left = 8 + i * 104;
++      if ((enabledKeys & (1 << i)) && x >= left && x < left + 96) return i + 1;
+     }
+     return 0;
+   }
+ 
++  void changePage(byte advance) {
++    pageIndex = (pageIndex + advance) % 3;
++    framePart = nextRow = pressed = enabledKeys = 0;
++  }
++
+ public:
+-  void begin(const __FlashStringHelper *title, const __FlashStringHelper *left,
+-             const __FlashStringHelper *middle, const __FlashStringHelper *right) {
+-    uint16_t id=tft.readID();
+-    tft.begin(id==0xD3D3 ? 0x9341 : id);
++  void begin() {
++    uint16_t id = tft.readID();
++    tft.begin(id == 0xD3D3 ? 0x9341 : id);
+     tft.setRotation(CalibratedTouch::ROTATION);
+     tft.setTextWrap(false);
+     tft.fillScreen(BG);
+-    tft.setTextSize(2);
+-    tft.setTextColor(CYAN);
+-    tft.setCursor(10,8); tft.print(title);
+-    tft.drawFastHLine(0,32,320,CYAN);
+-    const __FlashStringHelper *labels[]={left,middle,right};
+-    for (byte i=0; i<3; ++i) {
+-      int x=8+104*i;
+-      tft.fillRoundRect(x,184,96,46,5,CYAN);
+-      int width=12*strlen_P(reinterpret_cast<PGM_P>(labels[i]));
+-      tft.setCursor(x+(96-width)/2,199);
+-      tft.setTextColor(BG); tft.print(labels[i]);
+-    }
+   }
+ 
++  byte page() const { return pageIndex; }
++  bool needsFrame() const { return framePart < 4; }
++
+   byte button(unsigned long now) {
+-    CalibratedTouch::Event e=touch.poll(now);
+-    if (e==CalibratedTouch::DOWN) pressed=keyAt(touch.x,touch.y);
+-    if (e==CalibratedTouch::TAP && pressed==keyAt(touch.x,touch.y)) return pressed;
++    CalibratedTouch::Event e = touch.poll(now);
++    if (e == CalibratedTouch::DOWN) pressed = keyAt(touch.x, touch.y);
++    if (e == CalibratedTouch::SWIPE_LEFT) changePage(1);
++    if (e == CalibratedTouch::SWIPE_RIGHT) changePage(2);
++    if (e == CalibratedTouch::TAP && pressed && pressed == keyAt(touch.x, touch.y)) {
++      byte key = pressed;
++      pressed = 0;
++      if (key <= 3) return key;
++      changePage(1);
++    }
+     return 0;
+   }
+ 
+-  // Draw at most one changed row per tick; return to the USB/interlock loop.
++  // Gambar satu bagian per putaran agar serial dan interlock tetap dilayani.
++  void drawFrame(const __FlashStringHelper *title, const __FlashStringHelper *left,
++                 const __FlashStringHelper *middle, const __FlashStringHelper *right) {
++    if (!needsFrame()) return;
++    if (framePart == 0) {
++      tft.fillRect(0, 0, 320, 32, BG);
++      tft.setTextColor(WHITE); tft.setTextSize(2);
++      tft.setCursor(8, 8); tft.print(title);
++      tft.setTextColor(CYAN); tft.setTextSize(1);
++      tft.setCursor(263, 1); tft.print(F("MODE >"));
++      tft.setTextSize(2); tft.setCursor(261, 13);
++      tft.print(pageIndex + 1); tft.print(F("/3"));
++      tft.drawFastHLine(0, 32, 320, CYAN);
++    } else {
++      byte i = framePart - 1;
++      int x = 8 + i * 104;
++      const __FlashStringHelper *label = i == 0 ? left : i == 1 ? middle : right;
++      if (label) {
++        enabledKeys |= 1 << i;
++        tft.fillRoundRect(x, 184, 96, 46, 5, CYAN);
++        int width = 12 * strlen_P(reinterpret_cast<PGM_P>(label));
++        tft.setTextSize(2); tft.setTextColor(BG);
++        tft.setCursor(x + (96 - width) / 2, 199); tft.print(label);
++      } else {
++        tft.fillRect(x, 184, 96, 46, BG);
++      }
++    }
++    ++framePart;
++  }
++
+   int dueRow(unsigned long now) {
+-    if (now-lastRow<35) return -1;
+-    lastRow=now;
+-    byte row=next;
+-    next=(next+1)%4;
++    if (needsFrame() || now - lastRow < 35) return -1;
++    lastRow = now;
++    byte row = nextRow;
++    nextRow = (nextRow + 1) % 4;
+     return row;
+   }
+ 
+-  void row(byte i,const char (&value)[26]) {
+-    char *old=previous[i];
+-    if (strcmp(old,value)==0) return;
+-    tft.setCursor(10,45+32*i);
+-    tft.setTextColor(WHITE,BG);
++  void row(byte i, const char (&value)[26]) {
++    char *old = previous[i];
++    if (strcmp(old, value) == 0) return;
++    tft.setCursor(10, 45 + 32 * i);
++    tft.setTextSize(2); tft.setTextColor(WHITE, BG);
+     tft.print(value);
+-    for (int n=int(strlen(old))-int(strlen(value)); n>0; --n) tft.print(' ');
+-    strcpy(old,value);   // The caller formats each line into char[26].
++    for (int n = int(strlen(old)) - int(strlen(value)); n > 0; --n) tft.print(' ');
++    strcpy(old, value);
+   }
+ };
+diff --git a/AKSEL-DECY13/firmware/node1_hmi/node1_hmi.ino b/AKSEL-DECY13/firmware/node1_hmi/node1_hmi.ino
+--- a/AKSEL-DECY13/firmware/node1_hmi/node1_hmi.ino
++++ b/AKSEL-DECY13/firmware/node1_hmi/node1_hmi.ino
+@@ -46,7 +46,8 @@
+   UJI_KIPAS,
+   UJI_ALARM,
+   UJI_RELAI,
+-  UJI_KATUP
++  UJI_KATUP,
++  GANTI_MODE
+ };
+ 
+ // Dua bit pertama untuk LED. Bit berikutnya untuk keluaran biner.
+@@ -154,6 +155,7 @@
+ }
+ 
+ byte tombolPada(int x, int y) {
++  if (diDalam(x, y, 240, 0, 80, 29)) return GANTI_MODE;
+   if (currentPage == 0) {
+     if (diDalam(x, y, 10, 192, 145, 40)) return TOMBOL_MULAI;
+     if (diDalam(x, y, 165, 192, 145, 40)) return TOMBOL_ULANG;
+@@ -178,10 +180,14 @@
+   static byte tombolAwal=TANPA_TOMBOL;
+   CalibratedTouch::Event event=touchPanel.poll(sekarang);
+   if (event==CalibratedTouch::DOWN) tombolAwal=tombolPada(touchPanel.x, touchPanel.y);
+-  if (event==CalibratedTouch::TAP && tombolAwal==tombolPada(touchPanel.x, touchPanel.y))
+-    tekanTombol(tombolAwal, sekarang);
+-  if (event==CalibratedTouch::SWIPE_LEFT || event==CalibratedTouch::SWIPE_RIGHT) {
+-    pindahHalaman((currentPage+(event==CalibratedTouch::SWIPE_LEFT ? 1 : 2))%3);
++  byte langkah = 0;
++  if (event == CalibratedTouch::TAP && tombolAwal == tombolPada(touchPanel.x, touchPanel.y)) {
++    if (tombolAwal == GANTI_MODE) langkah = 1;
++    else tekanTombol(tombolAwal, sekarang);
++  } else if (event == CalibratedTouch::SWIPE_LEFT) langkah = 1;
++  else if (event == CalibratedTouch::SWIPE_RIGHT) langkah = 2;
++  if (langkah) {
++    pindahHalaman((currentPage + langkah) % 3);
+     waktuPaket=sekarang-100UL;
+   }
+ }
+@@ -226,7 +232,8 @@
+   tft.drawFastHLine(0, 28, 320, CYAN);
+   label(10, 6, 2, WHITE, currentPage == 0 ? F("Dasbor utama") :
+                          currentPage == 1 ? F("Pengaturan") : F("Keluaran USB"));
+-  pena(274, 6, 2, CYAN);
++  label(263, 1, 1, CYAN, F("MODE >"));
++  pena(261, 11, 2, CYAN);
+   tft.print(currentPage + 1);
+   tft.print(F("/3"));
+ 
+diff --git a/AKSEL-DECY13/firmware/node2_sensor/node2_sensor.ino b/AKSEL-DECY13/firmware/node2_sensor/node2_sensor.ino
+--- a/AKSEL-DECY13/firmware/node2_sensor/node2_sensor.ino
++++ b/AKSEL-DECY13/firmware/node2_sensor/node2_sensor.ino
+@@ -1,7 +1,7 @@
+ #include <AcceleratorLink.h>
+ // 0 = kabel langsung; 1 = shield TFT dan rangkaian I/O pada README.
+ #ifndef USE_LOCAL_TFT
+-#define USE_LOCAL_TFT 0
++#define USE_LOCAL_TFT 1
+ #endif
+ #if USE_LOCAL_TFT
+ #include <NodePanel.h>
+@@ -12,6 +12,7 @@
+ UsbLink usb;
+ #if USE_LOCAL_TFT
+ // 74HC4051: C/S2 dan INH ke GND; A5 membaca kanal Y0, Y1, Y2.
++int sampleAdc[3] = {};  // Sampel yang sama untuk telemetri dan halaman ADC.
+ const byte MUX_A=11, MUX_B=13, MUX_OUT=A5, DIGITAL_IN=12;
+ #else
+ const byte DIGITAL_IN=2;
+@@ -28,7 +29,8 @@
+   digitalWrite(MUX_A,channel & 1);
+   digitalWrite(MUX_B,(channel >> 1) & 1);
+   analogRead(MUX_OUT);  // Waktu peralihan mux dan pengisian ADC.
+-  return analogRead(MUX_OUT);
++  sampleAdc[channel] = analogRead(MUX_OUT);
++  return sampleAdc[channel];
+ #else
+   const byte pins[]={A0,A1,A2};
+   return analogRead(pins[channel]);
+@@ -42,26 +44,51 @@
+ }
+ 
+ #if USE_LOCAL_TFT
++void formatSuhu(char (&line)[26], PGM_P label, int dc) {
++  snprintf_P(line, sizeof(line), PSTR("%S %s%d.%d C"), label, dc < 0 ? "-" : "",
++             abs(dc) / 10, abs(dc) % 10);
++}
++
+ void localScreen(unsigned long now) {
+-  switch (panel.button(now)) {
+-    case 1: setOffset(max(-200,tempOffset-10)); break;
+-    case 2: setOffset(0); break;
+-    case 3: setOffset(min(200,tempOffset+10)); break;
++  byte key = panel.button(now);
++  byte page = panel.page();
++  if (key == 1) setOffset(max(-200, tempOffset - 10));
++  if (key == 2) setOffset(0);
++  if (key == 3) setOffset(min(200, tempOffset + 10));
++
++  if (panel.needsFrame()) {
++    if (page == 2) panel.drawFrame(F("Sensor - Input ADC"), nullptr, nullptr, nullptr);
++    else panel.drawFrame(page == 0 ? F("Sensor - Pantau") : F("Sensor - Kalibrasi"),
++                         F("-1 C"), F("Nol"), F("+1 C"));
++    return;
+   }
+-  int row=panel.dueRow(now);
+-  if (row<0) return;
++  int row = panel.dueRow(now);
++  if (row < 0) return;
+   char line[26];
+-  switch (row) {
+-    case 0: snprintf_P(line,sizeof(line),PSTR("Vakum %ld Pa"),pressurePa); break;
+-    case 1: snprintf_P(line,sizeof(line),PSTR("Tegangan %d V  IN %d"),hvVolts,digitalClosed); break;
+-    case 2: {
+-      int dc=rawTempDc+tempOffset;
+-      snprintf_P(line,sizeof(line),PSTR("Suhu %s%d.%d C"),dc<0?"-":"",abs(dc)/10,abs(dc)%10);
+-      break;
++  if (page == 0) {
++    switch (row) {
++      case 0: snprintf_P(line, sizeof(line), PSTR("Vakum %ld Pa"), pressurePa); break;
++      case 1: snprintf_P(line, sizeof(line), PSTR("Tegangan %d V"), hvVolts); break;
++      case 2: formatSuhu(line, PSTR("Suhu"), rawTempDc + tempOffset); break;
++      default: snprintf_P(line, sizeof(line), PSTR("Kontak %S"),
++                          digitalClosed ? PSTR("tertutup") : PSTR("terbuka")); break;
+     }
+-    default: snprintf_P(line,sizeof(line),PSTR("Offset %d x 0.1 C"),tempOffset); break;
++  } else if (page == 1) {
++    switch (row) {
++      case 0: formatSuhu(line, PSTR("Suhu awal"), rawTempDc); break;
++      case 1: formatSuhu(line, PSTR("Offset"), tempOffset); break;
++      case 2: formatSuhu(line, PSTR("Hasil"), rawTempDc + tempOffset); break;
++      default: snprintf_P(line, sizeof(line), PSTR("Batas offset +/-20 C")); break;
++    }
++  } else {
++    switch (row) {
++      case 0: snprintf_P(line, sizeof(line), PSTR("ADC vakum    %4d"), sampleAdc[0]); break;
++      case 1: snprintf_P(line, sizeof(line), PSTR("ADC tegangan %4d"), sampleAdc[1]); break;
++      case 2: snprintf_P(line, sizeof(line), PSTR("ADC suhu     %4d"), sampleAdc[2]); break;
++      default: snprintf_P(line, sizeof(line), PSTR("Input digital D12  %d"), digitalClosed); break;
++    }
+   }
+-  panel.row(row,line);
++  panel.row(row, line);
+ }
+ #endif
+ 
+@@ -69,7 +96,7 @@
+ #if USE_LOCAL_TFT
+   digitalWrite(10,HIGH); pinMode(10,OUTPUT);  // Nonaktifkan chip-select microSD.
+   pinMode(MUX_A,OUTPUT); pinMode(MUX_B,OUTPUT);
+-  panel.begin(F("Node 2 - Sensor"),F("-1 C"),F("Nol"),F("+1 C"));
++  panel.begin();
+ #endif
+   pinMode(DIGITAL_IN,INPUT_PULLUP);
+   Serial.begin(115200);
+diff --git a/AKSEL-DECY13/firmware/node3_actuator/node3_actuator.ino b/AKSEL-DECY13/firmware/node3_actuator/node3_actuator.ino
+--- a/AKSEL-DECY13/firmware/node3_actuator/node3_actuator.ino
++++ b/AKSEL-DECY13/firmware/node3_actuator/node3_actuator.ino
+@@ -1,7 +1,7 @@
+ #include <AcceleratorLink.h>
+ // 0 = kabel langsung; 1 = shield TFT dan rangkaian I/O pada README.
+ #ifndef USE_LOCAL_TFT
+-#define USE_LOCAL_TFT 0
++#define USE_LOCAL_TFT 1
+ #endif
+ #if USE_LOCAL_TFT
+ #include <NodePanel.h>
+@@ -22,6 +22,7 @@
+ enum { LED_MASK=3, FAN_BIT=4, BUZZ_BIT=8, RELAY_BIT=16, VALVE_BIT=32 };
+ int rpm=0, targetRPM=6000;
+ byte mode=STANDBY, rate=1, bits=0;
++const unsigned long HEARTBEAT_TIMEOUT_MS = 3000;
+ bool rising=true, automatic=false, lease=false, guard=false, closing=false, dirty=true;
+ unsigned long lastBeat=0, closedSince=0, standbySince=0, lastStep=0, lastReport=0;
+ 
+@@ -61,7 +62,7 @@
+ }
+ 
+ void safety(unsigned long now) {
+-  if (lease && now-lastBeat>3000UL) { lease=false; trip(); }
++  if (lease && now-lastBeat>HEARTBEAT_TIMEOUT_MS) { lease=false; trip(); }
+   if (digitalRead(INTERLOCK)!=LOW) {
+     closing=false;
+     if (guard) { guard=false; trip(); }
+@@ -119,31 +120,66 @@
+ 
+ #if USE_LOCAL_TFT
+ void localScreen(unsigned long now) {
+-  static byte result=0;
+-  byte key=panel.button(now);
++  static byte result = 0;
++  static unsigned long resultAt = 0;
++  byte key = panel.button(now);
++  byte page = panel.page();
+   if (key) {
+-    // Re-evaluate the physical contact and heartbeat at the point of use.
+-    unsigned long sampled=millis();
++    unsigned long sampled = millis();
+     safety(sampled);
+-    if (key==1) result=command("FAN",!(bits & FAN_BIT),sampled);
+-    if (key==2) result=command("RELAY_1",!(bits & RELAY_BIT),sampled);
+-    if (key==3) result=command("STOP",1,sampled);
+-    dirty=true;
+-  }
+-  int row=panel.dueRow(now);
+-  if (row<0) return;
++    resultAt = now;
++    if (page == 1) {
++      if (key == 1) result = command("LED", ((bits & LED_MASK) + 1) % 4, sampled);
++      if (key == 2) result = command("BUZZER", !(bits & BUZZ_BIT), sampled);
++      if (key == 3) result = command("VALVE", !(bits & VALVE_BIT), sampled);
++    } else {
++      if (key == 1) result = command("FAN", !(bits & FAN_BIT), sampled);
++      if (key == 2) result = command("RELAY_1", !(bits & RELAY_BIT), sampled);
++      if (key == 3) result = command("STOP", 1, sampled);
++    }
++    dirty = true;
++  }
++  if (panel.needsFrame()) {
++    if (page == 0) panel.drawFrame(F("Aktuator - Proses"), F("Kipas"), F("Relai"), F("Jeda"));
++    if (page == 1) panel.drawFrame(F("Aktuator - Keluaran"), F("Lampu"), F("Alarm"), F("Katup"));
++    if (page == 2) panel.drawFrame(F("Aktuator - Interlok"), nullptr, nullptr, F("Jeda"));
++    return;
++  }
++  int row = panel.dueRow(now);
++  if (row < 0) return;
+   char line[26];
+-  switch (row) {
+-    case 0: snprintf_P(line,sizeof(line),PSTR("RPM %d / %d"),rpm,targetRPM); break;
+-    case 1: snprintf_P(line,sizeof(line),PSTR("Kontak %S  Pi %S"),guard?PSTR("OK"):PSTR("buka"),lease?PSTR("OK"):PSTR("--")); break;
+-    case 2: snprintf_P(line,sizeof(line),PSTR("Kipas %d  Relai %d"),!!(bits&FAN_BIT),!!(bits&RELAY_BIT)); break;
+-    default:
+-      snprintf_P(line,sizeof(line),PSTR("%S"),result==2 ? PSTR("Heartbeat belum aktif") :
+-                 result==3 ? PSTR("Interlock terbuka") : result==4 ? PSTR("Jeda untuk uji manual") :
+-                 mode==RUNNING ? PSTR("Berjalan") : mode==PAUSED ? PSTR("Dijeda") : PSTR("Siaga"));
+-      break;
+-  }
+-  panel.row(row,line);
++  if (page == 0) {
++    switch (row) {
++      case 0: snprintf_P(line, sizeof(line), PSTR("RPM %d / %d"), rpm, targetRPM); break;
++      case 1: snprintf_P(line, sizeof(line), PSTR("Kontak %S  Pi %S"),
++                         guard ? PSTR("OK") : PSTR("buka"), lease ? PSTR("OK") : PSTR("--")); break;
++      case 2: snprintf_P(line, sizeof(line), PSTR("Kipas %d  Relai %d"), !!(bits & FAN_BIT), !!(bits & RELAY_BIT)); break;
++      default: snprintf_P(line, sizeof(line), PSTR("%S"),
++                          mode == RUNNING ? PSTR("Berjalan") : mode == PAUSED ? PSTR("Dijeda") : PSTR("Siaga")); break;
++    }
++  } else if (page == 1) {
++    byte led = bits & LED_MASK;
++    switch (row) {
++      case 0: snprintf_P(line, sizeof(line), PSTR("Lampu %S"), led == 1 ? PSTR("hijau") :
++                         led == 2 ? PSTR("kuning") : led == 3 ? PSTR("merah") : PSTR("mati")); break;
++      case 1: snprintf_P(line, sizeof(line), PSTR("Kipas %d  Relai %d"), !!(bits & FAN_BIT), !!(bits & RELAY_BIT)); break;
++      case 2: snprintf_P(line, sizeof(line), PSTR("Alarm %d  Katup %d"), !!(bits & BUZZ_BIT), !!(bits & VALVE_BIT)); break;
++      default: snprintf_P(line, sizeof(line), PSTR("%S"), !lease ? PSTR("Menunggu heartbeat Pi") :
++                          !guard ? PSTR("Interlok belum siap") : mode == RUNNING ? PSTR("Uji manual terkunci") : PSTR("Uji keluaran manual")); break;
++    }
++  } else {
++    switch (row) {
++      case 0: snprintf_P(line, sizeof(line), PSTR("Interlok %S"), guard ? PSTR("siap") : PSTR("belum siap")); break;
++      case 1: snprintf_P(line, sizeof(line), PSTR("Heartbeat Pi %S"), lease ? PSTR("aktif") : PSTR("terputus")); break;
++      case 2: snprintf_P(line, sizeof(line), PSTR("Batas watchdog %lu ms"), HEARTBEAT_TIMEOUT_MS); break;
++      default: snprintf_P(line, sizeof(line), PSTR("Keluaran %S"), bits ? PSTR("aktif") : PSTR("mati")); break;
++    }
++  }
++  if (row == 3 && result && page != 2 && now - resultAt < 1800UL) {
++    snprintf_P(line, sizeof(line), PSTR("%S"), result == 2 ? PSTR("Uji ditolak: Pi putus") :
++               result == 3 ? PSTR("Uji ditolak: interlok") : PSTR("Jeda untuk uji manual"));
++  }
++  panel.row(row, line);
+ }
+ #endif
+ 
+@@ -159,7 +195,7 @@
+   pinMode(INTERLOCK,INPUT_PULLUP);
+   Serial.begin(115200);
+ #if USE_LOCAL_TFT
+-  panel.begin(F("Node 3 - Aktuator"),F("Kipas"),F("Relai"),F("Jeda"));
++  panel.begin();
+ #endif
+ }
+ 
+diff --git a/decy13_mqtt_kit/web_hmi/index.html b/decy13_mqtt_kit/web_hmi/index.html
+--- a/decy13_mqtt_kit/web_hmi/index.html
++++ b/decy13_mqtt_kit/web_hmi/index.html
+@@ -6,6 +6,7 @@
+ <title>DECY-13 Cyclotron Control Center — Web HMI & Simulator Terpadu</title>
+ <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+ <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
++<script src="assets/usb-panel.js"></script>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+@@ -1410,8 +1411,9 @@
+ 
+     appendCommLog('INFO', `Menghubungkan MQTT ke ${brokerUrl} ...`);
+     const clientId = 'hmi_decy13_' + Math.random().toString(16).substr(2, 8);
+-    const mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, reconnectPeriod: 3000 });
++    const mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, queueQoSZero: false, reconnectPeriod: 3000 });
+     state.mqttClient = mqttClient;
++    window.attachDecyUsbPanel?.(mqttClient);
+ 
+     mqttClient.on('connect', () => {
+       state.mqttConnected = true;
