@@ -17,6 +17,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
    Buka file [`instruksi untuk projek sp/PANDUAN_VISUAL.html`](instruksi%20untuk%20projek%20sp/PANDUAN_VISUAL.html) dengan **Google Chrome / Microsoft Edge**.
 4. **🖥️ Panduan Stasiun Uji Mini PC Ruang Kontrol (Windows 8/10/11 <-> Raspi):**
    Buka [`decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`](decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md) untuk setting koneksi Mini PC Win 8 <-> Raspberry Pi, urutan uji lapangan terbaru, dan **Prompt AGY Mini PC siap *copy-paste***.
+5. **🔌 Panduan Operasional Lengkap Pasca-Wiring (100% Wi-Fi Auto-Link — Siap Baca di GitHub/HP):**
+   Buka [`PANDUAN_OPERASIONAL_PASCA_WIRING.md`](PANDUAN_OPERASIONAL_PASCA_WIRING.md) untuk cek keselamatan wiring, urutan nyalakan listrik, operasional `minipc_control_hub.py`, uji 6 divisi serentak, & *shutdown* aman.
 
 > 🛡️ **ATURAN WAJIB KOLABORASI MANDIRI:**
 > 1. AI milikmu (ChatGPT / Claude / Cursor / Gemini) **HANYA** membantu menulis isi file milik divisimu.
