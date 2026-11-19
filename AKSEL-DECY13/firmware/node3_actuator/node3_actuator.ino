@@ -1,7 +1,7 @@
 #include <AcceleratorLink.h>
 // 0 = kabel langsung; 1 = shield TFT dan rangkaian I/O pada README.
 #ifndef USE_LOCAL_TFT
-#define USE_LOCAL_TFT 0
+#define USE_LOCAL_TFT 1
 #endif
 #if USE_LOCAL_TFT
 #include <NodePanel.h>
@@ -22,6 +22,7 @@ enum { STANDBY, RUNNING, PAUSED };
 enum { LED_MASK=3, FAN_BIT=4, BUZZ_BIT=8, RELAY_BIT=16, VALVE_BIT=32 };
 int rpm=0, targetRPM=6000;
 byte mode=STANDBY, rate=1, bits=0;
+const unsigned long HEARTBEAT_TIMEOUT_MS = 3000;
 bool rising=true, automatic=false, lease=false, guard=false, closing=false, dirty=true;
 unsigned long lastBeat=0, closedSince=0, standbySince=0, lastStep=0, lastReport=0;
 
@@ -61,7 +62,7 @@ void trip() {
 }
 
 void safety(unsigned long now) {
-  if (lease && now-lastBeat>3000UL) { lease=false; trip(); }
+  if (lease && now-lastBeat>HEARTBEAT_TIMEOUT_MS) { lease=false; trip(); }
   if (digitalRead(INTERLOCK)!=LOW) {
     closing=false;
     if (guard) { guard=false; trip(); }
@@ -119,31 +120,66 @@ byte command(const char *a,long v,unsigned long now) {
 
 #if USE_LOCAL_TFT
 void localScreen(unsigned long now) {
-  static byte result=0;
-  byte key=panel.button(now);
+  static byte result = 0;
+  static unsigned long resultAt = 0;
+  byte key = panel.button(now);
+  byte page = panel.page();
   if (key) {
-    // Re-evaluate the physical contact and heartbeat at the point of use.
-    unsigned long sampled=millis();
+    unsigned long sampled = millis();
     safety(sampled);
-    if (key==1) result=command("FAN",!(bits & FAN_BIT),sampled);
-    if (key==2) result=command("RELAY_1",!(bits & RELAY_BIT),sampled);
-    if (key==3) result=command("STOP",1,sampled);
-    dirty=true;
+    resultAt = now;
+    if (page == 1) {
+      if (key == 1) result = command("LED", ((bits & LED_MASK) + 1) % 4, sampled);
+      if (key == 2) result = command("BUZZER", !(bits & BUZZ_BIT), sampled);
+      if (key == 3) result = command("VALVE", !(bits & VALVE_BIT), sampled);
+    } else {
+      if (key == 1) result = command("FAN", !(bits & FAN_BIT), sampled);
+      if (key == 2) result = command("RELAY_1", !(bits & RELAY_BIT), sampled);
+      if (key == 3) result = command("STOP", 1, sampled);
+    }
+    dirty = true;
   }
-  int row=panel.dueRow(now);
-  if (row<0) return;
+  if (panel.needsFrame()) {
+    if (page == 0) panel.drawFrame(F("Aktuator - Proses"), F("Kipas"), F("Relai"), F("Jeda"));
+    if (page == 1) panel.drawFrame(F("Aktuator - Keluaran"), F("Lampu"), F("Alarm"), F("Katup"));
+    if (page == 2) panel.drawFrame(F("Aktuator - Interlok"), nullptr, nullptr, F("Jeda"));
+    return;
+  }
+  int row = panel.dueRow(now);
+  if (row < 0) return;
   char line[26];
-  switch (row) {
-    case 0: snprintf_P(line,sizeof(line),PSTR("RPM %d / %d"),rpm,targetRPM); break;
-    case 1: snprintf_P(line,sizeof(line),PSTR("Kontak %S  Pi %S"),guard?PSTR("OK"):PSTR("buka"),lease?PSTR("OK"):PSTR("--")); break;
-    case 2: snprintf_P(line,sizeof(line),PSTR("Kipas %d  Relai %d"),!!(bits&FAN_BIT),!!(bits&RELAY_BIT)); break;
-    default:
-      snprintf_P(line,sizeof(line),PSTR("%S"),result==2 ? PSTR("Heartbeat belum aktif") :
-                 result==3 ? PSTR("Interlock terbuka") : result==4 ? PSTR("Jeda untuk uji manual") :
-                 mode==RUNNING ? PSTR("Berjalan") : mode==PAUSED ? PSTR("Dijeda") : PSTR("Siaga"));
-      break;
+  if (page == 0) {
+    switch (row) {
+      case 0: snprintf_P(line, sizeof(line), PSTR("RPM %d / %d"), rpm, targetRPM); break;
+      case 1: snprintf_P(line, sizeof(line), PSTR("Kontak %S  Pi %S"),
+                         guard ? PSTR("OK") : PSTR("buka"), lease ? PSTR("OK") : PSTR("--")); break;
+      case 2: snprintf_P(line, sizeof(line), PSTR("Kipas %d  Relai %d"), !!(bits & FAN_BIT), !!(bits & RELAY_BIT)); break;
+      default: snprintf_P(line, sizeof(line), PSTR("%S"),
+                          mode == RUNNING ? PSTR("Berjalan") : mode == PAUSED ? PSTR("Dijeda") : PSTR("Siaga")); break;
+    }
+  } else if (page == 1) {
+    byte led = bits & LED_MASK;
+    switch (row) {
+      case 0: snprintf_P(line, sizeof(line), PSTR("Lampu %S"), led == 1 ? PSTR("hijau") :
+                         led == 2 ? PSTR("kuning") : led == 3 ? PSTR("merah") : PSTR("mati")); break;
+      case 1: snprintf_P(line, sizeof(line), PSTR("Kipas %d  Relai %d"), !!(bits & FAN_BIT), !!(bits & RELAY_BIT)); break;
+      case 2: snprintf_P(line, sizeof(line), PSTR("Alarm %d  Katup %d"), !!(bits & BUZZ_BIT), !!(bits & VALVE_BIT)); break;
+      default: snprintf_P(line, sizeof(line), PSTR("%S"), !lease ? PSTR("Menunggu heartbeat Pi") :
+                          !guard ? PSTR("Interlok belum siap") : mode == RUNNING ? PSTR("Uji manual terkunci") : PSTR("Uji keluaran manual")); break;
+    }
+  } else {
+    switch (row) {
+      case 0: snprintf_P(line, sizeof(line), PSTR("Interlok %S"), guard ? PSTR("siap") : PSTR("belum siap")); break;
+      case 1: snprintf_P(line, sizeof(line), PSTR("Heartbeat Pi %S"), lease ? PSTR("aktif") : PSTR("terputus")); break;
+      case 2: snprintf_P(line, sizeof(line), PSTR("Batas watchdog %lu ms"), HEARTBEAT_TIMEOUT_MS); break;
+      default: snprintf_P(line, sizeof(line), PSTR("Keluaran %S"), bits ? PSTR("aktif") : PSTR("mati")); break;
+    }
   }
-  panel.row(row,line);
+  if (row == 3 && result && page != 2 && now - resultAt < 1800UL) {
+    snprintf_P(line, sizeof(line), PSTR("%S"), result == 2 ? PSTR("Uji ditolak: Pi putus") :
+               result == 3 ? PSTR("Uji ditolak: interlok") : PSTR("Jeda untuk uji manual"));
+  }
+  panel.row(row, line);
 }
 #endif
 
@@ -159,7 +195,7 @@ void setup() {
   pinMode(INTERLOCK,INPUT_PULLUP);
   Serial.begin(115200);
 #if USE_LOCAL_TFT
-  panel.begin(F("Node 3 - Aktuator"),F("Kipas"),F("Relai"),F("Jeda"));
+  panel.begin();
 #endif
 }
 

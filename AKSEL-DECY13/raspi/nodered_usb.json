@@ -1,0 +1,84 @@
+[
+  {
+    "id": "ac13usb-flow",
+    "type": "tab",
+    "label": "DECY-13 · USB tiga TFT"
+  },
+  {
+    "id": "ac13usb-broker",
+    "type": "mqtt-broker",
+    "name": "Broker tim MQTT",
+    "broker": "127.0.0.1",
+    "port": "1883",
+    "protocolVersion": "4",
+    "keepalive": "30",
+    "cleansession": true
+  },
+  {
+    "id": "ac13usb-in",
+    "type": "mqtt in",
+    "z": "ac13usb-flow",
+    "name": "Telemetri USB",
+    "topic": "decy13/usb/state",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "ac13usb-broker",
+    "x": 150,
+    "y": 80,
+    "wires": [
+      [
+        "ac13usb-store"
+      ]
+    ]
+  },
+  {
+    "id": "ac13usb-store",
+    "type": "function",
+    "z": "ac13usb-flow",
+    "name": "Simpan paket USB terbaru",
+    "func": "if (!msg.retain && msg.payload?.version === 1 && msg.payload.nodes) flow.set('usb', { at: Date.now(), nodes: msg.payload.nodes });\nreturn null;",
+    "outputs": 0,
+    "x": 380,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "ac13usb-http",
+    "type": "http in",
+    "z": "ac13usb-flow",
+    "name": "Status tiga TFT",
+    "url": "/api/usb/status",
+    "method": "get",
+    "x": 150,
+    "y": 150,
+    "wires": [
+      [
+        "ac13usb-status"
+      ]
+    ]
+  },
+  {
+    "id": "ac13usb-status",
+    "type": "function",
+    "z": "ac13usb-flow",
+    "name": "Hitung umur telemetri",
+    "func": "const usb = flow.get('usb');\nconst ageMs = usb ? Date.now() - usb.at : null;\nconst online = ageMs !== null && ageMs >= 0 && ageMs <= 2000;\nmsg.headers = { 'Cache-Control': 'no-store' };\nmsg.payload = { online, ageMs, nodes: online ? usb.nodes : null };\nreturn msg;",
+    "outputs": 1,
+    "x": 380,
+    "y": 150,
+    "wires": [
+      [
+        "ac13usb-response"
+      ]
+    ]
+  },
+  {
+    "id": "ac13usb-response",
+    "type": "http response",
+    "z": "ac13usb-flow",
+    "name": "JSON",
+    "x": 590,
+    "y": 150,
+    "wires": []
+  }
+]

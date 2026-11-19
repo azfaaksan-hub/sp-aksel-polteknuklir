@@ -35,11 +35,11 @@
       "pic": "azfaaksan-hub",
       "branch": "main / core-raspi-backend",
       "report_file": "UJI_DIVISI_1_CORE_RASPI.md",
-      "current_announcement": "Update v1.5 aktif: Core Daemon sudah dilengkapi proteksi setpoint_limits, auto-reconnect MQTT, serta lulus uji bare-board di RPi 3B+ (3/5 Tahap B).",
+      "current_announcement": "Update v1.6 aktif: Integrasi paket 3-LCD TFT + 3 Arduino Uno USB (`AKSEL-DECY13/` via bridge MQTT `decy13/usb/*`), Web HMI offline + `usb-panel.js`, handover QA Divisi 6 (`qa_divisi6/`), serta skrip safe-pull anti-rusak `tools/aman_pull_dan_sync.py`.",
       "current_tasks": [
-        "Koordinasikan jadwal uji integrasi wiring fisik bersama Divisi 2 (Relay/Buzzer/E-Stop), Divisi 3 (LED GPIO 18), dan Divisi 4 (LCD SPI0).",
-        "Pantau push branch anggota dengan: python tools/cek_integrasi_dan_announcer.py --ci --cek-branch --fetch --simpan-audit",
-        "Selesaikan 2 butir sisa Tahap B pada laporan_uji/UJI_DIVISI_1_CORE_RASPI.md saat aktuator fisik dan Mini PC terhubung."
+        "Pastikan branch Divisi 2..6 sinkron menggunakan `python tools/aman_pull_dan_sync.py --divisi <N>` tanpa merusak pekerjaan lokal anggota.",
+        "Koordinasikan jadwal uji integrasi wiring serentak (M3) di RPi 3B+: Relay/Buzzer Divisi 2 + LED WS2812B Divisi 3 + 3 Arduino Uno TFT USB Divisi 4 (pakai Powered USB Hub 5V >=2A).",
+        "Selesaikan 2 butir sisa Tahap B pada laporan_uji/UJI_DIVISI_1_CORE_RASPI.md dan sinkronkan `total_leds` di config_hardware.json setelah menerima data jumlah lampu fisik Divisi 3."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/04_decy13_mqtt_daemon.py",
@@ -92,9 +92,9 @@
       "report_file": "UJI_DIVISI_2_VAKUM_SAFETY.md",
       "current_announcement": "Divisi 2 RESMI LULUS_UJI_FISIK (4/4 Tahap B, 7/7 Total): Relay Kipas 12V (GPIO 21), Buzzer (GPIO 17), serta cleanup() lulus uji fisik bersama Ketua & PJ Divisi 2. Catatan: saklar fisik E-Stop GPIO 22 tidak dipasang/diuji (N/A) karena fungsi E-Stop dipindah ke HTML Web HMI di Mini PC.",
       "current_tasks": [
-        "Tarik update main terbaru ke branch divisi-2-vacum-safety: git fetch origin && git merge origin/main",
+        "Jika menyentuh branch `divisi-2-vacum-safety`, tarik update `main` v1.6 dengan aman lewat: python tools/aman_pull_dan_sync.py --divisi 2",
         "Pertahankan hasil uji fisik Divisi 2 yang sudah lulus (Relay Kipas GPIO 21 & Buzzer GPIO 17) dan jangan ubah file divisi lain.",
-        "Siap mendampingi uji integrasi penuh M3 (04_decy13_mqtt_daemon.py serentak dengan LED Divisi 3 & LCD Divisi 4) dan verifikasi E-Stop via HTML Web HMI Mini PC."
+        "Siap mendampingi uji integrasi penuh M3 (04_decy13_mqtt_daemon.py serentak dengan LED Divisi 3 & 3-TFT USB Divisi 4) serta verifikasi E-Stop via HTML Web HMI Mini PC."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py",
@@ -136,14 +136,13 @@
       "id": 3,
       "name": "Sistem Animasi LED Strip WS2812B (Spiral, RF Gap & Shoot)",
       "pic": "blufiaa",
-      "branch": "divisi-3-led-ws2812b-v13",
+      "branch": "divisi-3-uji-fisik / divisi-3-led-ws2812b-v13",
       "report_file": "UJI_DIVISI_3_LED_WS2812B.md",
-      "current_announcement": "PR #2 (ac21a27 pada divisi-3-led-ws2812b-v13) SUDAH DI-MERGE ke main dan lolos Tahap A (5/5 Laptop). Fokus sekarang adalah Tahap B (Uji Fisik LED WS2812B di RPi 3B+).",
+      "current_announcement": "UPDATE v1.6: Branch `divisi-3-uji-fisik` (`f6c367d`: 448 LED WS2812B — 400 spiral 0..399 + 48 extraction 400..447, `brightness=20`, `10/10` ceklis 5/5 A & 5/5 B) SUDAH DIINTEGRASIKAN ke `main`! Tinggal verifikasi akhir bersama LCD/daemon asli & keputusan sinkronisasi `config_hardware.json` dari 64 ke 448 LED untuk naik ke `LULUS_UJI_FISIK`.",
       "current_tasks": [
-        "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
-        "Di RPi 3B+, jalankan bash tools/raspi_bootstrap.sh (pastikan dtparam=audio=off + reboot) dan python3 tools/raspi_preflight.py --divisi 3.",
-        "Uji 64 piksel LED fisik di GPIO 18 dengan: sudo python3 03_test_led_pixel_finder.py --mode finder --hardware (tekan Enter untuk cek #0..#63, s untuk spiral, e untuk shoot, dan catat bila warna RGB/GRB tertukar).",
-        "Catat hasil pemetaan indeks/warna dan bukti terminal ke laporan_uji/UJI_DIVISI_3_LED_WS2812B.md (centang Tahap B hanya yang sudah terbukti di LED nyata)."
+        "Tarik update `main` v1.6 secara aman lewat: python tools/aman_pull_dan_sync.py --divisi 3",
+        "Uji terintegrasi `04_decy13_mqtt_daemon.py` + `LedStripModule` pada 448 LED fisik bersamaan dengan 3-TFT USB & Relay/Buzzer RPi (serta tempelkan bukti log terminal RPi ke Bagian C `UJI_DIVISI_3_LED_WS2812B.md`).",
+        "Konfirmasikan ke Ketua apakah `config_hardware.json` (`led_mapping`: 448 LED, 0..399 spiral, 400..447 shoot) sudah siap diaktifkan menyeluruh bersama Web HMI & Core Daemon agar status naik menjadi `LULUS_UJI_FISIK`."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py",
@@ -186,29 +185,36 @@
     },
     {
       "id": 4,
-      "name": "Layar Status Lokal LCD TFT SPI ILI9341 (320x240)",
-      "pic": "HDMrishiki (Anggota 4)",
-      "branch": "divisi-4-lcd-ili9341",
+      "name": "Sistem 3 Layar LCD TFT (3 Arduino Uno USB Hub + Fallback SPI0 ILI9341)",
+      "pic": "HDMrishiki",
+      "branch": "divisi-4-tft / divisi-4-lcd-ili9341",
       "report_file": "UJI_DIVISI_4_LCD_ILI9341.md",
-      "current_announcement": "Branch hmi+tft masih berada di v1.2 (045c321) dan belum ada commit kode baru untuk LCD ILI9341. Harap sinkronkan ke main v1.5 terlebih dahulu.",
+      "current_announcement": "Update v1.6: Paket `integrasi-tiga-tft.patch` (`207ac04`: 3 Arduino Uno + 3 Shield TFT MCUFRIEND via USB `/dev/arduino_*`, 74HC4051, 74HC595, `accelerator_hub.py` + bridge MQTT `decy13/usb/*`, & `nodered_usb.json`) sudah diintegrasikan ke `main` tanpa bentrok I/O dengan GPIO 17/18/21 RPi. Wajib gunakan `aman_pull_dan_sync.py` sebelum push lanjut!",
       "current_tasks": [
-        "Wajib tarik update main v1.5 dulu: git fetch origin && git merge origin/main",
-        "Sempurnakan tampilan 320x240 di mod_lcd_ili9341.py & 02_test_lcd_ili9341.py (pastikan aman di laptop tanpa luma.lcd), lalu isi Tahap A di laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md.",
-        "Saat uji di RPi 3B+, jalankan bash tools/raspi_bootstrap.sh && python3 tools/raspi_preflight.py --divisi 4 lalu tes layar SPI0 dengan python3 02_test_lcd_ili9341.py."
+        "Tarik `main` v1.6 secara aman (tanpa kehilangan edit lokal) lewat: python tools/aman_pull_dan_sync.py --divisi 4",
+        "Di RPi 3B+, siapkan udev & dependensi USB Hub (`sudo bash AKSEL-DECY13/raspi/setup_udev.sh`, `sudo apt install python3-serial python3-paho-mqtt`), hubungkan 3 Uno via Powered USB Hub 5V >=2A, lalu jalankan `python3 AKSEL-DECY13/raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883`.",
+        "Pastikan slot microSD kedua shield tambahan dikosongkan dan pull-up 10 kOhm /OE 74HC595 pada Uno 3 terpasang benar sebelum menyalakan beban.",
+        "Lengkapi ceklis Tahap A & bukti uji fisik Tahap B di `laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md`, cek `python tools/cek_integrasi_dan_announcer.py --ci`, lalu commit & push ke branch `divisi-4-tft`."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_lcd_ili9341.py",
         "decy13_mqtt_kit/raspi_cli/02_test_lcd_ili9341.py",
+        "AKSEL-DECY13/README.md",
+        "AKSEL-DECY13/raspi/*",
+        "AKSEL-DECY13/firmware/*",
         "laporan_uji/UJI_DIVISI_4_LCD_ILI9341.md"
       ],
       "hardware_scope": [
-        "SPI0 CE0 (GPIO 8 / Pin 24), MOSI (GPIO 10 / Pin 19), SCLK (GPIO 11 / Pin 23)",
-        "DC (GPIO 24 / Pin 18), RST (GPIO 25 / Pin 22), Backlight 3.3V via R 100 Ohm"
+        "3x Arduino Uno + 3x Shield TFT Paralel MCUFRIEND 320x240 (`USE_LOCAL_TFT=1`, XP=6, XM=A2, YP=A1, YM=7) terhubung via Powered USB Hub 5V ke Port USB-A RPi 3B+ (`115200 baud`: `/dev/arduino_hmi`, `/dev/arduino_sensor`, `/dev/arduino_actuator`)",
+        "Uno 2 (Sensor): Shield TFT 2 + IC Multiplexer 74HC4051 (`Z->A5`, `S0->D11`, `S1->D13`, `D12` input digital, `D10=HIGH` nonaktif SD)",
+        "Uno 3 (Aktuator): Shield TFT 3 + IC Shift Register 74HC595 (`DS->D11`, `SHCP->D13`, `STCP->D12`, `/OE->D10` + pull-up 10k ke 5V, `Interlock NC->A5 & GND`)",
+        "Fallback RPi SPI0 ILI9341 (`mod_lcd_ili9341.py`: GPIO 8/10/11/24/25) tetap utuh & bebas tabrakan pin dari Divisi 2 dan Divisi 3"
       ],
       "dependencies": [1],
       "cross_division_warnings": [
-        "Proses gambar SPI wajib tetap di background thread (~4 FPS) agar tidak memperlambat loop fisika/MQTT 200 ms maupun mengganggu LED GPIO 18.",
-        "Pastikan dev/spidev0.0 sudah aktif (dtparam=spi=on)."
+        "Gunakan Powered USB Hub 5V eksternal (>=2A) saat menyambung 3 Arduino Uno + 3 Shield TFT ke RPi 3B+ agar port USB RPi tidak under-voltage atau reboot mendadak.",
+        "Kosongkan slot microSD pada shield TFT Uno 2 & Uno 3 karena jalur D10-D13 & A5 dipakai oleh IC 74HC4051 / 74HC595; jangan mencampur hub Arduino dengan pin GPIO 17/18/21 RPi.",
+        "Proses SPI fallback (`mod_lcd_ili9341.py`) berjalan di background thread (~4 FPS) dan pin SPI0 tetap terisolasi dari PWM0/DMA10 LED (`GPIO 18`)."
       ],
       "tahap_b_commands": [
         {
@@ -233,14 +239,14 @@
     {
       "id": 5,
       "name": "Web HMI SCADA & Simulator 2D (Mini PC Ruang Kontrol)",
-      "pic": "HDMrishiki (Anggota 5)",
+      "pic": "HDMrishiki",
       "branch": "divisi-5-web-hmi",
       "report_file": "UJI_DIVISI_5_WEB_HMI.md",
-      "current_announcement": "PENTING v1.5: Core Daemon kini menerapkan setpoint_limits di config_hardware.json (magnet_a: 400..2200, rf_mhz: 15..30, rf_kv: 0..120, beam_ua: 0..100) dan menolak nilai 0 saat reconnect.",
+      "current_announcement": "UPDATE v1.6: Web HMI offline (`index.html`, `assets/console.css`, `assets/mqtt.min.js`) PLUS integrasi `assets/usb-panel.js` (`decy13/usb/state|cmd|ack`) sudah diaktifkan di jalur resmi `decy13_mqtt_kit/web_hmi/`! Tetap patuhi `setpoint_limits` (`magnet_a`: 400..2200, `rf_mhz`: 15..30, `rf_kv`: 0..120, `beam_ua`: 0..100).",
       "current_tasks": [
-        "Wajib tarik update main v1.5 dulu: git fetch origin && git merge origin/main",
-        "Periksa web_hmi/index.html agar saat baru connect/reconnect ke MQTT tidak mengirim SET_PARAMS dengan magnet_a=0 atau nilai di luar setpoint_limits.",
-        "Uji tampilan & kanvas 2D di browser, centang Tahap A pada laporan_uji/UJI_DIVISI_5_WEB_HMI.md, lalu uji koneksi WebSocket ws://<IP_RPI>:9001 untuk Tahap B."
+        "Tarik update `main` v1.6 secara aman lewat: python tools/aman_pull_dan_sync.py --divisi 5",
+        "Verifikasi `decy13_mqtt_kit/web_hmi/index.html` offline di Chrome/Edge (DevTools Console bersih, tombol & kanvas `applyRpiState()` tetap normal, serta panel `usb-panel.js` tampil rapi).",
+        "Lengkapi ceklis Tahap A pada `laporan_uji/UJI_DIVISI_5_WEB_HMI.md`, lalu uji koneksi nyata `ws://<IP_RPI>:9001` dari Mini PC untuk mengisi Tahap B."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/web_hmi/index.html",
@@ -282,15 +288,17 @@
       "pic": "rekypurnomo",
       "branch": "divisi-6-mqtt-nodered-qa-testing",
       "report_file": "UJI_DIVISI_6_MQTT_QA.md",
-      "current_announcement": "Commit 4ed588d (06_test_mqtt_healthcheck.py) & b2b42f6 (flows_mqtt_decy13.json 18 node) SUDAH DI-MERGE ke main dan lolos uji bare-board 5 detik ke RPi (4.97 Hz, LULUS=10).",
+      "current_announcement": "Update v1.6: Paket final QA commissioning & handover (`d929400`: `decy13_mqtt_kit/qa_divisi6/`, uji PC<->RPi 3 selama 5 menit `4.99 Hz` `300/300 ONLINE`, Stage 0-7 `8/8 PASS`) SUDAH DI-MERGE ke `main` (`087e0fb`), dan `allowed_files` Divisi 6 kini mencakup folder `qa_divisi6/` & `tests/decy13_simulator_divisi6.py`.",
       "current_tasks": [
-        "Tarik update main v1.5 terbaru: git fetch origin && git merge origin/main",
-        "Selaraskan 3 poin minor di 06_test_mqtt_healthcheck.py: (a) tunggu pressure <= 1e-3 mbar sebelum SEQ-03 TOGGLE_INTERLOCK, (b) sesuaikan --expected-stages dengan 6 nilai integer stage daemon (0,1,4,5,6,7), (c) patuhi setpoint_limits baru.",
-        "Jalankan python3 tools/raspi_preflight.py --divisi 6 dan uji penuh --auto --estop ke RPi + Mini PC untuk melengkapi Tahap B di laporan_uji/UJI_DIVISI_6_MQTT_QA.md."
+        "Tarik update `main` v1.6 dengan aman lewat: python tools/aman_pull_dan_sync.py --divisi 6",
+        "Siapkan verifikasi berpasangan bersama Ketua menggunakan `qa_divisi6/CHECKLIST_SERAH_TERIMA.md` serta jalankan `06_test_mqtt_healthcheck.py --auto --estop` terhadap `04_decy13_mqtt_daemon.py` + aktuator fisik nyata (M4/M5).",
+        "Setelah uji terintegrasi bersama daemon asli lulus, perbarui `laporan_uji/UJI_DIVISI_6_MQTT_QA.md` bagian B & C."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/06_test_mqtt_healthcheck.py",
+        "decy13_mqtt_kit/raspi_cli/tests/decy13_simulator_divisi6.py",
         "decy13_mqtt_kit/nodered/flows_mqtt_decy13.json",
+        "decy13_mqtt_kit/qa_divisi6/*",
         "instruksi untuk projek sp/CHECKLIST_COMMISSIONING.txt",
         "laporan_uji/UJI_DIVISI_6_MQTT_QA.md"
       ],

@@ -46,7 +46,8 @@ enum {
   UJI_KIPAS,
   UJI_ALARM,
   UJI_RELAI,
-  UJI_KATUP
+  UJI_KATUP,
+  GANTI_MODE
 };
 
 // Dua bit pertama untuk LED. Bit berikutnya untuk keluaran biner.
@@ -154,6 +155,7 @@ bool diDalam(int x, int y, int kiri, int atas, int lebar, int tinggi) {
 }
 
 byte tombolPada(int x, int y) {
+  if (diDalam(x, y, 240, 0, 80, 29)) return GANTI_MODE;
   if (currentPage == 0) {
     if (diDalam(x, y, 10, 192, 145, 40)) return TOMBOL_MULAI;
     if (diDalam(x, y, 165, 192, 145, 40)) return TOMBOL_ULANG;
@@ -178,10 +180,14 @@ void bacaSentuhan(unsigned long sekarang) {
   static byte tombolAwal=TANPA_TOMBOL;
   CalibratedTouch::Event event=touchPanel.poll(sekarang);
   if (event==CalibratedTouch::DOWN) tombolAwal=tombolPada(touchPanel.x, touchPanel.y);
-  if (event==CalibratedTouch::TAP && tombolAwal==tombolPada(touchPanel.x, touchPanel.y))
-    tekanTombol(tombolAwal, sekarang);
-  if (event==CalibratedTouch::SWIPE_LEFT || event==CalibratedTouch::SWIPE_RIGHT) {
-    pindahHalaman((currentPage+(event==CalibratedTouch::SWIPE_LEFT ? 1 : 2))%3);
+  byte langkah = 0;
+  if (event == CalibratedTouch::TAP && tombolAwal == tombolPada(touchPanel.x, touchPanel.y)) {
+    if (tombolAwal == GANTI_MODE) langkah = 1;
+    else tekanTombol(tombolAwal, sekarang);
+  } else if (event == CalibratedTouch::SWIPE_LEFT) langkah = 1;
+  else if (event == CalibratedTouch::SWIPE_RIGHT) langkah = 2;
+  if (langkah) {
+    pindahHalaman((currentPage + langkah) % 3);
     waktuPaket=sekarang-100UL;
   }
 }
@@ -226,7 +232,8 @@ void kerangka() {
   tft.drawFastHLine(0, 28, 320, CYAN);
   label(10, 6, 2, WHITE, currentPage == 0 ? F("Dasbor utama") :
                          currentPage == 1 ? F("Pengaturan") : F("Keluaran USB"));
-  pena(274, 6, 2, CYAN);
+  label(263, 1, 1, CYAN, F("MODE >"));
+  pena(261, 11, 2, CYAN);
   tft.print(currentPage + 1);
   tft.print(F("/3"));
 

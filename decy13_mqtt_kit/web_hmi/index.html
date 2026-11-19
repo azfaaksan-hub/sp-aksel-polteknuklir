@@ -4,11 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>DECY-13 Cyclotron Control Center — Web HMI & Simulator Terpadu</title>
-<script src="https://cdn.tailwindcss.com/3.4.17"></script>
-<script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/console.css">
+<script src="assets/mqtt.min.js"></script>
+<script src="assets/usb-panel.js"></script>
 <style>
   :root {
     color-scheme: dark;
@@ -189,7 +187,7 @@
           <span class="text-xs font-black uppercase tracking-wider text-cyan-400">DECY-13 CYCLOTRON</span>
           <span class="text-[10px] font-bold bg-blue-950/80 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full">13 MeV H⁻</span>
         </div>
-        <p class="text-[11px] text-slate-400">Web HMI State-Driven MQTT — Mini PC ⇄ Broker ⇄ Raspberry Pi 3B+</p>
+        <p class="text-[11px] text-slate-400">Alat peraga siklotron · SCADA &amp; Digital Twin Raspberry Pi 3B+</p>
       </div>
     </div>
 
@@ -204,7 +202,7 @@
 
       <div id="connBadge" class="flex items-center gap-2 bg-[#1c243d] border border-white/5 px-3 py-1.5 rounded-full text-xs">
         <span id="connDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-        <span id="connText" class="mono text-[11px] text-amber-200">MQTT LOOPBACK</span>
+        <span id="connText" class="mono text-[11px] text-amber-200">SIMULASI LOKAL</span>
       </div>
 
       <button id="soundToggleBtn" class="px-3 py-1.5 rounded-full bg-[#1c243d] hover:bg-[#252f4e] border border-white/5 text-xs text-slate-300 transition flex items-center gap-1.5">
@@ -252,7 +250,7 @@
         </div>
         <div class="relative h-28 bg-[#151c30] rounded-xl border border-white/5 overflow-hidden">
           <canvas id="rfWaveCanvas" class="w-full h-full block"></canvas>
-          <div class="absolute top-2 left-2 text-[10px] mono text-slate-400">f_RF = 22.11 MHz</div>
+          <div class="absolute top-2 left-2 text-[10px] mono text-slate-400">Bentuk gelombang ilustratif</div>
           <div class="absolute bottom-2 right-2 text-xs font-bold mono text-cyan-300" id="valRfFreq">22.11 MHz</div>
         </div>
 
@@ -373,7 +371,7 @@
             <span class="text-xs font-bold text-white uppercase tracking-wider">Lintasan Partikel 2D Dee &amp; WS2812B</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[10px] mono bg-[#151c30] border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-lg">MEDAN B ⊗ 1.45 T</span>
+            <span class="text-[10px] mono bg-[#151c30] border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-lg" id="canvasField">Medan B</span>
             <span class="text-xs font-extrabold mono text-white bg-blue-600 px-2 py-0.5 rounded-lg" id="valBeamEnergy">0.0 MeV</span>
           </div>
         </div>
@@ -544,7 +542,7 @@
           <span class="uppercase tracking-wider text-slate-200">BEAMLINE 16-LED STRIP</span>
           <span id="targetShootBadge" class="mono text-cyan-300 text-[10px]">Siap</span>
         </div>
-        <div id="ledStripLinearBar" class="grid grid-cols-16 gap-1 h-3.5 bg-[#12182a] p-1 rounded-xl border border-white/5">
+        <div id="ledStripLinearBar" class="grid grid-cols-[repeat(16,minmax(0,1fr))] gap-1 h-3.5 bg-[#12182a] p-1 rounded-xl border border-white/5">
           <!-- 16 pixels inserted via JS -->
         </div>
       </div>
@@ -652,10 +650,10 @@
           <!-- JSON TX Preview -->
           <div class="bg-[#13192c] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
             <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Live JSON TX Telemetri</span>
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">Payload perintah terakhir</span>
               <button id="btnCopyJsonPayload" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Salin JSON</button>
             </div>
-            <pre id="jsonTxPreview" class="h-36 bg-[#0a0f1d] p-2.5 rounded-xl border border-slate-800 text-[10px] mono text-cyan-300 overflow-y-auto leading-tight"></pre>
+            <pre id="jsonTxPreview" class="h-36 bg-[#0a0f1d] p-2.5 rounded-xl border border-slate-800 text-[10px] mono text-cyan-300 overflow-y-auto leading-tight">Belum ada perintah.</pre>
           </div>
         </div>
 
@@ -666,7 +664,7 @@
             <span class="text-[10px] mono text-slate-400">Terminal Telemetri HMI</span>
           </div>
           <div id="commLogContainer" class="h-36 bg-[#0a0f1d] p-2.5 rounded-xl border border-slate-800 text-[11px] mono text-emerald-400 overflow-y-auto space-y-1">
-            <div>[INIT] Menghubungkan ke broker MQTT port 9001...</div>
+            <div>[INIT] Simulator lokal siap.</div>
           </div>
         </div>
       </div>
@@ -689,10 +687,10 @@
             <div>
               <label for="inpParticle" class="flex justify-between font-semibold text-slate-300 mb-1">
                 <span>Jenis Partikel Ion</span>
-                <span class="text-cyan-400 mono" id="outParticleTag">H⁻ (Proton)</span>
+                <span class="text-cyan-400 mono" id="outParticleTag">Ion H⁻</span>
               </label>
               <select id="inpParticle" class="w-full bg-[#0d1222] border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100">
-                <option value="p">Ion H⁻ / Proton (DECY-13 · 13 MeV)</option>
+                <option value="p">Ion H⁻ (DECY-13 · 13 MeV)</option>
                 <option value="d">Deuteron (²H⁺ · 6.5 MeV)</option>
                 <option value="a">Partikel Alfa (⁴He²⁺ · 26 MeV)</option>
               </select>
@@ -734,7 +732,7 @@
                 <label for="inpTargetCurrent">Setpoint Arus Berkas (I_beam)</label>
                 <output id="outTargetCurrent" class="mono text-cyan-300">25.0 µA</output>
               </div>
-              <input id="inpTargetCurrent" type="range" min="1" max="100" step="1" value="25" class="w-full mt-1.5">
+              <input id="inpTargetCurrent" type="range" min="1" max="100" step="0.1" value="25" class="w-full mt-1.5">
               <div class="flex justify-between text-[10px] text-slate-500"><span>1 µA</span><span>DECY: 10–50 µA</span><span>100 µA</span></div>
             </div>
 
@@ -841,7 +839,7 @@ void setup() {
 <div id="toastBox" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 border border-teal-400 text-teal-200 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-medium"></div>
 
 <!-- ==================== FLOATING TOUR POP-UP (KIDS GUIDE) ==================== -->
-<div id="decyGuideTooltip" class="fixed z-50 hidden transition-all duration-200 pointer-events-auto" style="width: 360px;">
+<div id="decyGuideTooltip" class="fixed z-50 hidden transition-all duration-200 pointer-events-auto" style="width: min(360px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto;">
   <div class="relative bg-gradient-to-br from-[#121e36] via-[#0d1627] to-[#080d19] border-2 border-cyan-400 rounded-2xl p-4 shadow-[0_12px_45px_rgba(0,0,0,0.9)] text-slate-100">
     <!-- Header with Mascot & Close -->
     <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-cyan-500/30">
@@ -970,7 +968,7 @@ void setup() {
   // ==================== CONSTANTS & PHYSICS PRESETS ====================
   const E_CHARGE = 1.602176634e-19;
   const PARTICLES = {
-    p: { name: 'H⁻ / Proton', m: 1.6726219e-27, z: 1, maxMeV: 13.0 },
+    p: { name: 'Ion hidrogen negatif (H⁻)', m: 1.6726219e-27, z: 1, maxMeV: 13.0 },
     d: { name: 'Deuteron (²H⁺)', m: 3.3435838e-27, z: 1, maxMeV: 6.5 },
     a: { name: 'Alfa (⁴He²⁺)', m: 6.6446572e-27, z: 2, maxMeV: 26.0 }
   };
@@ -1075,6 +1073,7 @@ void setup() {
 
   // ==================== ORBIT REBUILD (MERGED FROM CYCLOLAB) ====================
   function rebuildOrbitSegments() {
+    if (state.mqttConnected) return;
     const part = PARTICLES[state.particleKey];
     const q = part.z * E_CHARGE;
     const B = Math.max(0.2, state.magCurrentA / 1000); // 1450 A -> 1.45 T
@@ -1147,6 +1146,11 @@ void setup() {
     setSwitch('swInterlock', 'lblInterlock', state.interlock, 'Locked', 'Not Set');
     setSwitch('swBeam', 'lblBeam', state.beam, 'On', 'Off', 'text-orange-400');
 
+    if (state.mqttConnected) {
+      renderLive();
+      return;
+    }
+    $('canvasField').textContent = 'Medan B ' + (state.power && state.magnet ? state.magFieldT : 0).toFixed(2) + ' T';
     // Update Input Outputs
     const part = PARTICLES[state.particleKey];
     $('outParticleTag').textContent = part.name;
@@ -1280,9 +1284,6 @@ void setup() {
       $('canvasStatusOverlay').textContent = `Status: ${modeStr} (${seq.text.replace(/^Tahap \d+ — /, '').slice(0, 34)})`;
     }
 
-    // Update JSON TX Preview
-    updateJsonPayloadView();
-
     // Notify Decy Kids Interactive Guide Manager
     if (window.decyKidsGuide && typeof window.decyKidsGuide.onStateUpdate === 'function') {
       window.decyKidsGuide.onStateUpdate(state);
@@ -1290,49 +1291,16 @@ void setup() {
   }
 
   // ==================== JSON PAYLOAD & MQTT TRANSMISSION ====================
-  function buildPayloadObject() {
-    return {
-      timestamp: new Date().toISOString(),
-      instrument: 'DECY-13_EDUCATIONAL_CYCLOTRON',
-      topic: $('mqttTopicPub') ? $('mqttTopicPub').value : 'decy13/hmi/cmd',
-      power: state.power,
-      vacuum: state.vacuum,
-      rf: state.rf,
-      magnet: state.magnet,
-      interlock: state.interlock,
-      beam: state.beam,
-      shoot: state.shooting,
-      estop: state.estop,
-      mag_a: state.magCurrentA,
-      rf_kv: state.rfVoltKv,
-      rf_detune_pct: state.rfDetunePct,
-      target_setpoint_ua: state.targetBeamUa,
-      fan_pwm: Math.round((state.fanPwmPct / 100) * 255),
-      telemetry: {
-        vac_mbar: +state.vacPressureMbar.toExponential(2),
-        energy_mev: +state.beamEnergyMev.toFixed(2),
-        beam_ua: +state.actualBeamUa.toFixed(2),
-        target_ua: +state.targetCurrentUa.toFixed(2),
-        led_pixel: state.activeLedIndex
-      }
-    };
-  }
-
   function appendCommLog(dir, text) {
     const box = $('commLogContainer');
     if (!box) return;
     const row = document.createElement('div');
     const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
     const badgeColor = dir === 'TX' ? 'text-teal-400' : (dir === 'RX' ? 'text-amber-300' : dir === 'ERR' ? 'text-red-400' : 'text-sky-400');
-    row.innerHTML = `<span class="text-slate-500">[${time}]</span> <b class="${badgeColor}">${dir}</b> ${text}`;
+    row.textContent = '[' + time + '] ' + dir + '  ' + text;
+    row.className = badgeColor;
     box.prepend(row);
     while (box.children.length > 40) box.removeChild(box.lastChild);
-  }
-
-  function updateJsonPayloadView() {
-    const payload = buildPayloadObject();
-    const pre = $('jsonTxPreview');
-    if (pre) pre.textContent = JSON.stringify(payload, null, 2);
   }
 
   // ==================== MQTT PUBLISH (GANTI broadcastToRaspberryPi) ====================
@@ -1361,14 +1329,14 @@ void setup() {
 
   function publishCommand(cmdObj) {
     if (!cmdObj) return;
-    updateJsonPayloadView();
+    $('jsonTxPreview').textContent = JSON.stringify(cmdObj, null, 2);
     const topicCmd = $('mqttTopicPub') ? $('mqttTopicPub').value : 'decy13/hmi/cmd';
     const payloadStr = JSON.stringify(cmdObj);
     if (state.mqttClient && state.mqttConnected) {
       state.mqttClient.publish(topicCmd, payloadStr);
-      appendCommLog('TX', `MQTT → ${topicCmd}: <code>${payloadStr}</code>`);
+      appendCommLog('TX', `MQTT → ${topicCmd}: ${payloadStr}`);
     } else {
-      appendCommLog('INFO', `[Mode Simulasi] MQTT belum terhubung. Cmd: <code>${payloadStr}</code>`);
+      appendCommLog('INFO', `[Mode Simulasi] MQTT belum terhubung. Cmd: ${payloadStr}`);
     }
   }
 
@@ -1389,7 +1357,7 @@ void setup() {
     if (reason === 'AUTO_INIT_READY') {
       // Kirim SET_PARAMS lalu AUTO_INIT agar Power, Vakum, dan Interlock langsung siap di daemon
       publishCommand({ cmd: 'SET_PARAMS', magnet_a: state.magCurrentA, rf_mhz: 22.5, rf_kv: state.rfVoltKv, beam_ua: state.targetBeamUa });
-      setTimeout(() => publishCommand({ cmd: 'AUTO_INIT' }), 200);
+      publishCommand({ cmd: 'AUTO_INIT' });
       return;
     }
     if (mapped) {
@@ -1401,38 +1369,48 @@ void setup() {
 
   // ==================== MQTT CONNECTION (MQTT.js via WebSocket port 9001) ====================
   function connectMQTT() {
-    const brokerUrl = ($('commEndpoint') ? $('commEndpoint').value.trim() : null) || 'ws://192.168.137.1:9001';
+    if (typeof mqtt === 'undefined') {
+      appendCommLog('ERR', 'Pustaka MQTT belum dimuat. Periksa assets/mqtt.min.js. Simulasi lokal tetap aktif.');
+      return;
+    }
+    const brokerUrl = $('commEndpoint').value.trim() || 'ws://127.0.0.1:9001';
     if (!brokerUrl.startsWith('ws://') && !brokerUrl.startsWith('wss://')) {
       appendCommLog('ERR', 'URL harus diawali ws:// atau wss://');
       return;
     }
-    if (state.mqttClient) { state.mqttClient.end(true); }
+    if (state.mqttClient) {
+      const previous = state.mqttClient;
+      state.mqttClient = null;
+      leaveLive();
+      previous.end(true);
+    }
 
     appendCommLog('INFO', `Menghubungkan MQTT ke ${brokerUrl} ...`);
     const clientId = 'hmi_decy13_' + Math.random().toString(16).substr(2, 8);
-    const mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, reconnectPeriod: 3000 });
+    let mqttClient;
+    try {
+      mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, queueQoSZero: false, reconnectPeriod: 3000 });
+    } catch (error) {
+      appendCommLog('ERR', 'Koneksi MQTT gagal: ' + error.message);
+      return;
+    }
     state.mqttClient = mqttClient;
+    window.attachDecyUsbPanel?.(mqttClient);
 
     mqttClient.on('connect', () => {
-      state.mqttConnected = true;
+      if (mqttClient !== state.mqttClient) return;
+      enterLive();
       const topicSub = $('mqttTopicSub') ? $('mqttTopicSub').value : 'decy13/rpi/state';
       mqttClient.subscribe(topicSub, { qos: 0 });
       $('connDot').className = 'w-2 h-2 rounded-full bg-emerald-400';
-      $('connText').textContent = 'MQTT TERHUBUNG - RPi 3B+';
-      $('connText').className = 'mono text-[11px] text-emerald-300';
+      $('connText').textContent = 'MQTT · menunggu telemetri';
+      $('connText').className = 'mono text-[11px] text-cyan-300';
       appendCommLog('INFO', `✅ MQTT TERHUBUNG ke Mosquitto (${brokerUrl}). Subscribe: ${topicSub}`);
-      showToast('MQTT terhubung ke Raspberry Pi 3B+! Animasi mengikuti hardware nyata.');
-      // Kirim SET_PARAMS awal
-      setTimeout(() => publishCommand({
-        cmd: 'SET_PARAMS',
-        magnet_a: state.magCurrentA,
-        rf_mhz: 22.5,
-        rf_kv: state.rfVoltKv,
-        beam_ua: state.targetBeamUa
-      }), 500);
+      showToast('Broker tersambung. Menunggu data Raspberry Pi.');
     });
 
     mqttClient.on('message', (topic, payload) => {
+      if (mqttClient !== state.mqttClient || !state.mqttConnected) return;
       const topicSub = $('mqttTopicSub') ? $('mqttTopicSub').value : 'decy13/rpi/state';
       if (topic === topicSub) {
         try {
@@ -1449,7 +1427,8 @@ void setup() {
     });
 
     mqttClient.on('reconnect', () => {
-      state.mqttConnected = false;
+      if (mqttClient !== state.mqttClient) return;
+      leaveLive();
       $('connDot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
       $('connText').textContent = 'MQTT Reconnecting...';
       $('connText').className = 'mono text-[11px] text-amber-200';
@@ -1457,9 +1436,10 @@ void setup() {
     });
 
     mqttClient.on('close', () => {
-      state.mqttConnected = false;
+      if (mqttClient !== state.mqttClient) return;
+      leaveLive();
       $('connDot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-      $('connText').textContent = 'MQTT LOOPBACK (STATE-DRIVEN)';
+      $('connText').textContent = 'SIMULASI LOKAL';
       $('connText').className = 'mono text-[11px] text-amber-200';
     });
   }
@@ -1467,74 +1447,155 @@ void setup() {
   // ==================== APPLY RPi STATE (INTI STATE-DRIVEN) ====================
   // Fungsi ini menerima JSON dari topic decy13/rpi/state dan meng-update
   // SEMUA state & animasi Web HMI agar sinkron dengan hardware nyata.
-  function applyRpiState(rpi) {
-    // 1. Sinkronisasi state boolean dari RPi (sumber kebenaran)
-    state.power    = !!rpi.power;
-    state.vacuum   = !!rpi.vacuum;
-    state.rf       = !!rpi.rf;
-    state.magnet   = rpi.magnet !== undefined ? !!rpi.magnet : state.magnet;
-    state.interlock = !!rpi.interlocks;
-    state.beam     = !!rpi.beam;
-    state.shooting = !!rpi.exposureActive;
-    state.estop    = !!rpi.emergency;
+  let live = {}, lastPacket = null, demo = null;
 
-    // 2. Sinkronisasi nilai fisika real-time dari RPi
-    if (rpi.pressure       !== undefined) state.vacPressureMbar = rpi.pressure;
-    if (rpi.beamEnergy     !== undefined) state.beamEnergyMev   = rpi.beamEnergy;
-    if (rpi.beamCurrent    !== undefined) state.actualBeamUa    = rpi.beamCurrent;
-    if (rpi.targetCurrent  !== undefined) state.targetCurrentUa = rpi.targetCurrent;
-    if (rpi.exposureSeconds !== undefined) state.exposureSeconds = rpi.exposureSeconds;
-    if (rpi.rfPower        !== undefined) state.rfPowerKw       = rpi.rfPower / 1000;
-    if (rpi.magnetCurrent  !== undefined) state.magCurrentA     = rpi.magnetCurrent;
-    if (rpi.frequency      !== undefined) state.frfMhz          = rpi.frequency;
-    if (rpi.magnetPower    !== undefined) state.magPowerKw       = rpi.magnetPower;
-
-    // 3. KUNCI STATE-DRIVEN: Sinkronisasi indeks LED dari RPi
-    //    Browser TIDAK menghitung posisi LED sendiri — mengikuti RPi
-    if (rpi.activeLedIdx !== undefined && rpi.activeLedIdx >= 0) {
-      const newIdx = rpi.activeLedIdx % state.ledSpiralCount;
-      if (state.beam && newIdx < state.activeLedIndex) {
-        state.passesCount += 2;
-      }
-      state.activeLedIndex = newIdx;
-    }
-    if (rpi.shootLedIdx !== undefined) {
-      state.shootLedIndex = rpi.shootLedIdx >= 0
-        ? (rpi.shootLedIdx - 48) % 8   // konversi dari indeks absolut 48-63 ke 8 titik visual canvas
-        : -1;
-    }
-
-    // 4. Update teks LCD 4-baris dari data LCD RPi (bukan dihitung ulang di browser)
-    if (rpi.lcd_line1 && $('lcdLine1')) $('lcdLine1').textContent = rpi.lcd_line1;
-    if (rpi.lcd_line2 && $('lcdLine2')) $('lcdLine2').textContent = rpi.lcd_line2;
-    if (rpi.lcd_line3 && $('lcdLine3')) $('lcdLine3').textContent = rpi.lcd_line3;
-    if (rpi.lcd_line4 && $('lcdLine4')) $('lcdLine4').textContent = rpi.lcd_line4;
-
-    // 5. Update log dari RPi ke panel log Web HMI
-    if (Array.isArray(rpi.logs) && rpi.logs.length > 0) {
-      const lastLog = rpi.logs[0];
-      if (lastLog && lastLog !== applyRpiState._lastLog) {
-        appendCommLog('RX', `RPi: ${lastLog}`);
-        applyRpiState._lastLog = lastLog;
+  function enterLive() {
+    if (!state.mqttConnected) {
+      demo = {};
+      for (const key of Object.keys(state)) {
+        if (!['mqttClient', 'mqttConnected', 'soundEnabled'].includes(key)) demo[key] = state[key];
       }
     }
+    live = {};
+    applyRpiState.lastLog = null;
+    lastPacket = null;
+    state.mqttConnected = true;
+    Object.assign(state, {vacHistory: [], beamHistory: [], targetHistory: []});
+    setLiveControls(true);
+    applyRpiState({}, false);
+  }
 
-    // 6. Update exposure timer dari RPi (sumber kebenaran waktu iradiasi)
-    if (rpi.exposureSeconds !== undefined && $('valExposureTimer')) {
-      const s = Math.floor(rpi.exposureSeconds);
-      const hrs  = String(Math.floor(s / 3600)).padStart(2, '0');
-      const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-      const secs = String(s % 60).padStart(2, '0');
-      $('valExposureTimer').textContent = `${hrs}:${mins}:${secs}`;
+  function leaveLive() {
+    if (!state.mqttConnected) return;
+    state.mqttConnected = false;
+    Object.assign(state, demo);
+    $('inpMagCurrent').value = state.magCurrentA;
+    $('inpRfVolt').value = state.rfVoltKv;
+    $('inpTargetCurrent').value = state.targetBeamUa;
+    demo = null;
+    lastPacket = null;
+    document.querySelectorAll('.seq-step').forEach(el => { el.style.outline = ''; el.style.opacity = ''; });
+    $('hwInterruptTxt').style.color = '';
+    setLiveControls(false);
+    syncUiFromState();
+    const seconds = Math.floor(state.exposureSeconds);
+    $('valExposureTimer').textContent = formatDuration(seconds);
+  }
+
+  function setLiveControls(connected) {
+    for (const id of ['swRf','swMagnet','btnResetTimer','inpParticle','inpFanPwm','inpRfDetune']) {
+      $(id).disabled = connected;
     }
+    document.querySelectorAll('.preset-pill').forEach((el, i) => { el.disabled = connected && i < 3; });
+  }
 
-    // 7. Rebuild orbit segments jika beam baru aktif
-    rebuildOrbitSegments();
+  function formatDuration(s) {
+    return [Math.floor(s / 3600), Math.floor(s / 60) % 60, Math.floor(s) % 60]
+      .map(n => String(n).padStart(2, '0')).join(':');
+  }
 
-    // 8. Sinkronisasi UI
+  function applyRpiState(packet, received = true) {
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) return;
+    live = {...live, ...packet};
+    if (received) lastPacket = performance.now();
+    for (const [key, source] of Object.entries({
+      power:'power', vacuum:'vacuum', rf:'rf', magnet:'magnet',
+      interlock:'interlocks', beam:'beam', shooting:'exposureActive', estop:'emergency'
+    })) state[key] = live[source] === true || live[source] === 1;
+    for (const [key, source] of Object.entries({
+      vacPressureMbar:'pressure', beamEnergyMev:'beamEnergy', actualBeamUa:'beamCurrent',
+      targetCurrentUa:'targetCurrent', magCurrentA:'magnetCurrent', frfMhz:'frequency',
+      rfVoltKv:'setpoint_rf_kv', targetBeamUa:'setpoint_beam_ua', exposureSeconds:'exposureSeconds'
+    })) state[key] = Number.isFinite(live[source]) ? live[source] : 0;
+    for (const [id, key] of [['inpMagCurrent','setpoint_magnet_a'], ['inpRfVolt','setpoint_rf_kv'], ['inpTargetCurrent','setpoint_beam_ua']]) {
+      if (Number.isFinite(packet[key]) && document.activeElement !== $(id)) $(id).value = packet[key];
+    }
+    const index = (n, start, count) => Number.isInteger(n) && n >= start && n < start + count ? n - start : -1;
+    state.activeLedIndex = index(live.activeLedIdx, 0, state.ledSpiralCount);
+    state.shootLedIndex = index(live.shootLedIdx, state.ledSpiralCount, state.ledShootCount);
+
+    function sample(buffer, value, length) {
+      if (Number.isFinite(value)) {
+        buffer.push(value);
+        if (buffer.length > length) buffer.shift();
+      }
+    }
+    sample(state.vacHistory, packet.pressure > 0 && Number.isFinite(packet.pressure) ? Math.log10(packet.pressure) : NaN, 50);
+    sample(state.beamHistory, packet.beamCurrent, 60);
+    sample(state.targetHistory, packet.targetCurrent, 60);
+    if (Array.isArray(packet.logs) && typeof packet.logs[0] === 'string' && packet.logs[0] !== applyRpiState.lastLog) {
+      appendCommLog('RX', packet.logs[0]);
+      applyRpiState.lastLog = packet.logs[0];
+    }
     syncUiFromState();
   }
-  applyRpiState._lastLog = '';
+
+  function renderLive() {
+    const put = (id, value) => { $(id).textContent = value; };
+    const reading = (key, digits, unit, scale = 1) => Number.isFinite(live[key])
+      ? (live[key] * scale).toFixed(digits) + ' ' + unit : '—';
+    const gauge = (id, value, max, length) => $(id).setAttribute('stroke-dashoffset',
+      length * (1 - Math.min(1, Math.max(0, Number.isFinite(value) ? value / max : 0))));
+    const phase = state.estop ? 'Darurat' : live.mode ?? '—';
+    const stage = Number.isInteger(live.stage) ? live.stage : null;
+    for (let i = 1; i <= 4; ++i) put('lcdLine' + i, live['lcd_line' + i] ?? '');
+    put('indMode', phase);
+    put('indReady', phase);
+    $('indReady').className = state.estop ? 'mono text-red-400' : 'mono text-cyan-300';
+    put('seqCurrentStepText', stage === null ? phase : 'Tahap ' + stage + ' · ' + phase);
+    put('canvasStatusOverlay', phase);
+    document.querySelectorAll('.seq-step').forEach(el => {
+      el.style.outline = Number(el.dataset.step) === stage ? '2px solid #5eead4' : '';
+      el.style.opacity = Number(el.dataset.step) === stage ? '1' : '0.65';
+    });
+    put('indBeamStatus', state.beam ? 'Aktif' : 'Mati');
+    put('indExposure', state.shooting ? 'Aktif' : 'Mati');
+    put('indInterlock', state.estop ? 'DARURAT' : state.interlock ? 'Terkunci' : 'Terbuka');
+    put('indPeakEnergy', reading('peakEnergy',1,'MeV'));
+    put('valMagCurrent', reading('magnetCurrent',1,'A'));
+    put('svgMagCurrentTxt', $('valMagCurrent').textContent);
+    put('magFieldSub', reading('magFieldT',2,'T'));
+    put('canvasField', 'Medan B ' + $('magFieldSub').textContent);
+    put('valRfFreq', reading('frequency',2,'MHz'));
+    put('rfSyncBadge', 'RF ' + $('valRfFreq').textContent);
+    put('valRfPower', reading('rfPower',1,'kW',0.001));
+    put('valMagPower', reading('magnetPower',1,'kW'));
+    put('svgMagPowerTxt', $('valMagPower').textContent);
+    put('valBeamCurrent', reading('beamCurrent',1,'µA'));
+    put('diagTargetCurrentTxt', 'Target ' + reading('targetCurrent',1,'µA'));
+    put('valBeamEnergy', reading('beamEnergy',2,'MeV'));
+    put('orbitRadiusSub', 'Radius ' + reading('orbitRadiusCm',1,'cm'));
+    put('beamFwhmTxt', 'Profil ilustratif · ' + reading('beamCurrent',1,'µA'));
+    put('valVacPressure', Number.isFinite(live.pressure) ? live.pressure.toExponential(1) + ' mbar' : '—');
+    put('vacStageBadge', state.vacuum ? 'Pompa aktif' : 'Pompa mati');
+    put('valExposureTimer', Number.isFinite(live.exposureSeconds) ? formatDuration(live.exposureSeconds) : '—');
+    put('valPassesCount', 'Lintasan Dee · ' + reading('passesCount',0,'putaran'));
+    gauge('arcMagCurrent', live.magnetCurrent, 2200, 173);
+    gauge('arcMagPower', live.magnetPower, 130, 173);
+    gauge('ringRfPower', live.rfPower, 35000, 276);
+    gauge('ringBeamCurrent', live.beamCurrent, 100, 276);
+    gauge('ringBeamEnergy', live.beamEnergy, live.peakEnergy > 0 ? live.peakEnergy : 13, 276);
+    const fan = live.fanOn ?? (live.vacuum == null ? null : state.vacuum);
+    $('fanSvgIcon').classList.toggle('fan-spinning', !!fan);
+    $('hwFanState').className = fan ? 'text-xs text-sky-300' : 'text-xs text-slate-400';
+    $('hwBuzzerState').className = live.buzzerActive ? 'text-xs text-amber-300' : 'text-xs text-slate-400';
+    put('hwFanState', fan == null ? 'Kipas —' : fan ? 'Kipas aktif' : 'Kipas mati');
+    put('hwFanPwmTxt', 'PWM ' + reading('fanPwm',0,'/255'));
+    put('hwBuzzerState', live.buzzerActive == null ? 'Buzzer —' : live.buzzerActive ? 'Buzzer aktif' : 'Buzzer mati');
+    put('hwInterruptTxt', state.estop ? 'E-STOP aktif' : 'E-STOP bebas');
+    $('hwInterruptTxt').style.color = state.estop ? '#f87171' : '';
+    put('hwLedFreqTxt', 'WS2812B · posisi dari Raspberry Pi');
+    for (const [label, input, unit] of [['outMagCurrent','inpMagCurrent','A'],['outRfVolt','inpRfVolt','kV'],['outTargetCurrent','inpTargetCurrent','µA']]) {
+      put(label, $(input).value + ' ' + unit + ' (usulan)');
+    }
+    put('outParticleTag','H⁻'); put('outRfDetune','Simulasi lokal'); put('outFanPwm','Simulasi lokal');
+    if (lastPacket === null) {
+      for (const id of ['lblPower','lblVacuum','lblRf','lblMagnet','lblInterlock','lblBeam',
+                        'hwFanState','hwBuzzerState','hwInterruptTxt','vacStageBadge','indInterlock',
+                        'indBeamStatus','indExposure']) put(id, '—');
+    }
+    if (lastPacket !== null && window.decyKidsGuide) window.decyKidsGuide.onStateUpdate(state);
+  }
 
   // ==================== CANVAS RENDERERS ====================
   function resizeCanvas(canvas) {
@@ -1673,14 +1734,14 @@ void setup() {
     }
 
     // Draw Continuous Physics Spiral Path when Beam is On
-    if (state.beam && state.magnet && !state.estop) {
+    if (state.beam && state.activeLedIndex >= 0 && state.magnet && !state.estop) {
       ctx.save();
       ctx.beginPath();
-      const maxIdx = Math.max(1, state.activeLedIndex);
+      const maxIdx = state.activeLedIndex;
       for (let step = 0; step <= maxIdx * 8; step++) {
         const f = step / (totalSpiral * 8);
         const a = step * (0.65 / 8);
-        const r = f * (R * 0.9);
+        const r = (f + 1 / totalSpiral) * (R * 0.9);
         const px = cx + r * Math.cos(a);
         const py = cy - r * Math.sin(a);
         if (step === 0) ctx.moveTo(px, py);
@@ -1692,12 +1753,12 @@ void setup() {
       ctx.restore();
     }
 
-    // Draw 8 Shoot Beamline LEDs (GPIO 5) when SHOOT EXPOSURE is active
-    for (let j = 0; j < 8; j++) {
-      const t = j / 7;
+    // Posisi ekstraksi fisik 48 sampai 63.
+    for (let j = 0; j < state.ledShootCount; j++) {
+      const t = j / (state.ledShootCount - 1);
       const bx = extractStartX + t * (targetX - 18 - extractStartX);
       const by = extractStartY;
-      const isShootLit = state.shooting && state.beam && !state.estop && (j === state.shootLedIndex || j === state.shootLedIndex - 1);
+      const isShootLit = state.shooting && state.beam && !state.estop && j === state.shootLedIndex;
       ctx.beginPath();
       ctx.arc(bx, by, isShootLit ? 4.8 : 2.5, 0, Math.PI * 2);
       ctx.fillStyle = isShootLit ? '#fb923c' : 'rgba(148, 163, 184, 0.28)';
@@ -1741,7 +1802,7 @@ void setup() {
     ctx.beginPath();
     ctx.strokeStyle = state.rf && state.power ? '#f59e0b' : '#475569';
     ctx.lineWidth = 1.6;
-    const amp = state.rf && state.power ? Math.min(h * 0.42, (state.rfVoltKv / 120) * h * 0.42 + 6) : 2;
+    const amp = state.rf && state.power ? Math.min(h * 0.42, (state.rfVoltKv / 120) * h * 0.42 + 6) : 0;
     const freq = (state.frfMhz / 22.5) * 0.18;
     for (let x = 0; x < w; x++) {
       const mod = Math.sin(x * 0.04 + nowMs * 0.005);
@@ -1773,7 +1834,7 @@ void setup() {
     if (!dataArr.length) return;
     ctx.beginPath();
     for (let i = 0; i < dataArr.length; i++) {
-      const x = (i / (dataArr.length - 1)) * w;
+      const x = (i / Math.max(1, dataArr.length - 1)) * w;
       const norm = (dataArr[i] - minVal) / Math.max(1e-6, maxVal - minVal);
       const y = h - Math.max(0.05, Math.min(0.95, norm)) * h;
       if (i === 0) ctx.moveTo(x, y);
@@ -1840,7 +1901,38 @@ void setup() {
   let lastLedStepMs = performance.now();
   let lastSecondMs = performance.now();
 
+  function renderStrip() {
+    const spiral = state.beam && !state.estop ? state.activeLedIndex : -1;
+    const shoot = state.shooting && state.beam && !state.estop ? state.shootLedIndex : -1;
+    const label = shoot < 0 ? '—' : '#' + (state.ledSpiralCount + shoot);
+    $('targetShootBadge').textContent = label;
+    $('canvasLedOverlay').textContent = 'Spiral ' + (spiral < 0 ? '—' : '#' + spiral) + ' · Ekstraksi ' + label;
+    ledCells.forEach((cell, i) => {
+      cell.style.backgroundColor = i === shoot ? '#fb923c' : '#253348';
+    });
+  }
+
+  let liveFrameTime = -Infinity;
   function simulationStep(nowMs) {
+    if (state.mqttConnected) {
+      if (nowMs - liveFrameTime >= 100) {
+        liveFrameTime = nowMs;
+        const status = lastPacket === null ? 'Menunggu telemetri' :
+          nowMs - lastPacket > 2000 ? 'Telemetri tertunda' : 'Telemetri langsung';
+        $('connText').textContent = 'MQTT · ' + status;
+        $('seqClockOut').textContent = status;
+        renderStrip();
+        const phase = Math.max(0, state.activeLedIndex) * 25;
+        drawCyclotronSimulator(phase);
+        drawRfWaveform(phase);
+        drawBeamProfile(phase);
+        drawLineChart('vacTrendCanvas', state.vacHistory, -7, 3.1, '#38bdf8', '#173341');
+        drawLineChart('diagChartCanvas', state.targetHistory, 0, 105, '#fb923c', '#38291d');
+        drawLineChart('trendChartCanvas', state.beamHistory, 0, 105, '#2dd4bf', '#163933');
+      }
+      requestAnimationFrame(simulationStep);
+      return;
+    }
     const dt = (nowMs - lastTickMs) / 1000;
     if (dt >= 0.12) {
       lastTickMs = nowMs;
@@ -1877,10 +1969,6 @@ void setup() {
           state.actualBeamUa = 0.0;
           state.targetCurrentUa = 0.0;
         }
-      } else {
-        // Saat MQTT terhubung: orbit radius dihitung dari energi yang sudah diterima dari RPi
-        const progressFrac = state.beamEnergyMev / Math.max(0.1, part.maxMeV);
-        state.orbitRadiusCm = 40.0 * Math.sqrt(Math.min(1, progressFrac));
       }
 
       state.beamHistory.push(state.actualBeamUa);
@@ -1888,21 +1976,6 @@ void setup() {
       state.targetHistory.push(state.targetCurrentUa);
       state.targetHistory.shift();
 
-      // Update linear 16-LED bar in Digital Twin
-      const active16 = state.beam && !state.estop ? Math.floor((state.activeLedIndex / state.ledSpiralCount) * 16) : -1;
-      for (let i = 0; i < 16; i++) {
-        if (state.estop) {
-          ledCells[i].className = 'rounded-sm bg-red-600 animate-pulse';
-        } else if (state.shooting && state.beam && i >= 12) {
-          ledCells[i].className = 'rounded-sm bg-orange-400 shadow-[0_0_8px_#fb923c]';
-        } else if (i === active16) {
-          ledCells[i].className = 'rounded-sm bg-cyan-300 shadow-[0_0_8px_#38bdf8]';
-        } else if (i < active16) {
-          ledCells[i].className = 'rounded-sm bg-sky-700/70';
-        } else {
-          ledCells[i].className = 'rounded-sm bg-slate-800';
-        }
-      }
 
       syncUiFromState();
       drawLineChart('vacTrendCanvas', state.vacHistory, -6.2, 3.2, '#38bdf8', 'rgba(56, 189, 248, 0.14)');
@@ -1931,15 +2004,13 @@ void setup() {
         state.activeLedIndex = (state.activeLedIndex + 1) % state.ledSpiralCount;
         if (state.activeLedIndex === 0) state.passesCount += 2;
         if (state.shooting) {
-          state.shootLedIndex = (state.shootLedIndex + 1) % 8;
+          state.shootLedIndex = (state.shootLedIndex + 1) % state.ledShootCount;
         } else {
           state.shootLedIndex = -1;
         }
       }
     }
-    if ($('canvasLedOverlay')) {
-      $('canvasLedOverlay').textContent = `LED Aktif: Spiral #${state.activeLedIndex + 1}/48 ${state.shooting ? '| Shoot #' + (Math.max(0,state.shootLedIndex) + 1) : ''}`;
-    }
+    renderStrip();
     if ($('valPassesCount')) {
       $('valPassesCount').textContent = `Lintasan Dee: ${state.passesCount} putaran`;
     }
@@ -1976,8 +2047,29 @@ void setup() {
     $('tabDevCode')?.click();
   });
 
-  // System Status Switches
-  $('swPower').addEventListener('click', () => {
+  // Saat terhubung, hanya Pi yang mengonfirmasi hasil perintah.
+  function control(id, event, online, local) {
+    $(id).addEventListener(event, e => {
+      if (!state.mqttConnected) return local(e);
+      online(e);
+    });
+  }
+
+  function sendSettings(preset = false, changed = null) {
+    if (preset) {
+      $('inpMagCurrent').value = 1450;
+      $('inpRfVolt').value = 45;
+      $('inpTargetCurrent').value = 25;
+    }
+    const params = {cmd:'SET_PARAMS'};
+    for (const [id, key] of [['inpMagCurrent','magnet_a'], ['inpRfVolt','rf_kv'], ['inpTargetCurrent','beam_ua']]) {
+      if (!changed || changed === id) params[key] = Number($(id).value);
+    }
+    publishCommand(params);
+    renderLive();
+  }
+
+  control('swPower', 'click', () => publishCommand({cmd:'TOGGLE_POWER'}), () => {
     state.estop = false;
     state.power = !state.power;
     if (!state.power) {
@@ -1990,7 +2082,7 @@ void setup() {
     broadcastToRaspberryPi('TOGGLE_POWER');
   });
 
-  $('swVacuum').addEventListener('click', () => {
+  control('swVacuum', 'click', () => publishCommand({cmd:'TOGGLE_VACUUM'}), () => {
     if (!state.power) {
       showToast('Aktifkan Power utama terlebih dahulu sebelum menjalankan Kipas Vakum.');
       return;
@@ -2001,7 +2093,7 @@ void setup() {
     broadcastToRaspberryPi('TOGGLE_VACUUM_FAN');
   });
 
-  $('swRf').addEventListener('click', () => {
+  control('swRf', 'click', () => {}, () => {
     if (!state.power) state.power = true;
     state.rf = !state.rf;
     playBeep(state.rf ? 740 : 350, 90);
@@ -2010,7 +2102,7 @@ void setup() {
     broadcastToRaspberryPi('TOGGLE_RF');
   });
 
-  $('swMagnet').addEventListener('click', () => {
+  control('swMagnet', 'click', () => {}, () => {
     state.magnet = !state.magnet;
     playBeep(state.magnet ? 580 : 300, 90);
     rebuildOrbitSegments();
@@ -2018,7 +2110,7 @@ void setup() {
     broadcastToRaspberryPi('TOGGLE_MAGNET');
   });
 
-  $('swInterlock').addEventListener('click', () => {
+  control('swInterlock', 'click', () => publishCommand({cmd:'TOGGLE_INTERLOCK'}), () => {
     if (!state.power) state.power = true;
     state.estop = false;
     state.interlock = !state.interlock;
@@ -2027,7 +2119,7 @@ void setup() {
     broadcastToRaspberryPi('TOGGLE_INTERLOCK');
   });
 
-  $('swBeam').addEventListener('click', () => {
+  control('swBeam', 'click', () => publishCommand({cmd:'START_BEAM'}), () => {
     if (!state.beam) {
       // Auto-ready if user toggles Beam directly
       state.power = true;
@@ -2049,7 +2141,7 @@ void setup() {
   });
 
   // Auto-Init Button
-  $('autoSequenceBtn').addEventListener('click', () => {
+  control('autoSequenceBtn', 'click', () => publishCommand({cmd:'AUTO_INIT'}), () => {
     state.estop = false;
     state.power = true;
     state.vacuum = true;
@@ -2065,7 +2157,7 @@ void setup() {
   });
 
   // 3 Main Operation Buttons
-  $('btnStartBeam').addEventListener('click', () => {
+  control('btnStartBeam', 'click', () => publishCommand({cmd:'START_BEAM'}), () => {
     state.estop = false;
     state.power = true;
     state.vacuum = true;
@@ -2081,7 +2173,7 @@ void setup() {
     showToast('START BEAM: Partikel dipercepat secara spiral menuju 13 MeV!');
   });
 
-  $('btnShootExposure').addEventListener('click', () => {
+  control('btnShootExposure', 'click', () => publishCommand({cmd:'SHOOT'}), () => {
     if (!state.beam) {
       $('btnStartBeam').click();
     }
@@ -2092,7 +2184,7 @@ void setup() {
     showToast(state.shooting ? 'SHOOT EXPOSURE AKTIF: Berkas ditembakkan ke sistem Target!' : 'Ekstraksi Target dihentikan.');
   });
 
-  $('btnEmergencyStop').addEventListener('click', () => {
+  control('btnEmergencyStop', 'click', () => publishCommand({cmd:'EMERGENCY_STOP'}), () => {
     state.estop = true;
     state.beam = false;
     state.shooting = false;
@@ -2105,47 +2197,47 @@ void setup() {
   });
 
   // Parameter Input Listeners
-  $('inpParticle').addEventListener('change', (e) => {
+  control('inpParticle', 'change', () => {}, (e) => {
     state.particleKey = e.target.value;
     rebuildOrbitSegments();
     syncUiFromState();
     broadcastToRaspberryPi('PARAM_PARTICLE');
   });
 
-  $('inpMagCurrent').addEventListener('input', (e) => {
+  control('inpMagCurrent', 'input', () => sendSettings(false, 'inpMagCurrent'), (e) => {
     state.magCurrentA = parseFloat(e.target.value);
     rebuildOrbitSegments();
     syncUiFromState();
     broadcastToRaspberryPi('PARAM_MAGNET_A');
   });
 
-  $('inpRfVolt').addEventListener('input', (e) => {
+  control('inpRfVolt', 'input', () => sendSettings(false, 'inpRfVolt'), (e) => {
     state.rfVoltKv = parseFloat(e.target.value);
     rebuildOrbitSegments();
     syncUiFromState();
     broadcastToRaspberryPi('PARAM_RF_KV');
   });
 
-  $('inpRfDetune').addEventListener('input', (e) => {
+  control('inpRfDetune', 'input', () => {}, (e) => {
     state.rfDetunePct = parseFloat(e.target.value);
     rebuildOrbitSegments();
     syncUiFromState();
     broadcastToRaspberryPi('PARAM_RF_DETUNE');
   });
 
-  $('inpTargetCurrent').addEventListener('input', (e) => {
+  control('inpTargetCurrent', 'input', () => sendSettings(false, 'inpTargetCurrent'), (e) => {
     state.targetBeamUa = parseFloat(e.target.value);
     syncUiFromState();
     broadcastToRaspberryPi('PARAM_BEAM_UA');
   });
 
-  $('inpFanPwm').addEventListener('input', (e) => {
+  control('inpFanPwm', 'input', () => {}, (e) => {
     state.fanPwmPct = parseInt(e.target.value, 10);
     syncUiFromState();
     broadcastToRaspberryPi('PARAM_FAN_PWM');
   });
 
-  $('btnResetParams').addEventListener('click', () => {
+  control('btnResetParams', 'click', () => sendSettings(true), () => {
     state.particleKey = 'p';
     state.magCurrentA = 1450;
     state.rfVoltKv = 45;
@@ -2164,7 +2256,7 @@ void setup() {
     showToast('Parameter dikembalikan ke nilai standar DECY-13 (1450 A, 45 kV, 0% Detune).');
   });
 
-  $('btnResetTimer').addEventListener('click', () => {
+  control('btnResetTimer', 'click', () => {}, () => {
     state.exposureSeconds = 0;
     state.passesCount = 0;
     $('valExposureTimer').textContent = '00:00:00';
@@ -2192,16 +2284,16 @@ void setup() {
       state.mqttClient.end(true);
       state.mqttClient = null;
     }
-    state.mqttConnected = false;
+    leaveLive();
     $('connDot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-    $('connText').textContent = 'MQTT LOOPBACK (STATE-DRIVEN)';
+    $('connText').textContent = 'SIMULASI LOKAL';
     $('connText').className = 'mono text-[11px] text-amber-200';
     appendCommLog('INFO', 'Koneksi MQTT diputus manual. Berjalan dalam Mode Simulasi Lokal.');
   });
 
-  $('btnSendTestPacket').addEventListener('click', () => {
+  control('btnSendTestPacket', 'click', () => sendSettings(), () => {
     publishCommand({ cmd: 'SET_PARAMS', magnet_a: state.magCurrentA, rf_mhz: 22.5, rf_kv: state.rfVoltKv, beam_ua: state.targetBeamUa });
-    showToast('Paket SET_PARAMS dikirim ke RPi via MQTT!');
+    showToast('Pratinjau SET_PARAMS diperbarui dalam simulasi lokal.');
   });
 
   // Copy Helpers
@@ -2263,7 +2355,7 @@ void setup() {
       subtitle: 'Langkah 3/5: Safety Interlock',
       badgeText: 'KUNCI SAFETY INTERLOCK!',
       badgeIcon: '👇',
-      text: 'Tekanan ruang hampa sudah terpenuhi. Kunci gerbang keselamatan INTERLOCK agar sistem memvalidasi seluruh sensor aman dan siap memasuki status BEAM READY!',
+      text: 'Amati tekanan pada grafik vakum. Kunci gerbang keselamatan INTERLOCK agar sistem memvalidasi seluruh sensor aman dan siap memasuki status BEAM READY!',
       funFact: 'Telemetri: Layar LCD matriks hijau akan langsung berganti menampilkan status BEAM READY!',
       isCompleted: (s) => s.interlock === true
     },
@@ -2287,7 +2379,7 @@ void setup() {
       subtitle: 'Langkah 5/5: Shoot Exposure Target Medis',
       badgeText: 'TEKAN SHOOT EXPOSURE!',
       badgeIcon: '🎯',
-      text: 'Partikel telah mencapai kecepatan puncak 13 MeV! Tekan tombol oranye [SHOOT EXPOSURE] untuk mengekstrak berkas proton menuju target station medik!',
+      text: 'Bandingkan energi berkas saat ini dengan skala 13 MeV. Tekan tombol oranye [SHOOT EXPOSURE] untuk mengekstrak berkas proton menuju target station medik!',
       funFact: 'Telemetri: Target beamline akan menyala oranye terang dan timer waktu paparan mulai berhitung!',
       isCompleted: (s) => s.shooting === true
     }
@@ -2360,11 +2452,10 @@ void setup() {
       });
 
       $('guideBtnNext')?.addEventListener('click', () => {
-        if (this.currentStep >= this.steps.length - 1) {
-          this.showCelebration();
-        } else {
-          this.next();
-        }
+        if (!this.isActive) return this.stop();
+        if (this.currentStep < this.steps.length - 1) this.next();
+        else if (this.steps.every(step => step.isCompleted(state)) && !state.estop) this.showCelebration();
+        else this.stop();
       });
 
       // If user clicks the bouncing badge directly on the tooltip, trigger the target element!
@@ -2432,6 +2523,8 @@ void setup() {
     }
 
     stop() {
+      clearTimeout(this.advanceTimer);
+      this.autoAdvanceCooldown = false;
       this.isActive = false;
       this.clearHighlight();
       $('decyGuideTooltip')?.classList.add('hidden');
@@ -2460,6 +2553,8 @@ void setup() {
     }
 
     showStep(index) {
+      clearTimeout(this.advanceTimer);
+      this.autoAdvanceCooldown = false;
       this.currentStep = index;
       const step = this.steps[index];
       if (!step) return;
@@ -2514,7 +2609,7 @@ void setup() {
 
       if (targetEl) {
         const rect = targetEl.getBoundingClientRect();
-        const tooltipWidth = 360;
+        const tooltipWidth = tooltip.offsetWidth;
         const tooltipHeight = tooltip.offsetHeight || 320;
         const padding = 16;
         const vw = window.innerWidth;
@@ -2548,6 +2643,7 @@ void setup() {
     onStateUpdate(s) {
       if (!this.isActive || this.mode !== 'edukasi' || this.autoAdvanceCooldown) return;
 
+      if (s.estop) return;
       const currentStepObj = this.steps[this.currentStep];
       if (currentStepObj && currentStepObj.isCompleted(s)) {
         this.autoAdvanceCooldown = true;
@@ -2556,25 +2652,20 @@ void setup() {
         // Small success flash feedback on tooltip badge
         const badge = $('guideBadgeText');
         if (badge) {
-          const oldTxt = badge.textContent;
-          badge.textContent = 'HEBAT! BERHASIL! 🎉';
-          setTimeout(() => {
-            if (badge) badge.textContent = oldTxt;
-          }, 900);
+          badge.textContent = 'Tahap terkonfirmasi ✓';
         }
-
-        setTimeout(() => {
+        this.advanceTimer = setTimeout(() => {
           this.autoAdvanceCooldown = false;
-          if (this.currentStep < this.steps.length - 1) {
-            this.next();
-          } else {
-            this.showCelebration();
-          }
+          if (!this.isActive || this.steps[this.currentStep] !== currentStepObj) return;
+          if (s.estop || !currentStepObj.isCompleted(s)) return this.showStep(this.currentStep);
+          if (this.currentStep < this.steps.length - 1) this.next();
+          else this.showCelebration();
         }, 900);
       }
     }
 
     showCelebration() {
+      this.isActive = false;
       this.clearHighlight();
       playChimeComplete();
 
@@ -2589,10 +2680,6 @@ void setup() {
       const nextBtn = $('guideBtnNext');
       if (nextBtn) {
         nextBtn.innerHTML = '<span>Tutup Panduan ✕</span>';
-        nextBtn.onclick = () => {
-          this.stop();
-          nextBtn.onclick = null;
-        };
       }
     }
 
@@ -2641,10 +2728,7 @@ void setup() {
   // Initial Boot
   rebuildOrbitSegments();
   syncUiFromState();
-  appendCommLog('INFO', 'Sistem HMI Siklotron DECY-13 siap. Menghubungkan ke MQTT Broker...');
-  // Auto-connect MQTT ke Mosquitto saat halaman dimuat
-  // Jika RPi belum aktif, akan masuk mode simulasi lokal otomatis
-  connectMQTT();
+  appendCommLog('INFO', 'Simulasi DECY-13 siap. Hubungkan broker melalui Developer Menu untuk membaca telemetri alat peraga.');
   requestAnimationFrame(simulationStep);
 
   // Inisiasi DecyKidsGuideManager

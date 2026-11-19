@@ -8,6 +8,8 @@ import queue
 import signal
 import sys
 import threading
+import os
+import re
 import time
 from collections import deque
 from datetime import datetime, timezone
@@ -175,25 +177,78 @@ class Port(threading.Thread):
             self.stop.wait(1)
 
 
+class MqttUsb:
+    PREFIX = "decy13/usb"
+
+    def __init__(self, host, port, events, allow_commands):
+        from paho.mqtt import client as mqtt
+
+        self.events = events
+        self.session = 0
+        self.connected = False
+        self.allow_commands = allow_commands
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
+                                  client_id="decy13_usb_hub", clean_session=True)
+        username = os.environ.get("DECY13_USB_MQTT_USER")
+        if username:
+            self.client.username_pw_set(username, os.environ.get("DECY13_USB_MQTT_PASSWORD"))
+        self.client.on_connect = self.on_connect
+        self.client.on_disconnect = self.on_disconnect
+        self.client.on_message = self.on_message
+        self.client.reconnect_delay_set(1, 10)
+        self.client.connect_async(host, port, 15)
+
+    def on_connect(self, client, userdata, flags, reason, properties):
+        if reason == 0:
+            self.session += 1
+            self.connected = True
+            if self.allow_commands:
+                client.subscribe(self.PREFIX + "/cmd", qos=0)
+
+    def on_disconnect(self, client, userdata, flags, reason, properties):
+        self.connected = False
+
+    def on_message(self, client, userdata, message):
+        if message.retain or len(message.payload) > 256:
+            return
+        try:
+            pkt = json.loads(message.payload)
+            if not isinstance(pkt, dict) or not isinstance(pkt.get("request"), str):
+                return
+            if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", pkt["request"]):
+                return
+            self.events.put_nowait(("mqtt", self.session, CLOCK(), pkt))
+        except (ValueError, queue.Full, RecursionError):
+            pass
+
+    def publish(self, channel, packet):
+        if self.connected:
+            self.client.publish(self.PREFIX + "/" + channel, json.dumps(packet), qos=0, retain=False)
+
+
 class Hub:
-    def __init__(self, ports, writer):
+    def __init__(self, ports, writer, mqtt_usb=None):
         self.ports, self.writer = ports, writer
         self.sequence = 0
         self.pending = {}
         self.readings = {}
+        self.mqtt_usb = mqtt_usb
+        self.mqtt_requests = {}
 
     def reply(self, source, session, dest, request, ok, code, extra=None):
         packet = dict(node=dest, type="ack", id=request, ok=ok, code=code)
         if extra:
             packet.update(extra)
-        LOG.info("ACK %s id=%d ok=%d code=%d", dest, request, ok, code)
+        LOG.info("ACK %s id=%s ok=%d code=%d", dest, request, ok, code)
+        if source == "mqtt" and self.mqtt_usb.session == session:
+            self.mqtt_usb.publish("ack", dict(request=request, ok=bool(ok), code=code))
         if source == "hmi":
             self.ports["hmi"].post(packet, session)
 
     def command(self, source, session, packet):
         action, val = packet.get("action"), packet.get("val")
-        request = packet.get("id")
-        if not integer(request, 1, 32767):
+        request = packet["request"] if source == "mqtt" else packet.get("id")
+        if source != "mqtt" and not integer(request, 1, 32767):
             return
         dest = "sensor" if source == "console" else "actuator"
         ranges = {"CAL_TEMP": (-200, 200), "RESET": (1, 1)} if dest == "sensor" else ACTION_RANGES
@@ -213,6 +268,15 @@ class Hub:
         LOG.info("%s -> %s %s=%d id=%d", source, dest, action, val, wire_id)
 
     def handle(self, role, session, arrived, packet):
+        if role == "mqtt":
+            if (not self.mqtt_usb.connected or session != self.mqtt_usb.session
+                    or CLOCK() - arrived >= 0.7):
+                return
+            request = packet["request"]
+            if request not in self.mqtt_requests and len(self.mqtt_requests) < 256:
+                self.mqtt_requests[request] = arrived + 30
+                self.command(role, session, packet)
+            return
         if role == "console":
             if CLOCK()-arrived < 0.7:
                 self.command(role, session, packet)
@@ -247,8 +311,20 @@ class Hub:
                          if integer(packet.get(k), *bounds)}
                 self.reply(source, origin_session, role, request, packet["ok"], code, extra)
 
+    def publish_usb(self):
+        now = CLOCK()
+        nodes = {}
+        for role, port in self.ports.items():
+            reading = self.readings.get(role)
+            online = bool(reading and port.generation() == reading[0] and now - reading[1] <= 1.2)
+            nodes[role] = dict(online=online, data=reading[2] if online else None)
+        self.mqtt_usb.publish("state", dict(version=1, nodes=nodes, commands=self.mqtt_usb.allow_commands))
+
     def expire(self):
         now = CLOCK()
+        for request, deadline in list(self.mqtt_requests.items()):
+            if now > deadline:
+                del self.mqtt_requests[request]
         for key, (deadline, source, session, request) in list(self.pending.items()):
             dest, dest_session, _ = key
             if now > deadline or self.ports[dest].generation() != dest_session:
@@ -280,7 +356,12 @@ def main():
         args.add_argument("--" + role, default="/dev/arduino_" + role)
     args.add_argument("--csv", type=Path, default=Path("accelerator_telemetry.csv"))
     args.add_argument("--console", action="store_true", help="Aktifkan kalibrasi sensor dari stdin")
+    args.add_argument("--mqtt-host", help="Host broker DECY-13, misalnya 127.0.0.1")
+    args.add_argument("--mqtt-port", type=int, default=1883)
+    args.add_argument("--mqtt-control", action="store_true", help="Aktifkan kontrol Uno dari Mini PC")
     opt = args.parse_args()
+    if opt.mqtt_control and not opt.mqtt_host:
+        args.error("--mqtt-control memerlukan --mqtt-host")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     paths = [str(Path(getattr(opt, role)).resolve()) for role in ROLES]
     if len(set(paths)) != 3:
@@ -293,7 +374,11 @@ def main():
         writer = csv.DictWriter(stream, fieldnames=COLUMNS)
         if not stream.tell():
             writer.writeheader()
-        hub = Hub(ports, writer)
+        mqtt_usb = MqttUsb(opt.mqtt_host, opt.mqtt_port, events, opt.mqtt_control) if opt.mqtt_host else None
+        hub = Hub(ports, writer, mqtt_usb)
+        if mqtt_usb:
+            mqtt_usb.client.loop_start()
+        next_mqtt = CLOCK()
         for worker in ports.values():
             worker.start()
         if opt.console:
@@ -305,6 +390,9 @@ def main():
             except queue.Empty:
                 pass
             hub.expire()
+            if mqtt_usb and CLOCK() >= next_mqtt:
+                hub.publish_usb()
+                next_mqtt = CLOCK() + 0.2
             if CLOCK() - summary >= 10:
                 LOG.info("USB %s | CSV %s", " ".join(r+"="+("OK" if p.generation() else "--")
                          for r,p in ports.items()), opt.csv)
@@ -315,6 +403,9 @@ def main():
                              data["vac_pa"], data["hv_v"], data["temp_dc"]/10, data["din"])
                 summary = CLOCK()
         stop.set()
+        if mqtt_usb:
+            mqtt_usb.client.disconnect()
+            mqtt_usb.client.loop_stop()
         for worker in ports.values():
             worker.join(2)
 

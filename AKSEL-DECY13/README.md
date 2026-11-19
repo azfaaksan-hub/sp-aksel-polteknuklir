@@ -1,6 +1,6 @@
 # DECY-13 · Hub USB tiga Arduino Uno
 
-Raspberry Pi 3B+ menghubungkan tiga Uno melalui USB serial 115200 baud. TFT menampilkan keadaan yang dikonfirmasi Node 3 dan pengukuran simulasi dari Node 2. Sistem ini bisa dijalankan sendiri tanpa daemon MQTT. Hub menjadi satu-satunya proses yang membuka ketiga port.
+Raspberry Pi 3B+ menghubungkan tiga Uno melalui USB serial 115200 baud. Setiap Uno memiliki satu TFT 320×240. TFT 1 menampilkan pengukuran dari Node 2 dan keadaan aktuator yang dikonfirmasi Node 3. TFT 2 dan TFT 3 menampilkan data lokal masing-masing. Sistem ini bisa dijalankan sendiri tanpa daemon MQTT. Hub menjadi satu-satunya proses yang membuka ketiga port.
 
 ~~~text
                             Raspberry Pi 3B+
@@ -10,8 +10,8 @@ Raspberry Pi 3B+ menghubungkan tiga Uno melalui USB serial 115200 baud. TFT mena
             +--------------+       |       +------------------+
             |                      |                          |
      /dev/arduino_hmi       /dev/arduino_sensor       /dev/arduino_actuator
-       Uno 1 + TFT             Uno 2 + input              Uno 3 + driver
-       tap / geser             A0/A1/A2, D2               D2 interlock
+       Uno 1 + TFT 1           Uno 2 + TFT 2             Uno 3 + TFT 3
+       tap / geser             sensor via 4051           driver via 595
        cmd -> Pi               telemetri -> Pi            cmd <- Pi
        status <- Pi            kalibrasi <- Pi            ACK/status -> Pi
 ~~~
@@ -20,12 +20,22 @@ Raspberry Pi 3B+ menghubungkan tiga Uno melalui USB serial 115200 baud. TFT mena
 
 Ketiga sketch memakai kelas `CalibratedTouch` dengan rotasi landscape 1, pin XP=6, XM=A2, YP=A1, YM=7, serta pemetaan yang sama: `p.y: 920 → 187` untuk X=0–319 dan `p.x: 894 → 146` untuk Y=0–239. Pengukuran tersebut berasal dari shield Node 1. Jika memasang panel fisik lain, cek tekan-lepas di sisi kiri, tengah, dan kanan. Jika meleset, jalankan contoh `TouchScreen_Calibr_native` pada panel itu untuk membandingkan hasilnya.
 
-Node 1 selalu menggunakan TFT. Node 2 dan Node 3 masing-masing memiliki pilihan `USE_LOCAL_TFT` di bagian atas sketch. Nilai awal **0** sesuai tabel kabel langsung di bawah. Untuk memasang layar di Uno tambahan, putuskan daya, pindahkan **semua** sambungan sensor/driver dari pin shield, siapkan rangkaian profil TFT berikut, lalu ubah `#define USE_LOCAL_TFT 0` menjadi `#define USE_LOCAL_TFT 1` pada sketch Uno tersebut. Dua profil bisa dipilih secara terpisah. Jangan memasang shield dengan kabel I/O dari profil langsung masih tersambung.
+Ketiga sketch langsung mengaktifkan TFT. Unggah satu sketch sesuai peran ke setiap Uno. Geser ke kiri/kanan atau ketuk **MODE >** di kanan atas untuk pindah halaman pada layar tersebut. Setiap layar memiliki nomor halaman 1/3 sampai 3/3 dan navigasi sendiri.
+
+| TFT | Halaman 1 | Halaman 2 | Halaman 3 |
+|---|---|---|---|
+| Uno 1 · HMI | Dasbor RPM dan sensor | Target, laju, mulai otomatis | Pemantauan dan uji keluaran lewat hub |
+| Uno 2 · Sensor | Pantau pengukuran dan kontak | Kalibrasi suhu awal, offset, dan hasil | Input ADC mentah tiga kanal dan kontak digital |
+| Uno 3 · Aktuator | Proses, kipas, relai, jeda | Keluaran dan uji lampu, alarm, katup | Interlok, heartbeat, watchdog dan jeda |
+
+[Pratinjau sembilan halaman TFT](simulasi/sembilan-halaman-tft.png)
+
+**Sebelum mengunggah ke Uno 2 atau 3 yang memakai rangkaian lama**, putuskan daya dan pindahkan sambungan sensor/driver ke profil TFT pada tabel berikut. Nilai bawaan `USE_LOCAL_TFT` sekarang **1**. Khusus Uno yang akan dipakai tanpa shield dan tetap memakai kabel langsung, pilih `#define USE_LOCAL_TFT 0` di sketch perannya sebelum unggah.
 
 | Node | Rangkaian tambahan untuk profil TFT (1) | Aksi sentuh |
 |---|---|---|
 | 2 | **74HC4051** pada 5 V. Pin common/Z → A5; S0 → D11; S1 → D13; S2, INH, VEE dan GND/VSS → GND. Y0/Y1/Y2 menerima potensiometer vakum/tegangan/suhu (0–5 V). Kontak digital → D12 dan GND. D10 ditahan HIGH. | **−1 C**, **Nol**, **+1 C** mengatur offset suhu. Perubahan muncul di layar dan pada telemetri USB. |
-| 3 | **74HC595** pada 5 V. DS/SER → D11; SHCP/SRCLK → D13; STCP/RCLK → D12; /OE → D10 dengan pull-up eksternal 10 kΩ ke 5 V; /MR (/SRCLR) → 5 V. **Interlock NC → A5 dan GND.** | **Kipas**, **Relai**, **Jeda**. Kipas dan relai memakai pemeriksaan heartbeat Pi, interlock, serta mode manual yang sama dengan perintah USB. Jeda mematikan keluaran. |
+| 3 | **74HC595** pada 5 V. DS/SER → D11; SHCP/SRCLK → D13; STCP/RCLK → D12; /OE → D10 dengan pull-up eksternal 10 kΩ ke 5 V; /MR (/SRCLR) → 5 V. **Interlock NC → A5 dan GND.** | **Kipas**, **Relai**, **Jeda**. Uji kipas, relai, lampu, alarm, dan katup memakai pemeriksaan heartbeat Pi, interlock, serta mode manual yang sama dengan perintah USB. Jeda mematikan keluaran. |
 
 Pada Node 3 profil TFT, Q0–Q6 berturut-turut menuju input driver relai, katup, kipas, buzzer, LED hijau, kuning, merah. Q7 dicadangkan. Pertahankan input driver pada level OFF dengan resistor selama /OE HIGH (pull-down untuk driver aktif-HIGH). Beri catu dan GND bersama pada IC; ambil pin melalui stacking header/breakout jika tertutup shield. Kosongkan slot SD pada kedua shield tambahan: profil TFT memakai jalur D10–D13 untuk I/O. Shield standar memakai D2–D9 dan A0–A4 untuk LCD. [Peta pin MCUFRIEND](https://github.com/prenticedavid/MCUFRIEND_kbv/blob/master/utility/mcufriend_shield.h) · [74HC4051](https://www.ti.com/product/CD74HC4051) · [74HC595](https://www.ti.com/product/SN74HC595)
 
@@ -94,6 +104,28 @@ Mode default mengikat peran ke **soket USB fisik**. Pertahankan kabel pada soket
 Jika akses TTY ditolak, jalankan `sudo usermod -aG dialout "$USER"`, lalu keluar dan masuk kembali. Hub menunggu perangkat yang belum terpasang dan membuka ulang port setelah kabel kembali. Uno dapat reset saat port dibuka. Hentikan hub dengan Ctrl+C. Opsi `--hmi`, `--sensor`, dan `--actuator` dapat mengganti path untuk pengujian.
 
 Dengan `--console`, ketik `CAL_TEMP -15` lalu Enter untuk offset −1,5 °C. Rentangnya −200 sampai 200 dalam satuan 0,1 °C. Ketik `RESET` di konsol untuk menghapus offset **Node 2**. Kalibrasi disimpan di RAM. Tombol **ULANG** di TFT mereset proses **Node 3**. CSV ditambahi baris UTC untuk setiap telemetri yang diproses, termasuk kolom sumber. Status koneksi, perintah, ACK, dan ringkasan sensor tampil di terminal.
+
+## Integrasi dengan Mini PC dan Node-RED
+
+Jalankan hub Uno dan daemon MQTT tim di Raspberry Pi. Gunakan broker yang dipakai oleh daemon. Untuk pemasangan dengan broker di Pi, endpoint browser Mini PC adalah `ws://<IP_RASPI>:9001`. Untuk susunan QA dengan broker di Mini PC, gunakan alamat broker atau ujung tunnel yang sudah dikonfigurasi pada instalasi itu. Kedua HMI dalam repo memakai panel tiga TFT dari koneksi MQTT yang sama.
+
+~~~sh
+sudo apt install python3-serial python3-paho-mqtt
+python3 raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883
+~~~
+
+Hub memerlukan Paho MQTT 2.x untuk integrasi. Jalankan dari direktori `AKSEL-DECY13`. Untuk broker dengan autentikasi, atur variabel lingkungan `DECY13_USB_MQTT_USER` dan `DECY13_USB_MQTT_PASSWORD` pada proses hub. Gunakan `--mqtt-control` bila Mini PC perlu mengirim perintah ke Uno simulasi melalui broker yang mengatur akses tulis ke topik perintah.
+
+| Topik | Isi |
+|---|---|
+| `decy13/rpi/state` dan `decy13/hmi/cmd` | Kontrak daemon dan HMI siklotron milik tim |
+| `decy13/usb/state` | Status tiga node dan telemetri USB setiap 200 ms. Sensor memakai Pa, tegangan simulasi, dan suhu dalam 0,1 °C. |
+| `decy13/usb/cmd` | Permintaan web ke Uno aktuator dengan `request`, `target`, `action`, dan `val`. |
+| `decy13/usb/ack` | Konfirmasi dari hub berdasarkan hasil serial, dengan `request`, `ok`, dan `code`. |
+
+Hub menolak perintah MQTT retained dan membatasi umur antrean. Node 3 tetap memeriksa interlock dan watchdog. Panel USB mendeteksi telemetri kedaluwarsa setelah dua detik. Tombol siklotron di HMI tetap menggunakan kontrak daemon.
+
+Impor `raspi/nodered_usb.json` sebagai tab tambahan jika Node-RED perlu memantau tiga Uno. Pilih broker tim untuk node MQTT pada tab tersebut. Endpoint baca status tersedia di `/api/usb/status`. Flow tim tetap menyediakan `/cyclotron` dan `/api/status` untuk telemetri siklotron.
 
 ## Operasi HMI
 

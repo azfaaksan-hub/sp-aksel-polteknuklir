@@ -464,7 +464,7 @@ def test_module(config):
 
 def pixel_finder(config, hardware=False, total=448,
                  spiral_count=400, brightness=10,
-                 auto=False, buzzer_pin=23,
+                 auto=False, buzzer_pin=17,
                  sound=True, power_ok=False):
 
     if hardware:
