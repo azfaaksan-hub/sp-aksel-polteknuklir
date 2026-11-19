@@ -8,13 +8,18 @@
 #  Cara pakai di Raspberry Pi 3B+:
 #    bash tools/raspi_bootstrap.sh
 #    bash tools/raspi_bootstrap.sh --install-service
+#    bash tools/raspi_bootstrap.sh --install-service --install-autolink --disable-eth
 # ==============================================================================
 set -euo pipefail
 
 INSTALL_SERVICE=0
+INSTALL_AUTOLINK=0
+DISABLE_ETH=0
 for arg in "$@"; do
     case "$arg" in
-        --install-service) INSTALL_SERVICE=1 ;;
+        --install-service)  INSTALL_SERVICE=1; INSTALL_AUTOLINK=1 ;;
+        --install-autolink) INSTALL_AUTOLINK=1 ;;
+        --disable-eth)      DISABLE_ETH=1 ;;
     esac
 done
 
@@ -130,17 +135,37 @@ if [ -d "$RASPI_CLI_DIR" ]; then
     sudo chown -R "$TARGET_USER:$TARGET_USER" "$(dirname "$RASPI_CLI_DIR")" || true
 fi
 
-# 5. Opsional: pasang systemd service otomatis sesuai path user aktif
+# 5. Pastikan SSH aktif & opsional matikan eth0 (mode 100% Wi-Fi anti drop daya)
+sudo systemctl enable --now ssh >/dev/null 2>&1 || true
+
+if [ "$DISABLE_ETH" -eq 1 ]; then
+    info "Menonaktifkan profil Ethernet (eth0) agar RPi berjalan 100% via Wi-Fi (hemat daya)..."
+    sudo nmcli con mod lan-minipc connection.autoconnect no >/dev/null 2>&1 || true
+    sudo nmcli con down lan-minipc >/dev/null 2>&1 || true
+    sudo nmcli dev disconnect eth0 >/dev/null 2>&1 || true
+    ok "Ethernet (eth0) dinonaktifkan — RPi fokus pada Wi-Fi."
+fi
+
+# 6. Opsional: pasang systemd service otomatis sesuai path user aktif
 if [ "$INSTALL_SERVICE" -eq 1 ]; then
     info "Memasang systemd service /etc/systemd/system/decy13.service ..."
     printf '[Unit]\nDescription=DECY-13 Cyclotron MQTT Hardware Daemon\nAfter=network.target mosquitto.service\nRequires=mosquitto.service\n\n[Service]\nExecStart=/usr/bin/python3 %s/04_decy13_mqtt_daemon.py\nWorkingDirectory=%s\nRestart=always\nRestartSec=5\nUser=root\n\n[Install]\nWantedBy=multi-user.target\n' \
         "$RASPI_CLI_DIR" "$RASPI_CLI_DIR" | sudo tee /etc/systemd/system/decy13.service >/dev/null
     sudo systemctl daemon-reload
-    sudo systemctl enable decy13.service
-    ok "Service decy13.service berhasil dipasang untuk path $RASPI_CLI_DIR."
+    sudo systemctl enable --now decy13.service
+    ok "Service decy13.service aktif untuk path $RASPI_CLI_DIR."
 fi
 
-# 6. Cek /dev/spidev0.0
+if [ "$INSTALL_AUTOLINK" -eq 1 ] && [ -f "$SCRIPT_DIR/raspi_auto_link.py" ]; then
+    info "Memasang systemd service /etc/systemd/system/decy13-autolink.service (Auto-Discovery Wi-Fi ke Mini PC)..."
+    printf '[Unit]\nDescription=DECY-13 Raspi Wi-Fi Auto-Link & Discovery Agent\nAfter=network-online.target mosquitto.service\nWants=network-online.target\n\n[Service]\nExecStart=/usr/bin/python3 %s/raspi_auto_link.py\nWorkingDirectory=%s\nRestart=always\nRestartSec=3\nUser=%s\n\n[Install]\nWantedBy=multi-user.target\n' \
+        "$SCRIPT_DIR" "$REPO_ROOT" "$TARGET_USER" | sudo tee /etc/systemd/system/decy13-autolink.service >/dev/null
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now decy13-autolink.service
+    ok "Service decy13-autolink.service aktif (otomatis lapor IP Wi-Fi ke Mini PC)."
+fi
+
+# 7. Cek /dev/spidev0.0
 if ls /dev/spidev* >/dev/null 2>&1; then
     ok "Device SPI terdeteksi: $(ls /dev/spidev* | tr '\n' ' ')"
 else

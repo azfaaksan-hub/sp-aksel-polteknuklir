@@ -43,6 +43,27 @@ Karena Mini PC memakai **Windows 8**, perhatikan 5 hal khusus ini:
    - Buka Web HMI dengan **Chrome / Edge versi 109** atau **Firefox 115 ESR** (bukan Internet Explorer). Karena **`web_hmi/` sekarang 100% offline** (`assets/console.css`, `assets/mqtt.min.js`, `assets/usb-panel.js`), ruang kontrol **tidak lagi bergantung pada internet/CDN**.
    - Jika menjalankan skrip Python QA di Mini PC Win 8, gunakan Python **3.8–3.10** + `pip install paho-mqtt`.
 
+### Mode 100% Wi-Fi Auto-Link (Tanpa Kabel Ethernet — Anti Raspi Mati/Drop Daya)
+Jika penggunaan kabel Ethernet (`eth0` chip LAN7515) menyebabkan Raspberry Pi 3B+ mengalami *under-voltage* (*brown-out* / mati setelah beberapa saat), **cabut kabel Ethernet** dan gunakan sistem **Auto-Link 100% Wi-Fi**:
+1. **Pasang sekali di Raspberry Pi 3B+:**
+   ```bash
+   cd ~/decy13   # atau ~/sp-aksel-polteknuklir
+   git checkout main && git pull --ff-only origin main
+   bash tools/raspi_bootstrap.sh --install-service --install-autolink --disable-eth
+   ```
+   Perintah ini otomatis menonaktifkan `eth0` (hemat daya), mengaktifkan `decy13.service` (`04_decy13_mqtt_daemon.py` auto-start saat boot), dan mengaktifkan **`decy13-autolink.service`** ([`tools/raspi_auto_link.py`](../tools/raspi_auto_link.py)) yang otomatis melaporkan IP Wi-Fi & kesehatan tegangan RPi (`vcgencmd get_throttled`) ke Mini PC.
+2. **Jalankan Pusat Kendali di PowerShell Mini PC (tanpa perlu cari/ketik IP Raspi lagi):**
+   ```powershell
+   python tools/minipc_control_hub.py
+   ```
+   Skrip [`tools/minipc_control_hub.py`](../tools/minipc_control_hub.py) otomatis menemukan IP Wi-Fi Raspi (`UDP 51313` + fallback *TCP Subnet Scan*) dan menyediakan menu:
+   - `[1]` Buka Terminal SSH Raspi otomatis
+   - `[2]` Auto-Setup / Restart Daemon Raspi & matikan `eth0`
+   - `[3]` Start / Restart Hub 3-TFT Arduino Uno (`accelerator_hub.py`)
+   - `[4]` Tambah / Simpan Wi-Fi baru di Raspi langsung dari Mini PC
+   - `[5]` Buka Web HMI Offline (`http://127.0.0.1:8000`, anti error 404) + **Auto-Copy `ws://<IP_RASPI>:9001` ke Clipboard**
+   - `[6]` Jalankan QA Healthcheck (`06_test_mqtt_healthcheck.py`)
+
 ---
 
 ## 4. Penyatuan Sambungan Divisi 6 (`qa_divisi6`) dengan Divisi 1–5 (`v1.6`)
