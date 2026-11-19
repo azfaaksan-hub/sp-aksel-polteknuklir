@@ -461,259 +461,140 @@ def test_module(config):
 # 4. PIXEL FINDER
 # ============================================
 
-def pixel_finder(config, hardware=False):
-
-    mapping = validate_mapping(config)
-
-    total = mapping["total"]
+def pixel_finder(config, hardware=False,
+                 total=448, spiral_count=400, brightness=20):
 
     if hardware:
-
-        # Hanya diimpor dalam mode hardware.
-        ws = importlib.import_module(
-            "rpi_ws281x"
-        )
-
-        strip = ws.PixelStrip(
-            total,
-            int(
-                config["pins_bcm"][
-                    "led_ws2812b"
-                ]
-            ),
-            800000,
-            10,
-            False,
-            int(
-                config["led_mapping"].get(
-                    "brightness", 110
-                )
-            ),
-            0
-        )
-
+        ws = importlib.import_module("rpi_ws281x")
+        strip = ws.PixelStrip(total, 18, 800000, 10,
+                              False, brightness, 0)
         strip.begin()
-
-        print(
-            "[HARDWARE] WS2812B initialized"
-        )
-
     else:
-
         strip = MemoryStrip(total)
 
-        print(
-            "[VIRTUAL] No GPIO output"
-        )
+    gaps = {spiral_count*k//4-1 for k in range(1, 5)}
 
-    index = 0
+    def show(p={}):
+        for i in range(total):
+            strip.setPixelColor(i, p.get(i, 0))
+        strip.show()
 
-    print()
-    print("=" * 48)
-    print("DECY-13 LED PIXEL FINDER")
-    print("=" * 48)
+    def all_on(c):
+        show({i: c for i in range(total)})
 
-    print("Total LED:", total)
+    def move(a, b, c, d1, d2, rf=False):
+        for i in range(a, b):
+            x = (i-a)/max(1, b-a-1)
+            head = Color(255,220,55) if rf and i in gaps else c
+            p = {i: head}
+            if i > a:
+                p[i-1] = Color(0,50,90) if rf else Color(90,25,0)
+            show(p)
+            time.sleep(d1+(d2-d1)*x)
+        show()
 
-    print(
-        "Spiral:",
-        mapping["spiral_start"],
-        "-",
-        mapping["spiral_end"]
-    )
+    def spiral():
+        move(0, spiral_count, Color(0,170,255),
+             0.04, 0.015, True)
 
-    print(
-        "Extraction:",
-        mapping["shoot_start"],
-        "-",
-        mapping["shoot_end"]
-    )
+    def beam():
+        move(spiral_count, total, Color(255,100,0),
+             0.04, 0.025)
 
-    print()
-    print("ENTER = Next LED")
-    print("Angka = Jump to LED")
-    print("s = Test spiral")
-    print("e = Test extraction")
-    print("q = Quit")
+    def individual():
+        for i in range(total):
+            show({i: Color(255,255,255)})
+            print("LED", i, flush=True)
+            time.sleep(0.05)
+
+    def rgb():
+        for c in [Color(255,0,0), Color(0,255,0),
+                  Color(0,0,255), Color(255,255,255)]:
+            all_on(c)
+            time.sleep(1.5)
+
+    def repeat():
+        for _ in range(3):
+            spiral()
+            beam()
+
+    def final_shot():
+        spiral()
+        beam()
+        for v in [30,100,200,255,200,100,30,0]:
+            show({i: Color(0,v,0)
+                  for i in range(total-8,total)})
+            time.sleep(0.15)
+
+    def all_test():
+        individual()                       # 1
+        all_on(Color(255,255,255))         # 2
+        time.sleep(3)
+        rgb()                              # 3
+        spiral()                           # 4
+        beam()                             # 5
+        repeat()                           # 6
+        final_shot()                       # 7
+        show()                             # 8
+
+    commands = {
+        "t": individual,
+        "a": lambda: (all_on(Color(255,255,255)), time.sleep(3), show()),
+        "r": rgb,
+        "s": spiral,
+        "e": beam,
+        "p": repeat,
+        "b": final_shot,
+        "f": all_test
+    }
 
     try:
-
+        show()
+        i = 0
+        print("DECY-13 | 400 SPIRAL + 48 BEAM")
+        print("t/a/r/s/e/p/b/f = test | q = off")
         while True:
-
-            show_pixel(
-                strip,
-                index,
-                Color(0, 180, 255)
-            )
-
-            command = input(
-                f"LED #{index} > "
-            ).strip().lower()
-
-            if command == "q":
+            cmd = input(f"LED #{i} > ").strip().lower()
+            if cmd in ("q", "o"):
                 break
-
-            elif command == "":
-
-                index = (
-                    index + 1
-                ) % total
-
-            elif command == "s":
-
-                start = mapping[
-                    "spiral_start"
-                ]
-
-                end = mapping[
-                    "spiral_end"
-                ]
-
-                gaps = mapping[
-                    "rf_gaps"
-                ]
-
-                print(
-                    "[TEST] Spiral acceleration"
-                )
-
-                for i in range(
-                    start,
-                    end + 1
-                ):
-
-                    color = (
-                        Color(255, 220, 55)
-                        if i in gaps
-                        else Color(0, 170, 255)
-                    )
-
-                    show_pixel(
-                        strip,
-                        i,
-                        color
-                    )
-
-                    fraction = (
-                        (i - start)
-                        / max(1, end - start)
-                    )
-
-                    delay = max(
-                        0.015,
-                        0.09 - fraction * 0.075
-                    )
-
-                    time.sleep(delay)
-
-                index = start
-
-            elif command == "e":
-
-                start = mapping[
-                    "shoot_start"
-                ]
-
-                end = mapping[
-                    "shoot_end"
-                ]
-
-                print(
-                    "[TEST] Extraction beamline"
-                )
-
-                for i in range(
-                    start,
-                    end + 1
-                ):
-
-                    show_pixel(
-                        strip,
-                        i,
-                        Color(255, 100, 0)
-                    )
-
-                    time.sleep(0.04)
-
-                index = start
-
-            elif command.isdecimal():
-
-                target = int(command)
-
-                if 0 <= target < total:
-                    index = target
-
-                else:
-                    print(
-                        "[WARNING] Index out of range"
-                    )
-
+            elif cmd in commands:
+                commands[cmd]()
+            elif cmd == "":
+                show({i: Color(0,180,255)})
+                i = (i+1) % total
+            elif cmd.isdecimal() and int(cmd) < total:
+                i = int(cmd)
+                show({i: Color(0,180,255)})
             else:
-
-                print(
-                    "[WARNING] Unknown command"
-                )
-
-    except KeyboardInterrupt:
-        print("\nTest dihentikan pengguna.")
-
+                print("Perintah tidak dikenal")
     finally:
+        show()
+        time.sleep(0.2)
+        show()
+        print("ALL OFF - SELESAI")
 
-        clear_strip(strip)
-
-        print(
-            "[SAFE] Pixel finder cleared"
-        )
-
-
-# ============================================
-# 5. APPLICATION ENTRY
-# ============================================
 
 def main():
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "DECY-13 Division 3 "
-            "WS2812B test utility"
-        )
-    )
-
-    parser.add_argument(
-        "--mode",
-        choices=("test", "finder"),
-        default="test"
-    )
-
-    parser.add_argument(
-        "--hardware",
-        action="store_true",
-        help="Enable physical LED output"
-    )
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["test","finder"],
+                        default="test")
+    parser.add_argument("--hardware", action="store_true")
+    parser.add_argument("--total-leds", type=int, default=448)
+    parser.add_argument("--spiral-leds", type=int, default=400)
+    parser.add_argument("--brightness", type=int, default=20)
     args = parser.parse_args()
 
-    if (
-        args.hardware
-        and args.mode != "finder"
-    ):
-        parser.error(
-            "--hardware hanya untuk --mode finder"
-        )
+    if not 1 <= args.spiral_leds < args.total_leds:
+        parser.error("Pemetaan LED tidak valid")
+    if not 1 <= args.brightness <= 255:
+        parser.error("Brightness tidak valid")
 
     config = load_config()
-
     if args.mode == "test":
-
         test_module(config)
-
     else:
-
-        pixel_finder(
-            config,
-            hardware=args.hardware
-        )
+        pixel_finder(config, args.hardware, args.total_leds,
+                     args.spiral_leds, args.brightness)
 
 
 if __name__ == "__main__":

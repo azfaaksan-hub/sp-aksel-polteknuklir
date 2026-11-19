@@ -6,6 +6,7 @@
 <title>DECY-13 Cyclotron Control Center — Web HMI & Simulator Terpadu</title>
 <link rel="stylesheet" href="assets/console.css">
 <script src="assets/mqtt.min.js"></script>
+<script src="assets/usb-panel.js"></script>
 <style>
   :root {
     color-scheme: dark;
@@ -1388,12 +1389,13 @@ void setup() {
     const clientId = 'hmi_decy13_' + Math.random().toString(16).substr(2, 8);
     let mqttClient;
     try {
-      mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, reconnectPeriod: 3000 });
+      mqttClient = mqtt.connect(brokerUrl, { clientId, keepalive: 30, clean: true, queueQoSZero: false, reconnectPeriod: 3000 });
     } catch (error) {
       appendCommLog('ERR', 'Koneksi MQTT gagal: ' + error.message);
       return;
     }
     state.mqttClient = mqttClient;
+    window.attachDecyUsbPanel?.(mqttClient);
 
     mqttClient.on('connect', () => {
       if (mqttClient !== state.mqttClient) return;

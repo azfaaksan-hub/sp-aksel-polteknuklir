@@ -12,3 +12,6 @@ env/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Snapshot backup lokal anggota dari tools/aman_pull_dan_sync.py
+laporan_uji/backup_lokal/
