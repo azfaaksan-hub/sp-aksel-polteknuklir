@@ -1,0 +1,171 @@
+[
+  {
+    "id": "qa_stages_decy13_20261119",
+    "type": "tab",
+    "label": "DECY-13 QA Stage Monitor",
+    "disabled": false,
+    "info": "Isolated QA stage monitor. MQTT input only. No MQTT out, POST controls or GPIO."
+  },
+  {
+    "id": "qa_broker_pi1885_tunnel1886",
+    "type": "mqtt-broker",
+    "name": "QA Pi localhost tunnel 1886",
+    "broker": "127.0.0.1",
+    "port": "1886",
+    "clientid": "decy13-node-red-qa-stage-1886",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {}
+  },
+  {
+    "id": "qa-mqtt-in",
+    "type": "mqtt in",
+    "z": "qa_stages_decy13_20261119",
+    "name": "Subscribe QA state",
+    "topic": "decy13/qa/state",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "qa_broker_pi1885_tunnel1886",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 100,
+    "wires": [
+      [
+        "qa-state-store"
+      ]
+    ]
+  },
+  {
+    "id": "qa-state-store",
+    "type": "function",
+    "z": "qa_stages_decy13_20261119",
+    "name": "Store state in QA flow only",
+    "func": "let d=msg.payload;\nif(Buffer.isBuffer(d))d=d.toString('utf8');\nif(typeof d==='string'){try{d=JSON.parse(d)}catch(e){node.warn('Invalid JSON QA');return null}}\nif(!d||typeof d!=='object'||Array.isArray(d)){node.warn('Non-object QA');return null}\nconst required=['power','vacuum','rf','magnet','interlocks','beam','exposureActive','emergency','stage','mode','lcd_line1','lcd_line2','lcd_line3','lcd_line4','pressure','beamEnergy','beamCurrent','targetCurrent','activeLedIdx','shootLedIdx','buzzerActive','logs'];\nconst missing=required.filter(x=>!Object.prototype.hasOwnProperty.call(d,x));\nif(missing.length||!Number.isInteger(d.stage)||d.stage<0||d.stage>7){node.warn('Invalid QA state: '+missing.join(','));return null}\nflow.set('qa_state',d);flow.set('qa_last_rx',Date.now());flow.set('qa_packets',(flow.get('qa_packets')||0)+1);flow.set('qa_sequence',(flow.get('qa_sequence')||0)+1);\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 100,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "qa-http-ui",
+    "type": "http in",
+    "z": "qa_stages_decy13_20261119",
+    "name": "GET /cyclotron-qa",
+    "url": "/cyclotron-qa",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 220,
+    "wires": [
+      [
+        "qa-html"
+      ]
+    ]
+  },
+  {
+    "id": "qa-html",
+    "type": "template",
+    "z": "qa_stages_decy13_20261119",
+    "name": "QA HTML dashboard",
+    "field": "payload",
+    "fieldType": "msg",
+    "format": "handlebars",
+    "syntax": "mustache",
+    "template": "<!doctype html><html lang=\"id\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>DECY-13 | QA Stage Monitor</title><style>\n:root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color-scheme:dark}body{margin:0;background:#0b1220;color:#e2e8f0}main{max-width:1020px;margin:auto;padding:28px}h1{font-size:28px;margin:0 0 6px}.sub{color:#94a3b8;margin-bottom:25px}.tag{display:inline-block;border:1px solid #334155;border-radius:20px;padding:5px 12px;color:#cbd5e1;font-size:12px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.card{background:#14213a;border:1px solid #26344c;border-radius:14px;padding:17px}.label{font-size:12px;color:#9caec8}.value{font-size:30px;font-weight:750;margin-top:8px}.ok{color:#4ade80}.warn{color:#fb923c}.stages{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin:22px 0}.stage{border-radius:9px;text-align:center;background:#14213a;border:1px solid #34425c;padding:15px 0;font-weight:700}.stage.active{background:#176f53;border-color:#48dfb2;color:white}.panel{background:#14213a;border:1px solid #26344c;padding:18px;border-radius:14px;margin-top:14px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:9px;border-bottom:1px solid #2b3b56;font-size:14px}th{color:#a5b4cc;font-size:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:220px;overflow:auto}footer{color:#9ca3af;margin-top:24px;font-size:12px}@media(max-width:500px){main{padding:14px}.stages{gap:3px}.stage{padding:10px 0;font-size:12px}.value{font-size:24px}}</style></head><body><main><span class=\"tag\">QA TERISOLASI · TANPA TOMBOL KONTROL · MQTT 1886</span><h1>DECY-13 — Visualisasi Stage 0–7</h1><div class=\"sub\">Data simulasi MQTT dari Raspberry Pi melalui SSH tunnel, bukan pengukuran siklotron fisik.</div><div class=\"cards\"><div class=\"card\"><div class=\"label\">Status telemetri QA</div><div class=\"value\" id=\"online\">MENUNGGU</div></div><div class=\"card\"><div class=\"label\">Stage aktif</div><div class=\"value\" id=\"stage\">—</div></div><div class=\"card\"><div class=\"label\">Mode</div><div class=\"value\" id=\"mode\" style=\"font-size:20px\">—</div></div><div class=\"card\"><div class=\"label\">Jumlah paket</div><div class=\"value\" id=\"packets\">0</div></div></div><div class=\"stages\" id=\"stages\"></div><div class=\"panel\"><h3>Parameter simulasi terbaru</h3><table><tbody><tr><th>Field JSON</th><th>Nilai diterima</th></tr><tr><td>pressure</td><td id=\"pressure\">—</td></tr><tr><td>beamEnergy</td><td id=\"beamEnergy\">—</td></tr><tr><td>beamCurrent</td><td id=\"beamCurrent\">—</td></tr><tr><td>targetCurrent</td><td id=\"targetCurrent\">—</td></tr><tr><td>Jumlah field</td><td id=\"fieldCount\">—</td></tr><tr><td>Usia telemetri</td><td id=\"age\">—</td></tr></tbody></table></div><div class=\"panel\"><h3>Riwayat stage yang teramati browser</h3><pre id=\"history\">Belum ada perubahan stage.</pre></div><footer>Pengamatan browser menggunakan polling REST API setiap 500 ms. Hanya untuk QA visualisasi; tidak ada jalur kontrol MQTT atau GPIO di halaman ini.</footer></main><script>\nconst el = id => document.getElementById(id);\nconst stages = el('stages'); for(let s=0;s<=7;s++){const x=document.createElement('div');x.id='s'+s;x.className='stage';x.textContent=s;stages.appendChild(x)}\nlet lastSequence=0;let lastStage=null;let history=[];\nasync function tick(){try{const r=await fetch('/api/status-qa?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();const st=j.state||{};el('online').textContent=j.online?'ONLINE':'OFFLINE';el('online').className='value '+(j.online?'ok':'warn');el('stage').textContent=Number.isInteger(st.stage)?st.stage:'—';el('mode').textContent=st.mode??'—';el('packets').textContent=j.packets??0;el('fieldCount').textContent=j.fieldCount??'—';el('age').textContent=j.ageMs==null?'—':j.ageMs+' ms';for(const k of ['pressure','beamEnergy','beamCurrent','targetCurrent'])el(k).textContent=st[k]??'—';for(let s=0;s<=7;s++)el('s'+s).className='stage'+(st.stage===s?' active':'');if(j.sequence!==lastSequence){lastSequence=j.sequence;if(j.online && Number.isInteger(st.stage) && st.stage!==lastStage){lastStage=st.stage;history.unshift(new Date().toLocaleTimeString('id-ID')+'  Stage '+st.stage+'  '+(st.mode||''));history=history.slice(0,20);el('history').textContent=history.join('\\n')}}}catch(e){el('online').textContent='API ERROR';el('online').className='value warn'}}\ntick();setInterval(tick,500);\n</script></body></html>",
+    "output": "str",
+    "x": 410,
+    "y": 220,
+    "wires": [
+      [
+        "qa-html-response"
+      ]
+    ]
+  },
+  {
+    "id": "qa-html-response",
+    "type": "http response",
+    "z": "qa_stages_decy13_20261119",
+    "name": "HTML response",
+    "statusCode": "",
+    "headers": {
+      "Content-Type": "text/html; charset=utf-8"
+    },
+    "x": 665,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "qa-http-status",
+    "type": "http in",
+    "z": "qa_stages_decy13_20261119",
+    "name": "GET /api/status-qa",
+    "url": "/api/status-qa",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 305,
+    "wires": [
+      [
+        "qa-status-build"
+      ]
+    ]
+  },
+  {
+    "id": "qa-status-build",
+    "type": "function",
+    "z": "qa_stages_decy13_20261119",
+    "name": "QA status from flow context",
+    "func": "const s=flow.get('qa_state')||null;const last=flow.get('qa_last_rx')||0;const age=last?Date.now()-last:null;msg.headers={'Content-Type':'application/json','Cache-Control':'no-store'};msg.payload={online:age!==null&&age<=2500,ageMs:age,packets:flow.get('qa_packets')||0,sequence:flow.get('qa_sequence')||0,fieldCount:s?Object.keys(s).length:0,state:s};return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 423,
+    "y": 305,
+    "wires": [
+      [
+        "qa-status-response"
+      ]
+    ]
+  },
+  {
+    "id": "qa-status-response",
+    "type": "http response",
+    "z": "qa_stages_decy13_20261119",
+    "name": "JSON response",
+    "statusCode": "",
+    "headers": {},
+    "x": 663,
+    "y": 305,
+    "wires": []
+  }
+]
