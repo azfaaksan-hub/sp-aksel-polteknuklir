@@ -404,8 +404,8 @@ def main() -> None:
                 "REPO_DIR=$( [ -d ~/decy13/.git ] && echo ~/decy13 || echo ~/sp-aksel-polteknuklir ); "
                 "cd \"$REPO_DIR\" && git checkout main && git pull --ff-only origin main && "
                 "pkill -f decy13_simulator_divisi6.py 2>/dev/null || true; "
-                "bash tools/raspi_bootstrap.sh --install-service --install-autolink --disable-eth && "
-                "sudo systemctl restart decy13-autolink.service decy13.service && "
+                "bash tools/raspi_bootstrap.sh --install-service --install-autolink --install-usb-service --disable-eth && "
+                "sudo systemctl restart decy13-autolink.service decy13.service decy13-usb-hub.service && "
                 "python3 tools/raspi_auto_link.py --status"
             )
             _run_ssh_command(ssh_bin, user, ip, remote_cmd)
@@ -413,12 +413,18 @@ def main() -> None:
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == "3":
             remote_cmd = (
+                "if systemctl list-unit-files | grep -q decy13-usb-hub.service; then "
+                "sudo systemctl restart decy13-usb-hub.service && sleep 3 && "
+                "sudo journalctl -u decy13-usb-hub.service -n 20 --no-pager; "
+                "else "
                 "REPO_DIR=$( [ -d ~/decy13/AKSEL-DECY13 ] && echo ~/decy13/AKSEL-DECY13 || echo ~/sp-aksel-polteknuklir/AKSEL-DECY13 ); "
                 "cd \"$REPO_DIR\" && sudo apt install -y python3-serial python3-paho-mqtt && "
-                "python3 raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control"
+                "python3 raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control; "
+                "fi"
             )
             _run_ssh_command(ssh_bin, user, ip, remote_cmd)
             st = discover_via_udp(timeout=1.5) or st
+            input("\nTekan Enter untuk kembali ke menu...")
         elif choice == "4":
             ssid_new = input("Masukkan Nama Wi-Fi / Hotspot baru untuk Raspi: ").strip()
             if ssid_new:

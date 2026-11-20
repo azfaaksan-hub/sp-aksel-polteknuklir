@@ -1,6 +1,6 @@
 {
   "mqtt": {
-    "broker_host": "192.168.137.1",
+    "broker_host": "127.0.0.1",
     "broker_port_tcp": 1883,
     "broker_port_mqtt_web": 9001,
     "topic_cmd": "decy13/hmi/cmd",
@@ -14,25 +14,25 @@
     "buzzer": 17,
     "estop_button": 22,
     "estop_active_low": true,
-    "estop_hardware_enabled": true,
+    "estop_hardware_enabled": false,
     "lcd_spi_port": 0,
     "lcd_spi_device_ce": 0,
     "lcd_dc": 24,
     "lcd_rst": 25
   },
   "led_mapping": {
-    "total_leds": 64,
-    "brightness": 110,
+    "total_leds": 448,
+    "brightness": 15,
     "spiral_start_idx": 0,
-    "spiral_end_idx": 47,
+    "spiral_end_idx": 399,
     "rf_gap_indices": [
-      11,
-      23,
-      35,
-      47
+      99,
+      199,
+      299,
+      399
     ],
-    "shoot_start_idx": 48,
-    "shoot_end_idx": 63
+    "shoot_start_idx": 400,
+    "shoot_end_idx": 447
   },
   "physics_defaults": {
     "magnet_current_a": 1450.0,

@@ -18,6 +18,7 @@ Pastikan kondisi **semua adaptor masih mati**, lalu periksa 6 titik wajib ini:
 - [ ] **3 Arduino Uno + 3 Shield TFT (Divisi 4):**
   - Ketiga Uno tercolok ke **Powered USB Hub 5V (≥ 2A)** *(bukan langsung ke port USB RPi)*.
   - **Slot microSD Uno 2 & Uno 3 KOSONG**.
+  - **Interlock Uno 3 (`A5 ↔ GND`):** pastikan saklar Interlock NC (atau kabel jumper uji ke `GND`) terpasang pada pin **`A5` Uno 3**, jika kosong layar TFT 3 terkunci di `Interlok terbuka` dan tombol Panel 3-TFT tidak aktif.
   - Pull-up eksternal **`10 kΩ`** dari `/OE` (`D10`) IC `74HC595` ke `5V` sudah terpasang, dan **output `Q0..Q6` Uno 3 tidak dicampur ke Relay/Buzzer `GPIO 21/17` RPi**.
 - [ ] **Hotspot / Wi-Fi Bersama:** Hotspot HP / Wi-Fi yang sudah tersimpan di Raspi menyala, dan **Mini PC terhubung ke Wi-Fi / Hotspot yang sama**.
 
@@ -29,7 +30,7 @@ Nyalakan daya dengan urutan berikut:
 1. Nyalakan **Adaptor Powered USB Hub 5V (≥ 2A)** *(3 Arduino Uno + 3 LCD TFT menyala)*.
 2. Nyalakan **PSU Eksternal 5V LED Strip** dan **Adaptor 12V Kipas Vakum**.
 3. Nyalakan **Adaptor 5V Raspberry Pi 3B+** *(disarankan 5V 2.5A–3A, tanpa monitor/keyboard/Ethernet)*.
-4. Tunggu **±30–45 detik** — Raspi otomatis menyambung ke Wi-Fi serta menyalakan **Mosquitto (`:1883` / `:9001`)**, **`decy13.service` (`04_decy13_mqtt_daemon.py`)**, dan **`decy13-autolink.service` (`raspi_auto_link.py`)** di background.
+4. Tunggu **±30–45 detik** — Raspi otomatis menyambung ke Wi-Fi serta menyalakan **Mosquitto (`:1883` / `:9001`)**, **`decy13.service` (`04_decy13_mqtt_daemon.py`)**, **`decy13-autolink.service` (`raspi_auto_link.py`)**, dan **`decy13-usb-hub.service` (`accelerator_hub.py`)** di background.
 
 ---
 
@@ -44,7 +45,7 @@ python tools\minipc_control_hub.py
 
 **Yang wajib dicek pada tampilan dashboard Mini PC:**
 - **Status Raspi:** `[ONLINE] via UDP Auto-Link (51313)` *(bila belum langsung muncul karena hotspot memblokir broadcast, tekan **`R`** untuk scan ulang, atau tekan **`M`** untuk memasukkan IP Wi-Fi Raspi manual)*.
-- **Layanan Raspi:** `Mosquitto 1883=AKTIF, 9001=AKTIF | Daemon=AKTIF` *(bila Daemon belum aktif, tekan **`2`** → Enter → masukkan password Raspi)*.
+- **Layanan Raspi:** `Mosquitto 1883=AKTIF, 9001=AKTIF | Daemon=AKTIF | USB-Hub=AKTIF` *(bila ada service yang belum aktif, tekan **`2`** → Enter → masukkan password Raspi untuk auto-setup ulang semua service)*.
 - **Daya 5V & Suhu:** target **`0x0 (Tegangan 5V Stabil / Normal)`**. *(Jika muncul peringatan `UNDER-VOLTAGE`, segera ganti adaptor/kabel micro-USB Raspi.)*
 
 ---
@@ -84,12 +85,11 @@ Di menu `minipc_control_hub.py` pada Mini PC:
    ```
    *(Ikuti petunjuk di layar untuk memilih port USB fisik Uno 1 `hmi`, Uno 2 `sensor`, dan Uno 3 `actuator`. Jangan tukar posisi colokan kabel USB pada hub setelah disimpan.)*
 
-### B. Menjalankan Bridge USB → MQTT (`decy13/usb/*`)
-1. Kembali ke menu `minipc_control_hub.py`, ketik **`3`** → **Enter**.
-   - Skrip otomatis menjalankan `python3 raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control` di Raspi.
+### B. Status Bridge USB → MQTT (`decy13/usb/*`)
+1. Jika service `decy13-usb-hub.service` sudah dipasang lewat menu **`2`**, Hub 3-TFT menyala otomatis setiap boot. Jika ingin restart atau cek log Hub 3-TFT, cukup ketik **`3`** → **Enter** di menu `minipc_control_hub.py`.
 2. Cek di **Web HMI Mini PC** (`http://127.0.0.1:8000`):
    - **Panel tiga TFT · USB Raspberry Pi** di bawah header menampilkan status `TFT 1`, `TFT 2`, dan `TFT 3` aktif.
-   - Uji geser/ketuk layar sentuh TFT Uno 1–3 dan pastikan perintah serta telemetri tersinkronisasi.
+   - Pastikan **Uno 3 memiliki interlock `A5 ↔ GND` tertutup** (`guard=1`), lalu uji sentuh layar TFT Uno 1–3 atau tombol Panel 3-TFT di Web HMI.
 
 ---
 
@@ -113,7 +113,7 @@ Di menu `minipc_control_hub.py` pada Mini PC:
 
 ## 6. Uji Isolasi Penuh 448 LED + Buzzer `GPIO 17` (Divisi 3)
 
-> **Catatan:** Selama `config_hardware.json` masih default `64` LED, daemon utama hanya menyalakan 64 LED pertama. Untuk menguji penuh **448 LED (`0..399` spiral + `400..447` beam) + 9 tahap tes & bunyi Buzzer `GPIO 17`**, hentikan sementara `decy13.service` agar tidak berebut pin `GPIO 18` & `GPIO 17`.
+> **Catatan:** Mulai versi ini, `config_hardware.json` sudah disinkronkan penuh ke **448 LED (`0..399` spiral + `400..447` beam, `brightness: 15`)**, `estop_hardware_enabled: false`, dan `broker_host: 127.0.0.1`, sehingga **Core Daemon langsung mengendalikan seluruh 448 LED saat `Start Beam` & `Shoot`**. Jika tetap ingin menjalankan uji isolasi `03_test_led_pixel_finder.py` secara terpisah, hentikan sementara `decy13.service` agar tidak berebut pin `GPIO 18` & `GPIO 17`.
 
 1. Di menu `minipc_control_hub.py`, ketik **`1`** → **Enter** (SSH ke Raspi).
 2. Jalankan:

@@ -18,7 +18,7 @@ Dokumen ini khusus dibuat untuk **Mini PC Ruang Kontrol** (Windows 8 / 10 / 11) 
 
 - **Branch `main` aktif (`v1.6` @ `18c2603`):**
   1. **Divisi 2 (`LULUS_UJI_FISIK`, `7/7`):** Relay Kipas 12V (`GPIO 21`, Active-LOW), Buzzer SFM-27 (`GPIO 17`, Active-HIGH), & `cleanup()` lulus uji fisik bersama tim; E-Stop dijalankan lewat tombol **`EMERGENCY_STOP` HTML Web HMI di Mini PC** *(saklar fisik `GPIO 22` berstatus N/A)*.
-  2. **Divisi 3 (`0db6f3b` & `18c2603`, `10/10` ceklis):** Uji isolasi **448 LED WS2812B** (`0..399` spiral 400 LED, `400..447` extraction/beam 48 LED) kini memakai default **`--brightness 10`**, kunci pengaman **`--power-ok`** untuk tes ALL ON/RGB, mode otomatis **`--auto`**, serta integrasi **Buzzer Bersama `GPIO 17`** (`--buzzer-pin 17` / `--no-buzzer`) yang berbunyi `1..9x` per tahap uji LED dan menjalankan `GPIO.cleanup(17)` saat keluar *(status kartu `DRAFT_PUSH_LAPTOP`, menunggu uji serentak bersama daemon asli & sinkronisasi `config_hardware.json` dari `64` ke `448` LED setelah PSU diverifikasi)*.
+  2. **Divisi 3 (`0db6f3b` & `18c2603`, `10/10` ceklis):** Uji isolasi **448 LED WS2812B** (`0..399` spiral 400 LED, `400..447` extraction/beam 48 LED, `--brightness 10`, `--power-ok`, `--auto`, & buzzer bersama `GPIO 17`). Mulai update ini, **`config_hardware.json` sudah disinkronkan penuh ke 448 LED (`brightness=15`)**, `estop_hardware_enabled=false`, dan `broker_host=127.0.0.1`.
   3. **Divisi 4 (`207ac04` — 3-LCD TFT Arduino Uno via USB Hub):** `AKSEL-DECY13/raspi/accelerator_hub.py` menyatukan 3 Uno + 3 Shield TFT `MCUFRIEND 320x240` (`/dev/arduino_hmi|sensor|actuator`, `115200 baud`) ke Mosquitto lewat topik **`decy13/usb/state`**, **`decy13/usb/cmd`**, & **`decy13/usb/ack`** (**0 konflik** dengan pin GPIO `17/18/21` RPi!). *(Catatan daya: gunakan **Powered USB Hub 5V >= 2A** untuk 3 Uno + TFT, dan kosongkan slot microSD Uno 2 & 3.)*
   4. **Divisi 5 (`6d37d99` + `usb-panel.js`):** Web HMI (`decy13_mqtt_kit/web_hmi/`) kini **100% Offline** (CSS `console.css`, `mqtt.min.js`, & `usb-panel.js` lokal — tidak perlu internet di ruang kontrol!).
   5. **Divisi 6 (`087e0fb` / `d929400`):** Handover QA komunikasi PC ↔ RPi 3 selesai (`300/300 ONLINE @ 4.99 Hz`, `22/22` field PASS, flow Node-RED `/cyclotron`, `/cyclotron-qa`, `qa_readonly_api.ps1`), ditambah tab opsional `AKSEL-DECY13/raspi/nodered_usb.json` `/api/usb/status`.
@@ -49,9 +49,9 @@ Jika penggunaan kabel Ethernet (`eth0` chip LAN7515) menyebabkan Raspberry Pi 3B
    ```bash
    cd ~/decy13   # atau ~/sp-aksel-polteknuklir
    git checkout main && git pull --ff-only origin main
-   bash tools/raspi_bootstrap.sh --install-service --install-autolink --disable-eth
+   bash tools/raspi_bootstrap.sh --install-service --install-autolink --install-usb-service --disable-eth
    ```
-   Perintah ini otomatis menonaktifkan `eth0` (hemat daya), mengaktifkan `decy13.service` (`04_decy13_mqtt_daemon.py` auto-start saat boot), dan mengaktifkan **`decy13-autolink.service`** ([`tools/raspi_auto_link.py`](../tools/raspi_auto_link.py)) yang otomatis melaporkan IP Wi-Fi & kesehatan tegangan RPi (`vcgencmd get_throttled`) ke Mini PC.
+   Perintah ini otomatis menonaktifkan `eth0` (hemat daya) serta mengaktifkan **`decy13.service`** (`04_decy13_mqtt_daemon.py`), **`decy13-autolink.service`** ([`tools/raspi_auto_link.py`](../tools/raspi_auto_link.py)), dan **`decy13-usb-hub.service`** (`AKSEL-DECY13/raspi/accelerator_hub.py`) secara otomatis saat boot. *(Pastikan slot microSD Uno 2 & 3 kosong serta Uno 3 memiliki interlock `A5 ↔ GND`.)*
 2. **Jalankan Pusat Kendali di PowerShell Mini PC (tanpa perlu cari/ketik IP Raspi lagi):**
    ```powershell
    python tools/minipc_control_hub.py
@@ -167,7 +167,7 @@ Daftar **9 Tahap Uji** & menu perintah interaktif pada commit `0db6f3b`/`18c2603
 2. Di **Web HMI Offline Mini PC** (`MQTT TERHUBUNG` ke `ws://<IP_RASPI>:9001`):
    - Uji sekuens **Power → Vacuum (`<= 1e-3 mbar`) → Interlock → Start Beam → Shoot → Emergency Stop** sambil mengamati Relay Kipas, Buzzer, LED WS2812B, Panel tiga TFT (`decy13/usb/*`), serta Dashboard Node-RED `/cyclotron`.
    - Pastikan **Emergency Stop** via Web HMI memutus `beam`, `vacuum`, `rf`, dan membunyikan alarm 3 detik dengan aman.
-3. Simpan/kirim bukti output terminal ke Divisi 1, Divisi 3 (`blufiaa`), Divisi 4 (`HDMrishiki`), atau Divisi 6 (`rekypurnomo`) tanpa mengedit file divisi lain dari Mini PC. *(Catatan: `config_hardware.json` masih default `64` LED sampai uji daya penuh 448 LED + daemon disepakati untuk disinkronkan menjadi `448`.)*
+3. Simpan/kirim bukti output terminal ke Divisi 1, Divisi 3 (`blufiaa`), Divisi 4 (`HDMrishiki`), atau Divisi 6 (`rekypurnomo`) tanpa mengedit file divisi lain dari Mini PC. *(`config_hardware.json` kini sudah disinkronkan penuh ke **448 LED** @ `brightness=15`, `estop_hardware_enabled=false`, & `broker_host=127.0.0.1`.)*
 
 ---
 

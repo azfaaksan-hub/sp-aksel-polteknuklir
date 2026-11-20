@@ -8,18 +8,20 @@
 #  Cara pakai di Raspberry Pi 3B+:
 #    bash tools/raspi_bootstrap.sh
 #    bash tools/raspi_bootstrap.sh --install-service
-#    bash tools/raspi_bootstrap.sh --install-service --install-autolink --disable-eth
+#    bash tools/raspi_bootstrap.sh --install-service --install-autolink --install-usb-service --disable-eth
 # ==============================================================================
 set -euo pipefail
 
 INSTALL_SERVICE=0
 INSTALL_AUTOLINK=0
+INSTALL_USB_SERVICE=0
 DISABLE_ETH=0
 for arg in "$@"; do
     case "$arg" in
-        --install-service)  INSTALL_SERVICE=1; INSTALL_AUTOLINK=1 ;;
-        --install-autolink) INSTALL_AUTOLINK=1 ;;
-        --disable-eth)      DISABLE_ETH=1 ;;
+        --install-service)     INSTALL_SERVICE=1; INSTALL_AUTOLINK=1; INSTALL_USB_SERVICE=1 ;;
+        --install-autolink)    INSTALL_AUTOLINK=1 ;;
+        --install-usb-service) INSTALL_USB_SERVICE=1 ;;
+        --disable-eth)         DISABLE_ETH=1 ;;
     esac
 done
 
@@ -163,6 +165,18 @@ if [ "$INSTALL_AUTOLINK" -eq 1 ] && [ -f "$SCRIPT_DIR/raspi_auto_link.py" ]; the
     sudo systemctl daemon-reload
     sudo systemctl enable --now decy13-autolink.service
     ok "Service decy13-autolink.service aktif (otomatis lapor IP Wi-Fi ke Mini PC)."
+fi
+
+USB_HUB_DIR="$REPO_ROOT/AKSEL-DECY13"
+if [ "$INSTALL_USB_SERVICE" -eq 1 ] && [ -f "$USB_HUB_DIR/raspi/accelerator_hub.py" ]; then
+    info "Memasang paket serial/MQTT & service /etc/systemd/system/decy13-usb-hub.service (Divisi 4 3-TFT USB)..."
+    sudo apt-get install -y python3-serial python3-paho-mqtt -qq >/dev/null 2>&1 || true
+    sudo usermod -aG dialout "$TARGET_USER" >/dev/null 2>&1 || true
+    printf '[Unit]\nDescription=DECY-13 3-TFT Arduino Uno USB Hub Service\nAfter=network.target mosquitto.service\nRequires=mosquitto.service\n\n[Service]\nExecStart=/usr/bin/python3 %s/raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control\nWorkingDirectory=%s\nRestart=always\nRestartSec=5\nUser=%s\nSupplementaryGroups=dialout\n\n[Install]\nWantedBy=multi-user.target\n' \
+        "$USB_HUB_DIR" "$USB_HUB_DIR" "$TARGET_USER" | sudo tee /etc/systemd/system/decy13-usb-hub.service >/dev/null
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now decy13-usb-hub.service
+    ok "Service decy13-usb-hub.service aktif (otomatis hubungkan 3 Arduino Uno TFT saat boot)."
 fi
 
 # 7. Cek /dev/spidev0.0
