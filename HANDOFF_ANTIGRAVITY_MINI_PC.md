@@ -99,7 +99,38 @@ Saat `bash tools/raspi_bootstrap.sh --install-service --install-autolink --insta
 
 ---
 
-## 5. Cara Melanjutkan di Antigravity (AGY) Mini PC (1 Kalimat!)
+## 5. TUGAS PRIORITAS BARU DARI KETUA (KERJAKAN LANGSUNG DI MINI PC!) — Revisi Animasi LED 2-Fase
+
+> **Izin Eksplisit Ketua (`azfaaksan-hub` — 2026-11-24):** Antigravity di **Mini PC** DIIZINKAN mengedit **`decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py`** dan **`decy13_mqtt_kit/raspi_cli/config_hardware.json`** secara langsung dari Mini PC untuk menerapkan revisi animasi LED 2-fase ini lalu langsung mengujinya ke 448 LED fisik di Raspberry Pi. *(Tetap DILARANG `git commit`/`git push` otomatis — berikan perintah Git manual kepada user.)*
+
+### Masalah Sebelumnya
+Di `mod_led_ws2812b.py` saat ini, warna & ukuran ekor masih dibuat untuk 64 LED @ `brightness=110`:
+- Pada `brightness=15` di 448 LED, warna Stage 4 `Color(35, 0, 55)` & Stage 5 `Color(0, 18, 22)` bernilai PWM `1–3` (nyaris padam), Stage 1 cuma menyalakan 1 titik (`LED #0`), dan Stage 6/7 hanya menyalakan 1 komet kecil 7 LED berkecepatan lambat (`12–57 LED/detik` → butuh 7–33 detik per putaran di 400 LED), sehingga terlihat seperti lampu hidup satu-satu/sedikit.
+
+### Spesifikasi Revisi yang WAJIB Diterapkan AGY Mini PC
+1. **Di `decy13_mqtt_kit/raspi_cli/config_hardware.json`:**
+   - Ubah `"brightness"` dari `15` menjadi **`45`** *(aman arus PSU 5V karena hanya sebagian piksel menyala serentak pada mode animasi fase, bukan All-ON putih 448 LED; pertahankan `total_leds: 448`, `spiral: 0..399`, `rf_gap: [99,199,299,399]`, `shoot: 400..447`)*.
+2. **Di `decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py` (Mode 2 Fase Utama + Indikator Persiapan Jelas):**
+   - **Stage 0 / `EMERGENCY_STOP`:** Semua 448 LED **MATI total** (`0`), `activeLedIdx = -1`, `shootLedIdx = -1`.
+   - **Indikator Persiapan (Stage 1–5 sebelum Beam):**
+     - **Stage 1–3 (`Power ON` / Standby):** Nyalakan zona sumber ion (`spiral_start .. min(spiral_end, spiral_start + 15)`) warna biru cerah lembut (memastikan `pixels[spiral_start] != 0`).
+     - **Stage 4 (`Vacuum Pumping`):** Nyalakan 1/4 awal spiral (`0..99`) dengan **ungu-biru terang** *(misal `Color(120, 20, 220)`, bukan `35, 0, 55`)* agar langsung terlihat jelas saat pompa vakum aktif.
+     - **Stage 5 (`Beam Ready` / `AUTO INIT`):** Nyalakan sumber ion (`0..15`) cyan terang + **4 blok RF Gap** (`{99, 199, 299, 399}` beserta ±2 piksel di sekitarnya) warna kuning-cyan terang (`Color(220, 180, 30)`).
+   - **FASE 1 — Akselerasi Spiral Penuh (Stage 6 `START BEAM`, `0..399` = 400 LED):**
+     - Kecepatan proporsional terhadap panjang spiral: `speed = spiral_length * (0.20 + 0.55 * ratio)` *(pada 400 LED ≈ `80–300 LED/detik` → 1 putaran hanya `1,3–5 detik`!)*.
+     - Komet cyan terang `(0, 190, 255)` dengan ekor proporsional **`tail = max(7, spiral_length // 16)`** *(25 LED di 400 LED)* + paket partikel kedua di sisi berlawanan `(spiral_index + spiral_length // 2)` agar spiral 400 LED tampak hidup penuh!
+     - Saat kepala komet melintas dekat `rf_gaps`, nyalakan kilatan kuning emas `Color(255, 220, 55)` sepanjang ±2 piksel pada RF Gap tersebut.
+   - **FASE 2 — Ekstraksi & Tembakan Target (Stage 7 `SHOOT`, `400..447` = 48 LED):**
+     - Fase 1 (spiral `0..399`) tetap berputar aktif di dalam Dee, **DAN**
+     - Jalur ekstraksi (`400..447`) menyala **oranye-emas terang `(255, 110, 0)`** dengan kecepatan proporsional `shoot_speed = max(32.0, shoot_length * 1.4)` dan ekor **`tail = max(5, shoot_length // 3)`** *(16 LED di 48 LED)* + **kilatan dampak target hijau-emas** di 8 LED ujung (`max(shoot_start, shoot_end - 7) .. shoot_end`) saat komet menyentuh ujung target!
+3. **Verifikasi Wajib Setelah Edit di Mini PC:**
+   - Jalankan `python decy13_mqtt_kit/raspi_cli/03_test_led_pixel_finder.py --mode test` → WAJIB `ALL DIVISI 3 VIRTUAL TESTS PASSED` (`Total LED: 448`).
+   - Jalankan `python tools/cek_integrasi_dan_announcer.py --ci --cek-branch` → WAJIB `7/7 [LULUS]`.
+   - Minta user commit & push dari Mini PC (atau uji langsung dulu ke Raspi via `scp` / menu `[2]` `minipc_control_hub.py`), lalu cek fisik di Web HMI (**Power → Vacuum → Interlocks → Start Beam [Fase 1] → Shoot [Fase 2] → EMERGENCY_STOP**) dan pastikan `vcgencmd get_throttled` tetap `0x0`.
+
+---
+
+## 6. Cara Melanjutkan di Antigravity (AGY) Mini PC (1 Kalimat!)
 
 1. Di Mini PC, tarik update terbaru dulu di CMD/PowerShell:
    ```cmd
@@ -110,5 +141,5 @@ Saat `bash tools/raspi_bootstrap.sh --install-service --install-autolink --insta
 2. Buka folder `sp-aksel-polteknuklir` di **Antigravity (AGY) pada Mini PC** (file `AGENTS.md` di root otomatis memuat konteks ini!).
 3. Cukup ketik **1 kalimat pendek ini** di chat Antigravity Mini PC:
    ```text
-   Baca HANDOFF_ANTIGRAVITY_MINI_PC.md lalu cek git status dan lanjutkan koordinasi setup serta troubleshooting hardware Raspi dari Mini PC ini.
+   Baca HANDOFF_ANTIGRAVITY_MINI_PC.md lalu langsung kerjakan Bagian 5 (revisi animasi LED 2-fase) dan lanjutkan uji lapangan Raspi dari Mini PC ini.
    ```
