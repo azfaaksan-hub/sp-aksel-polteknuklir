@@ -135,12 +135,19 @@ class Decy13CoreDaemon:
         }
         self.last_tick = time.time()
 
-        # Daftar plugin modul dari Divisi 2, 3, dan 4
+        # Daftar plugin modul dari Divisi 2, 3, dan 4.
+        # PENTING: LcdDisplayModule (SPI0 ILI9341) dinonaktifkan secara default saat
+        # `lcd_spi_enabled=false` (Divisi 4 resmi memakai 3 Arduino Uno TFT USB) karena
+        # default `luma.lcd.device.ili9341` mengklaim `gpio_LIGHT=18` menjadi OUTPUT HIGH
+        # yang merampas PWM0 GPIO 18 milik LED WS2812B! Bila `lcd_spi_enabled=true`,
+        # LcdDisplayModule ditaruh SEBELUM LedStripModule agar GPIO 18 tetap dipegang PWM0.
+        self.lcd_spi_enabled = bool(CFG.get("pins_bcm", {}).get("lcd_spi_enabled", False))
         self.modules = [
             VacuumSafetyModule(CFG),
-            LedStripModule(CFG),
-            LcdDisplayModule(CFG),
         ]
+        if self.lcd_spi_enabled:
+            self.modules.append(LcdDisplayModule(CFG))
+        self.modules.append(LedStripModule(CFG))
         self.init_modules()
 
     def add_log(self, msg: str) -> None:
@@ -161,7 +168,9 @@ class Decy13CoreDaemon:
                 print(f"  - {mod.name:<22} : [{status_txt}]")
             except Exception as e:
                 print(f"  - {mod.name:<22} : [ERROR ISOLATED: {e}]")
-        print("=" * 64)
+        if not self.lcd_spi_enabled:
+            print(f"  - {'LcdDisplayModule':<22} : [NONAKTIF - Mode 3-TFT USB / Anti-Konflik GPIO 18]")
+        print("=" * 64, flush=True)
 
     def handle_command(self, payload: dict) -> None:
         with self.lock:

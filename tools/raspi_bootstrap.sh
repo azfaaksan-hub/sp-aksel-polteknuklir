@@ -92,15 +92,25 @@ if [ -f "$BOOT_CFG" ]; then
     else
         ok "Interface SPI0 sudah ON (dtparam=spi=on)."
     fi
+
+    # Blacklist snd_bcm2835 agar tidak pernah merampas kanal PWM0 GPIO 18 di Debian 13
+    if [ ! -f /etc/modprobe.d/decy13-disable-audio.conf ]; then
+        printf 'blacklist snd_bcm2835\n' | sudo tee /etc/modprobe.d/decy13-disable-audio.conf >/dev/null
+        ok "Blacklist modul kernel snd_bcm2835 dipasang (anti-bentrok PWM0 GPIO 18)."
+    fi
 else
     warn "File $BOOT_CFG tidak ditemukan (bukan OS Raspberry Pi standar?)."
 fi
 
-# 2. Install paket sistem & Mosquitto Broker
-info "Memastikan paket sistem (mosquitto, python3-pip, python3-pil, python3-spidev) terpasang..."
-sudo apt-get update -qq
-sudo apt-get install -y mosquitto mosquitto-clients python3-pip python3-dev python3-pil python3-spidev git -qq
-ok "Paket sistem & Mosquitto terpasang."
+# 2. Install paket sistem & Mosquitto Broker (lewati apt-get bila sudah lengkap -> cepat & tahan offline)
+if command -v mosquitto >/dev/null 2>&1 && command -v git >/dev/null 2>&1 && python3 -c "import PIL, spidev" >/dev/null 2>&1; then
+    ok "Paket sistem (mosquitto, git, PIL, spidev) sudah terpasang — lewati apt-get."
+else
+    info "Memastikan paket sistem (mosquitto, python3-pip, python3-pil, python3-spidev) terpasang..."
+    sudo apt-get update -qq || warn "apt-get update gagal (mode offline?), lanjut menggunakan cache lokal."
+    sudo apt-get install -y mosquitto mosquitto-clients python3-pip python3-dev python3-pil python3-spidev git -qq
+    ok "Paket sistem & Mosquitto terpasang."
+fi
 
 # 3. Tulis konfigurasi Mosquitto murni LF (bebas bug CRLF Windows)
 info "Menulis /etc/mosquitto/conf.d/decy13.conf (TCP 1883 & WebSocket 9001)..."
@@ -124,13 +134,16 @@ else
     warn "Salah satu port 1883/9001 belum terlihat di ss -tulnp. Cek sudo ss -tulnp | grep mosquitto"
 fi
 
-# 4. Install ke-6 library Python untuk sudo/root maupun user biasa
-info "Memasang library Python (paho-mqtt, RPi.GPIO, rpi-ws281x, luma.lcd, Pillow, spidev)..."
-sudo pip3 install --break-system-packages -q paho-mqtt RPi.GPIO rpi-ws281x luma.lcd Pillow spidev \
-    || sudo pip3 install -q paho-mqtt RPi.GPIO rpi-ws281x luma.lcd Pillow spidev
-
-sudo python3 -c "import paho.mqtt.client, RPi.GPIO, rpi_ws281x, luma.lcd, PIL, spidev"
-ok "Ke-6 library Python terverifikasi dapat di-import oleh sudo python3."
+# 4. Install ke-6 library Python untuk sudo/root maupun user biasa (lewati pip3 bila sudah terpasang)
+if sudo python3 -c "import paho.mqtt.client, RPi.GPIO, rpi_ws281x, luma.lcd, PIL, spidev" >/dev/null 2>&1; then
+    ok "Ke-6 library Python sudah terverifikasi untuk sudo python3 — lewati pip3."
+else
+    info "Memasang library Python (paho-mqtt, RPi.GPIO, rpi-ws281x, luma.lcd, Pillow, spidev)..."
+    sudo pip3 install --break-system-packages -q paho-mqtt RPi.GPIO rpi-ws281x luma.lcd Pillow spidev \
+        || sudo pip3 install -q paho-mqtt RPi.GPIO rpi-ws281x luma.lcd Pillow spidev
+    sudo python3 -c "import paho.mqtt.client, RPi.GPIO, rpi_ws281x, luma.lcd, PIL, spidev"
+    ok "Ke-6 library Python terverifikasi dapat di-import oleh sudo python3."
+fi
 
 # Pastikan kepemilikan folder proyek sesuai user aktif
 if [ -d "$RASPI_CLI_DIR" ]; then
@@ -151,7 +164,7 @@ fi
 # 6. Opsional: pasang systemd service otomatis sesuai path user aktif
 if [ "$INSTALL_SERVICE" -eq 1 ]; then
     info "Memasang systemd service /etc/systemd/system/decy13.service ..."
-    printf '[Unit]\nDescription=DECY-13 Cyclotron MQTT Hardware Daemon\nAfter=network.target mosquitto.service\nRequires=mosquitto.service\n\n[Service]\nExecStart=/usr/bin/python3 %s/04_decy13_mqtt_daemon.py\nWorkingDirectory=%s\nRestart=always\nRestartSec=5\nUser=root\n\n[Install]\nWantedBy=multi-user.target\n' \
+    printf '[Unit]\nDescription=DECY-13 Cyclotron MQTT Hardware Daemon\nAfter=network.target mosquitto.service\nRequires=mosquitto.service\n\n[Service]\nEnvironment=PYTHONUNBUFFERED=1\nExecStart=/usr/bin/python3 -u %s/04_decy13_mqtt_daemon.py\nWorkingDirectory=%s\nRestart=always\nRestartSec=5\nUser=root\n\n[Install]\nWantedBy=multi-user.target\n' \
         "$RASPI_CLI_DIR" "$RASPI_CLI_DIR" | sudo tee /etc/systemd/system/decy13.service >/dev/null
     sudo systemctl daemon-reload
     sudo systemctl enable --now decy13.service
@@ -169,8 +182,10 @@ fi
 
 USB_HUB_DIR="$REPO_ROOT/AKSEL-DECY13"
 if [ "$INSTALL_USB_SERVICE" -eq 1 ] && [ -f "$USB_HUB_DIR/raspi/accelerator_hub.py" ]; then
-    info "Memasang paket serial/MQTT & service /etc/systemd/system/decy13-usb-hub.service (Divisi 4 3-TFT USB)..."
-    sudo apt-get install -y python3-serial python3-paho-mqtt -qq >/dev/null 2>&1 || true
+    info "Memasang service /etc/systemd/system/decy13-usb-hub.service (Divisi 4 3-TFT USB)..."
+    if ! python3 -c "import serial, paho.mqtt.client" >/dev/null 2>&1; then
+        sudo apt-get install -y python3-serial python3-paho-mqtt -qq >/dev/null 2>&1 || true
+    fi
     sudo usermod -aG dialout "$TARGET_USER" >/dev/null 2>&1 || true
     printf '[Unit]\nDescription=DECY-13 3-TFT Arduino Uno USB Hub Service\nAfter=network.target mosquitto.service\nRequires=mosquitto.service\n\n[Service]\nExecStart=/usr/bin/python3 %s/raspi/accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control\nWorkingDirectory=%s\nRestart=always\nRestartSec=5\nUser=%s\nSupplementaryGroups=dialout\n\n[Install]\nWantedBy=multi-user.target\n' \
         "$USB_HUB_DIR" "$USB_HUB_DIR" "$TARGET_USER" | sudo tee /etc/systemd/system/decy13-usb-hub.service >/dev/null

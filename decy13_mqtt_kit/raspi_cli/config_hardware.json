@@ -15,6 +15,7 @@
     "estop_button": 22,
     "estop_active_low": true,
     "estop_hardware_enabled": false,
+    "lcd_spi_enabled": false,
     "lcd_spi_port": 0,
     "lcd_spi_device_ce": 0,
     "lcd_dc": 24,
