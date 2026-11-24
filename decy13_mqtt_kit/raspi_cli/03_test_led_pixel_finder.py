@@ -30,7 +30,7 @@ import time
 from modules.mod_led_ws2812b import (
     LedStripModule,
     MemoryStrip,
-    Color
+    Color, Animation
 )
 
 
@@ -437,6 +437,7 @@ def test_module(config):
         assert check_all_off(led.strip)
 
         print("[PASS] Emergency Stop")
+        test_animation(config)
 
         # ====================================
         # RESULT
@@ -457,6 +458,54 @@ def test_module(config):
             assert check_all_off(led.strip)
 
 
+def test_animation(config):
+    """Deterministic frame tests; no physical GPIO or sleeping."""
+    a = Animation(config)
+    state = dict(power=True, beam=True, stage=6, emergency=False,
+                 exposureActive=False, beamEnergy=13., peakEnergy=13.)
+    def check(name, ok):
+        if not ok:
+            raise AssertionError(name)
+        print("[PASS] " + name)
+    a.step(state, 0)
+    check("Energy speed scaling", a.speed(dict(state, beamEnergy=0)) < a.speed(state))
+    check("NaN energy handled", a.speed(dict(state, beamEnergy=float('nan'))) == a.speed(dict(state, beamEnergy=0)))
+    frame, head, shoot = a.step(state, .01)
+    opposite = a.a + (head-a.a + a.n//2) % a.n
+    check("Two cyan packets", frame[head] != 0 and frame[opposite] != 0)
+    seen = set()
+    for _ in range(200):
+        frame, _, _ = a.step(state, .025)
+        seen.update(g for g in a.gaps if frame[g] == Color(255,220,55))
+    check("All RF crossings", seen == set(a.gaps))
+    before = a.spiral_pos
+    state.update(stage=7, exposureActive=True)
+    frame, head, shoot = a.step(state, .025)
+    check("Spiral persists on SHOOT", a.spiral_pos == before and head >= a.a and any(frame[a.a:a.b+1]))
+    check("Beamline starts without tail wrap", shoot == a.c and not any(frame[a.c+1:a.d+1]))
+    hit = False
+    restarted = False
+    early = False
+    for _ in range(200):
+        frame, head, shoot = a.step(state, .025)
+        if shoot < a.d and frame[a.d] != 0:
+            early = True
+        if shoot == a.d and frame[a.d] == Color(170,255,65):
+            hit = True
+        if hit and shoot == a.c:
+            restarted = True
+            break
+    check("No premature target", not early)
+    check("Target impact", hit)
+    check("Continuous exposure repeats", restarted)
+    frame, head, shoot = a.step(dict(state, exposureActive=False, stage=6), .025)
+    check("Exposure OFF clears beamline only", shoot == -1 and not any(frame[a.c:a.d+1]) and any(frame[a.a:a.b+1]))
+    frame, head, shoot = a.step(dict(state, emergency=True), .025)
+    check("Emergency overrides active beam", head == shoot == -1 and not any(frame))
+    frame, head, shoot = a.step(dict(state, stage=0), .025)
+    check("Stage zero overrides stale flags", head == shoot == -1 and not any(frame))
+
+
 # ============================================
 # 4. PIXEL FINDER
 # ============================================
@@ -467,6 +516,8 @@ def pixel_finder(config, hardware=False, total=448,
                  auto=False, buzzer_pin=17,
                  sound=True, power_ok=False):
 
+    if hardware and auto and not power_ok:
+        raise RuntimeError("--auto hardware memerlukan --power-ok setelah PSU diverifikasi")
     if hardware:
         ws = importlib.import_module("rpi_ws281x")
         strip = ws.PixelStrip(
@@ -478,14 +529,10 @@ def pixel_finder(config, hardware=False, total=448,
         strip = MemoryStrip(total)
 
     GPIO = None
-    if hardware and sound:
-        GPIO = importlib.import_module("RPi.GPIO")
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(buzzer_pin, GPIO.OUT, initial=GPIO.LOW)
 
     ready = False
-    gaps = {spiral_count*k//4-1 for k in range(1, 5)}
+    mapping = config["led_mapping"]
+    gaps = set(mapping["rf_gap_indices"])
 
     def show(p=None):
         p = p or {}
@@ -605,9 +652,15 @@ def pixel_finder(config, hardware=False, total=448,
 
     try:
         show()
+        if hardware and sound:
+            gpio = importlib.import_module("RPi.GPIO")
+            gpio.setwarnings(False)
+            gpio.setmode(gpio.BCM)
+            gpio.setup(buzzer_pin, gpio.OUT, initial=gpio.LOW)
+            GPIO = gpio
         print(f"DECY-13 | {spiral_count} SPIRAL + "
               f"{total-spiral_count} BEAM")
-        print(f"BUZZER GPIO{buzzer_pin}")
+        print(f"BUZZER GPIO{buzzer_pin}" if sound else "BUZZER OFF")
 
         if auto:
             for n in range(1,10):
@@ -631,8 +684,9 @@ def pixel_finder(config, hardware=False, total=448,
                     run_one(7)
                     run_one(8)
                 elif cmd == "" or cmd.isdecimal():
-                    idx = (idx+1)%total if cmd == "" else int(cmd)
-                    if 0 <= idx < total:
+                    candidate = (idx+1)%total if cmd == "" else int(cmd)
+                    if 0 <= candidate < total:
+                        idx = candidate
                         show({idx: Color(0,180,255)})
                     else:
                         print("Indeks di luar jangkauan")
@@ -643,10 +697,14 @@ def pixel_finder(config, hardware=False, total=448,
         print("\nPengujian dihentikan")
 
     finally:
-        show()
-        if GPIO is not None:
-            GPIO.output(buzzer_pin, GPIO.LOW)
-            GPIO.cleanup(buzzer_pin)
+        try:
+            show()
+        finally:
+            if GPIO is not None:
+                try:
+                    GPIO.output(buzzer_pin, GPIO.LOW)
+                finally:
+                    GPIO.cleanup(buzzer_pin)
         print("ALL OFF - SELESAI")
 
 
@@ -656,14 +714,24 @@ def main():
                         default="test")
     parser.add_argument("--hardware", action="store_true")
     parser.add_argument("--auto", action="store_true")
-    parser.add_argument("--total-leds", type=int, default=448)
-    parser.add_argument("--spiral-leds", type=int, default=400)
+    parser.add_argument("--total-leds", type=int, default=None)
+    parser.add_argument("--spiral-leds", type=int, default=None)
     parser.add_argument("--brightness", type=int, default=10)
     parser.add_argument("--buzzer-pin", type=int, default=17)
     parser.add_argument("--no-buzzer", action="store_true")
     parser.add_argument("--power-ok", action="store_true")
     args = parser.parse_args()
 
+    config = load_config()
+    m = validate_mapping(config)
+    if args.total_leds is None:
+        args.total_leds = m["total"]
+    if args.spiral_leds is None:
+        args.spiral_leds = m["spiral_end"] - m["spiral_start"] + 1
+    if args.mode == "finder" and (m["spiral_start"] != 0 or
+            m["shoot_start"] != args.spiral_leds or m["shoot_end"] != args.total_leds-1 or
+            args.total_leds != m["total"] or args.spiral_leds != m["spiral_end"]+1):
+        parser.error("Finder harus mengikuti mapping resmi kontigu dari config_hardware.json")
     if not 20 <= args.spiral_leds <= args.total_leds-8:
         parser.error("Pemetaan spiral/beam tidak valid")
     if not 1 <= args.brightness <= 255:
@@ -673,7 +741,6 @@ def main():
     if (args.hardware or args.auto) and args.mode != "finder":
         parser.error("--hardware/--auto hanya untuk finder")
 
-    config = load_config()
     if args.mode == "test":
         test_module(config)
     else:
