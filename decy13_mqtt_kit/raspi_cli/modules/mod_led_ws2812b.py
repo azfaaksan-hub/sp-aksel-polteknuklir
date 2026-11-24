@@ -450,15 +450,14 @@ class LedStripModule(HardwareModule):
                             self.spiral_start
                         )
 
-                    # Visual particle speed
-                    # increases with beam energy.
-                    speed = (
-                        12.0 + 45.0 * ratio
-                    )
-
+                    # Visual particle speed proportional
+                    # to spiral length and beam energy.
                     spiral_length = (
                         self.spiral_end
                         - self.spiral_start + 1
+                    )
+                    speed = spiral_length * (
+                        0.20 + 0.55 * ratio
                     )
 
                     self._spiral_position = (
@@ -481,13 +480,17 @@ class LedStripModule(HardwareModule):
                             self.shoot_end
                             - self.shoot_start + 1
                         )
+                        shoot_speed = max(
+                            32.0,
+                            shoot_length * 1.4
+                        )
 
                         self._shoot_position = (
                             self.shoot_start
                             + (
                                 self._shoot_position
                                 - self.shoot_start
-                                + 32.0 * dt
+                                + shoot_speed * dt
                             ) % shoot_length
                         )
 
@@ -559,88 +562,177 @@ class LedStripModule(HardwareModule):
         emergency = s["emergency"]
         stage = s["stage"]
 
+        spiral_length = (
+            self.spiral_end
+            - self.spiral_start + 1
+        )
+        shoot_length = (
+            self.shoot_end
+            - self.shoot_start + 1
+        )
+
         if emergency or not power:
-            # Safe OFF, no warning flash.
+            # Stage 0 / EMERGENCY_STOP: Safe OFF total.
             pass
 
         elif beam:
-            # Core Stage 6:
-            # Beam acceleration inside Dee.
+            # FASE 1 — Core Stage 6:
+            # Akselerasi spiral penuh 400 LED di dalam Dee.
+            spiral_tail = max(
+                7,
+                spiral_length // 16
+            )
 
             self._comet(
                 spiral_index,
                 self.spiral_start,
                 self.spiral_end,
-                (0, 170, 255),
-                tail=7
+                (0, 190, 255),
+                tail=spiral_tail
             )
 
-            # RF acceleration gap flash.
-            if spiral_index in self.rf_gaps:
-                self._set_pixel(
-                    spiral_index,
-                    Color(255, 220, 55)
+            # Paket partikel kedua di sisi berlawanan
+            # agar lintasan spiral 400 LED tampak hidup penuh.
+            active_heads = [spiral_index]
+            if spiral_length >= spiral_tail * 2:
+                second_head = (
+                    self.spiral_start
+                    + (
+                        spiral_index
+                        - self.spiral_start
+                        + spiral_length // 2
+                    ) % spiral_length
                 )
+                self._comet(
+                    second_head,
+                    self.spiral_start,
+                    self.spiral_end,
+                    (0, 190, 255),
+                    tail=spiral_tail
+                )
+                active_heads.append(second_head)
+
+            # Kilatan kuning emas pada blok RF Gap (+-2 piksel)
+            # saat kepala komet melintas dekat RF Gap.
+            for gap in self.rf_gaps:
+                if any(
+                    abs(head - gap) <= 2
+                    for head in active_heads
+                ):
+                    g_start = max(
+                        self.spiral_start,
+                        gap - 2
+                    )
+                    g_end = min(
+                        self.spiral_end,
+                        gap + 2
+                    )
+                    for idx in range(
+                        g_start,
+                        g_end + 1
+                    ):
+                        self._set_pixel(
+                            idx,
+                            Color(255, 220, 55)
+                        )
 
             if exposure:
-                # Core Stage 7:
-                # Extraction / Shoot.
+                # FASE 2 — Core Stage 7:
+                # Ekstraksi & Tembakan Target (400..447).
+                shoot_tail = max(
+                    5,
+                    shoot_length // 3
+                )
                 self._comet(
                     shoot_index,
                     self.shoot_start,
                     self.shoot_end,
-                    (255, 100, 0),
-                    tail=5
+                    (255, 110, 0),
+                    tail=shoot_tail
                 )
 
-                if (
-                    shoot_index
-                    == self.shoot_end
-                ):
-                    self._set_pixel(
-                        self.shoot_end,
-                        Color(255, 235, 130)
+                # Kilatan dampak target hijau-emas di 8 LED ujung
+                # saat komet menyentuh area ujung target.
+                impact_trigger = max(
+                    self.shoot_start,
+                    self.shoot_end - 3
+                )
+                if shoot_index >= impact_trigger:
+                    impact_start = max(
+                        self.shoot_start,
+                        self.shoot_end - 7
                     )
+                    for idx in range(
+                        impact_start,
+                        self.shoot_end + 1
+                    ):
+                        self._set_pixel(
+                            idx,
+                            Color(170, 255, 65)
+                        )
 
         elif stage == 4:
-            # Vacuum pumping: purple glow.
-            count = max(
-                1,
-                (
-                    self.spiral_end
-                    - self.spiral_start + 1
-                ) // 4
-            )
-
+            # Stage 4 (Vacuum Pumping): 1/4 awal spiral
+            # menyala ungu-biru terang agar jelas terlihat.
+            count = max(1, spiral_length // 4)
             for index in range(
                 self.spiral_start,
                 self.spiral_start + count
             ):
                 self._set_pixel(
                     index,
-                    Color(35, 0, 55)
+                    Color(120, 20, 220)
                 )
 
         elif stage == 5:
-            # Beam ready:
-            # Source + RF markers.
-            self._set_pixel(
-                self.spiral_start,
-                Color(0, 75, 145)
+            # Stage 5 (Beam Ready / AUTO INIT):
+            # Sumber ion cyan terang + 4 blok RF Gap kuning-cyan.
+            src_end = min(
+                self.spiral_end,
+                self.spiral_start + 15
             )
-
-            for index in self.rf_gaps:
+            for index in range(
+                self.spiral_start,
+                src_end + 1
+            ):
                 self._set_pixel(
                     index,
-                    Color(0, 18, 22)
+                    Color(0, 200, 255)
                 )
 
+            for gap in self.rf_gaps:
+                g_start = max(
+                    self.spiral_start,
+                    gap - 2
+                )
+                g_end = min(
+                    self.spiral_end,
+                    gap + 2
+                )
+                for index in range(
+                    g_start,
+                    g_end + 1
+                ):
+                    self._set_pixel(
+                        index,
+                        Color(220, 180, 30)
+                    )
+
         else:
-            # Stage 1-3: standby.
-            self._set_pixel(
-                self.spiral_start,
-                Color(0, 0, 100)
+            # Stage 1-3 (Power ON / Standby):
+            # Zona sumber ion (0..15) biru cerah lembut.
+            src_end = min(
+                self.spiral_end,
+                self.spiral_start + 15
             )
+            for index in range(
+                self.spiral_start,
+                src_end + 1
+            ):
+                self._set_pixel(
+                    index,
+                    Color(0, 95, 225)
+                )
 
         self.strip.show()
 
