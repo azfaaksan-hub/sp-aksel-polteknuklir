@@ -402,8 +402,8 @@ def main() -> None:
             _stop_windows_mosquitto()
             remote_cmd = (
                 "REPO_DIR=$( [ -d ~/decy13/.git ] && echo ~/decy13 || echo ~/sp-aksel-polteknuklir ); "
-                "cd \"$REPO_DIR\" && git checkout main && git pull --ff-only origin main && "
-                "pkill -f decy13_simulator_divisi6.py 2>/dev/null || true; "
+                "cd \"$REPO_DIR\" && git fetch origin && git checkout main && git reset --hard origin/main && "
+                "(pkill -f decy13_simulator_divisi6.py 2>/dev/null || true) && "
                 "bash tools/raspi_bootstrap.sh --install-service --install-autolink --install-usb-service --disable-eth && "
                 "sudo systemctl restart decy13-autolink.service decy13.service decy13-usb-hub.service && "
                 "python3 tools/raspi_auto_link.py --status"

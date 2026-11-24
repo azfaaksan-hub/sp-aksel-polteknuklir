@@ -171,19 +171,22 @@ Daftar **9 Tahap Uji** & menu perintah interaktif pada commit `0db6f3b`/`18c2603
 
 ---
 
-## 7. Prompt Siap Copy-Paste untuk Antigravity (AGY) di Mini PC (`v1.6`)
+## 7. Prompt Siap Pakai untuk Antigravity (AGY) di Mini PC (`v1.6`)
 
-Setelah `git pull --ff-only origin main` di Mini PC, tempelkan prompt ini ke chat baru Antigravity di Mini PC:
+> 🤖 **Konteks Otomatis (`AGENTS.md` + `HANDOFF_ANTIGRAVITY_MINI_PC.md`):** Begitu Anda melakukan `git pull --ff-only origin main` dan membuka folder `sp-aksel-polteknuklir` di **Antigravity (AGY) pada Mini PC**, aturan workspace [`AGENTS.md`](../AGENTS.md) otomatis terbaca. Anda cukup mengetik **1 kalimat pendek** ini:
+>
+> ```text
+> Baca HANDOFF_ANTIGRAVITY_MINI_PC.md lalu cek git status dan lanjutkan koordinasi setup serta troubleshooting hardware Raspi dari Mini PC ini.
+> ```
+
+Atau jika ingin menempelkan prompt lengkapnya secara manual:
 
 ```text
-Saya Ketua Tim (Divisi 1 / `azfaaksan-hub`) sedang menyiapkan & menguji alat lengkap dari Mini PC Ruang Kontrol (Windows 8/10/11) yang terhubung ke Raspberry Pi 3B+ pada versi `v1.6` (`18c2603`).
-Baca `decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`, `decy13_mqtt_kit/qa_divisi6/PANDUAN_KETUA_UJI_ULANG.md`, dan `README.md`, lalu jalankan `git status -sb` dan `python tools/raspi_preflight.py --divisi 1 --no-save`.
-Patuhi seluruh aturan di `PANDUAN_MINI_PC_UJI_LAPANGAN.md`:
-- Mini PC hanya sebagai Stasiun Uji (JANGAN edit file kode Divisi 2–6 atau menjalankan `git commit`/`git push` otomatis).
-- Divisi 2 (`GPIO 21/17`) sudah `LULUS_UJI_FISIK` (`7/7`, E-Stop via HTML Web HMI Mini PC).
-- Divisi 3 memakai `03_test_led_pixel_finder.py` (`18c2603`: **448 LED** `--brightness 10` + kunci `--power-ok` + `--auto` + buzzer bersama `GPIO 17` untuk 9 uji isolasi saat daemon mati).
-- Divisi 4 (`AKSEL-DECY13`) memakai 3 Arduino Uno + 3 Shield TFT via Powered USB Hub (`accelerator_hub.py --mqtt-host 127.0.0.1 --mqtt-port 1883 --mqtt-control`), topik `decy13/usb/*`.
-- Web HMI di Mini PC (`decy13_mqtt_kit/web_hmi/`) 100% offline (`http://localhost:8000`) + `usb-panel.js`.
-- Satukan koneksi Divisi 6 (`qa_divisi6`: Node-RED `/cyclotron` & `/api/status` + `qa_readonly_api.ps1`) ke broker RPi (`1883`/`9001`) dengan mematikan Mosquitto Windows Mini PC (`Stop-Service mosquitto`) agar `04_decy13_mqtt_daemon.py` auto-fallback ke `127.0.0.1:1883`.
-Tampilkan: (1) status sinkronisasi repo di Mini PC, (2) panduan langkah berurutan menyalakan RPi (2 terminal SSH) & Web HMI Offline + Node-RED QA di Mini PC, dan (3) perintah verifikasi yang harus saya jalankan sendiri.
+Saya Ketua Tim (Divisi 1 / `azfaaksan-hub`) melanjutkan koordinasi setup & uji lapangan dari Mini PC Ruang Kontrol (CMD/PowerShell) ke Raspberry Pi 3B+ (`Debian 13 trixie Lite 64-bit`, user `sp-aksel`, folder `~/decy13`, mode 100% Wi-Fi Auto-Link tanpa Ethernet).
+Baca `HANDOFF_ANTIGRAVITY_MINI_PC.md`, `PANDUAN_OPERASIONAL_PASCA_WIRING.md`, dan `decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`, lalu jalankan `git status -sb` dan `python tools/minipc_control_hub.py --scan-only`.
+Patuhi seluruh aturan di `AGENTS.md` dan `HANDOFF_ANTIGRAVITY_MINI_PC.md`:
+- DILARANG menjalankan `git commit`/`git push` otomatis atau mengedit file kode Divisi 2–6 tanpa izin.
+- `config_hardware.json` sudah disinkronkan ke **448 LED** (`brightness=15`), `estop_hardware_enabled=false`, & `broker_host=127.0.0.1`.
+- JANGAN gunakan kabel Ethernet di RPi (memicu under-voltage); gunakan `python tools\minipc_control_hub.py` dan pastikan Mosquitto Windows Mini PC mati.
+Tampilkan status sinkronisasi Mini PC + status deteksi Raspi saat ini, lalu lanjutkan dari daftar troubleshooting aktif di Bagian 4 `HANDOFF_ANTIGRAVITY_MINI_PC.md` (`decy13-usb-hub.service`, 3-TFT USB + Interlock A5 Uno 3, kipas 12V relay, cek `vcgencmd get_throttled`, & uji penuh 448 LED).
 ```

@@ -19,6 +19,8 @@ Sebelum menyentuh kode atau menjalankan AI, **buka 3 file panduan ini secara ber
    Buka [`decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md`](decy13_mqtt_kit/PANDUAN_MINI_PC_UJI_LAPANGAN.md) untuk setting koneksi Mini PC Win 8 <-> Raspberry Pi, urutan uji lapangan terbaru, dan **Prompt AGY Mini PC siap *copy-paste***.
 5. **🔌 Panduan Operasional Lengkap Pasca-Wiring (100% Wi-Fi Auto-Link — Siap Baca di GitHub/HP):**
    Buka [`PANDUAN_OPERASIONAL_PASCA_WIRING.md`](PANDUAN_OPERASIONAL_PASCA_WIRING.md) untuk cek keselamatan wiring, urutan nyalakan listrik, operasional `minipc_control_hub.py`, uji 6 divisi serentak, & *shutdown* aman.
+6. **🤖 Handoff Konteks Antigravity (AGY) Mini PC (`AGENTS.md` + `HANDOFF_ANTIGRAVITY_MINI_PC.md`):**
+   Buka [`HANDOFF_ANTIGRAVITY_MINI_PC.md`](HANDOFF_ANTIGRAVITY_MINI_PC.md) untuk langsung melanjutkan sesi koordinasi Antigravity di Mini PC setelah `git pull` *(otomatis terdeteksi oleh [`AGENTS.md`](AGENTS.md))*.
 
 > 🛡️ **ATURAN WAJIB KOLABORASI MANDIRI:**
 > 1. AI milikmu (ChatGPT / Claude / Cursor / Gemini) **HANYA** membantu menulis isi file milik divisimu.
