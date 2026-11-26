@@ -237,6 +237,8 @@ def test_module(config):
         )
 
         time.sleep(0.10)
+        # Refresh indeks dari LED Worker
+        led.update(state, 0.2, time.monotonic())
 
         assert (
             state["activeLedIdx"] == -1
@@ -266,6 +268,14 @@ def test_module(config):
         )
 
         time.sleep(0.10)
+        # Refresh indeks dari LED Worker
+        led.update(state, 0.2, time.monotonic())
+        deadline = time.monotonic() + 1.0
+        while state['activeLedIdx'] != mapping['spiral_start']:
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.01)
+            led.update(state, 0.2, time.monotonic())
 
         assert (
             state["activeLedIdx"]
@@ -293,6 +303,8 @@ def test_module(config):
         )
 
         time.sleep(0.10)
+        # Refresh indeks dari LED Worker
+        led.update(state, 0.2, time.monotonic())
 
         assert any(
             color != 0
@@ -317,6 +329,8 @@ def test_module(config):
         )
 
         time.sleep(0.10)
+        # Refresh indeks dari LED Worker
+        led.update(state, 0.2, time.monotonic())
 
         assert (
             led.strip.pixels[
@@ -345,6 +359,8 @@ def test_module(config):
             )
 
             time.sleep(0.05)
+            # Refresh indeks dari LED Worker
+            led.update(state, 0.2, time.monotonic())
 
         active = state["activeLedIdx"]
 
@@ -385,6 +401,8 @@ def test_module(config):
             )
 
             time.sleep(0.05)
+            # Refresh indeks dari LED Worker
+            led.update(state, 0.2, time.monotonic())
 
         shoot = state["shootLedIdx"]
 
@@ -425,6 +443,8 @@ def test_module(config):
         )
 
         time.sleep(0.10)
+        # Refresh indeks dari LED Worker
+        led.update(state, 0.2, time.monotonic())
 
         assert (
             state["activeLedIdx"] == -1
@@ -511,8 +531,8 @@ def test_animation(config):
 # ============================================
 
 
-def pixel_finder(config, hardware=False, total=448,
-                 spiral_count=400, brightness=10,
+def pixel_finder(config, hardware=False, total=437,
+                 spiral_count=389, brightness=10,
                  auto=False, buzzer_pin=17,
                  sound=True, power_ok=False):
 

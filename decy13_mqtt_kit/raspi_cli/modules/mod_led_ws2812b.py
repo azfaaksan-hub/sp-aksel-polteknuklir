@@ -51,8 +51,8 @@ def validate_mapping(config):
         raise ValueError('RF gap harus berada di zona spiral')
     if not 1 <= brightness <= 255:
         raise ValueError('Brightness harus 1..255')
-    if pin != 18:
-        raise ValueError('Divisi 3 menggunakan GPIO18 PWM0 (pin fisik 12)')
+    if pin not in (12, 18):
+        raise ValueError('Divisi 3 menggunakan GPIO12 atau GPIO18 PWM0')
     return total, a, b, c, d, gaps, brightness, pin
 
 
@@ -218,8 +218,6 @@ class LedStripModule(HardwareModule):
 
     def _publish_indices(self, indices):
         self._indices = indices
-        if self._state is not None:
-            self._state.update(activeLedIdx=indices[0], shootLedIdx=indices[1])
 
     def _clear(self):
         self._publish_indices((-1, -1))
@@ -252,69 +250,143 @@ class LedStripModule(HardwareModule):
             return self.enabled
 
     def update(self, state, dt, now):
-        # Core memegang state fisika. Modul ini hanya menulis dua indeks.
+        # Core hanya mengirim snapshot dan membaca indeks.
+        # Tidak ada operasi GPIO, PWM, DMA atau strip.show().
         with self._lock:
-            self._state = state
-            self._snapshot = {k: state.get(k) for k in ('power', 'beam', 'exposureActive',
-                              'emergency', 'stage', 'beamEnergy', 'peakEnergy')}
-            if self._stop.is_set() or self.error is not None or self._thread is None:
-                self._publish_indices((-1, -1))
-                return
-            try:
-                if self.anim.mode(self._snapshot) == 'off':
-                    self.anim.reset()
-                    self._clear()
-                elif self.anim.mode(self._snapshot) != self.anim.last_mode:
-                    self._draw(0.)
-                else:
-                    self._publish_indices(self._indices)
-            except Exception as exc:
-                self.error = str(exc)
-                self.enabled = False
-                self._stop.set()
-                self._publish_indices((-1, -1))
-                print('[DIVISI 3] Update gagal:', exc, flush=True)
-                raise
+            self._snapshot = {
+                k: state.get(k)
+                for k in (
+                    "power", "beam", "exposureActive",
+                    "emergency", "stage", "beamEnergy",
+                    "peakEnergy"
+                )
+            }
 
-    def _draw(self, dt):
-        frame, active, shoot = self.anim.step(self._snapshot, dt)
+            active, shoot = self._indices
+
+            if (
+                self._stop.is_set()
+                or self.error is not None
+                or self._thread is None
+                or not state.get("power")
+                or state.get("emergency")
+            ):
+                active, shoot = -1, -1
+
+            if not state.get("exposureActive"):
+                shoot = -1
+
+            state.update(
+                activeLedIdx=active,
+                shootLedIdx=shoot
+            )
+
+    def _draw(self, snapshot, dt):
+        frame, active, shoot = self.anim.step(snapshot, dt)
         write_frame(self.strip, frame)
-        self._publish_indices((active, shoot))
+        return active, shoot
 
     def _worker(self):
         last = time.monotonic()
+
         try:
             while not self._stop.is_set():
                 start = time.monotonic()
+
+                # Lock hanya untuk menyalin snapshot.
                 with self._lock:
-                    if self._stop.is_set():
-                        break
-                    self._draw(start - last)
+                    snapshot = dict(self._snapshot)
+
+                # Seluruh operasi hardware berada di luar lock.
+                mode = self.anim.mode(snapshot)
+
+                if mode == "off":
+                    self.anim.reset()
+
+                dt = (
+                    0.0 if mode != self.anim.last_mode
+                    else start - last
+                )
+
+                indices = self._draw(snapshot, dt)
+
+                # Publikasi hasil tanpa mengakses state Core.
+                with self._lock:
+                    keys = (
+                        "power", "beam", "exposureActive",
+                        "emergency", "stage"
+                    )
+
+                    if all(
+                        snapshot.get(k) == self._snapshot.get(k)
+                        for k in keys
+                    ):
+                        self._publish_indices(indices)
+
                 last = start
-                self._stop.wait(max(0., 1/self.FPS - (time.monotonic()-start)))
+
+                self._stop.wait(
+                    max(
+                        0.0,
+                        1 / self.FPS -
+                        (time.monotonic() - start)
+                    )
+                )
+
         except Exception as exc:
-            self.error = str(exc)
-            self.enabled = False
-            self._stop.set()
-            print('[DIVISI 3] Render gagal:', exc, flush=True)
-        finally:
             with self._lock:
-                try:
-                    self._clear()
-                except Exception as exc:
+                self.error = str(exc)
+                self.enabled = False
+                self._publish_indices((-1, -1))
+
+            self._stop.set()
+            print("[DIVISI 3] Render gagal:", exc, flush=True)
+
+        finally:
+            # Hanya worker yang memadamkan LED saat shutdown.
+            try:
+                write_frame(
+                    self.strip,
+                    [0] * self.total_leds
+                )
+            except Exception as exc:
+                with self._lock:
                     self.error = str(exc)
-                    print('[DIVISI 3] Gagal blank LED:', exc, flush=True)
+
+                print(
+                    "[DIVISI 3] Gagal blank LED:",
+                    exc,
+                    flush=True
+                )
+
+            finally:
+                with self._lock:
+                    self._publish_indices((-1, -1))
+                    self.enabled = False
 
     def cleanup(self):
         self._stop.set()
+
         thread = self._thread
+
         if thread is not None:
-            thread.join(timeout=2.)
+            thread.join(timeout=2.0)
+
             if thread.is_alive():
-                raise RuntimeError('Thread LED belum berhenti; matikan PSU LED secara manual bila perlu')
+                raise RuntimeError(
+                    "LED worker belum berhenti. "
+                    "Matikan PSU LED secara manual."
+                )
+
         with self._lock:
-            self._clear()
+            error = self.error
             self.enabled = False
             self._thread = None
             self._state = None
             self._snapshot = {}
+            self._indices = (-1, -1)
+
+        if error is not None:
+            raise RuntimeError(
+                "LED worker melaporkan error: " + error
+            )

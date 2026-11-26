@@ -8,7 +8,7 @@
     "publish_interval_sec": 0.2
   },
   "pins_bcm": {
-    "led_ws2812b": 18,
+    "led_ws2812b": 12,
     "relay_vacuum_fan": 21,
     "relay_vacuum_active_low": true,
     "buzzer": 17,
@@ -22,18 +22,18 @@
     "lcd_rst": 25
   },
   "led_mapping": {
-    "total_leds": 448,
+    "total_leds": 437,
     "brightness": 45,
     "spiral_start_idx": 0,
-    "spiral_end_idx": 399,
+    "spiral_end_idx": 388,
     "rf_gap_indices": [
-      99,
-      199,
-      299,
-      399
+      96,
+      193,
+      290,
+      387
     ],
-    "shoot_start_idx": 400,
-    "shoot_end_idx": 447
+    "shoot_start_idx": 389,
+    "shoot_end_idx": 436
   },
   "physics_defaults": {
     "magnet_current_a": 1450.0,
