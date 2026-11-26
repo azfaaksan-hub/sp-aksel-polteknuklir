@@ -102,13 +102,14 @@ def check_config_json() -> Tuple[bool, str]:
         pins = cfg["pins_bcm"]
         leds = cfg["led_mapping"]
         mqtt = cfg["mqtt"]
-        if pins.get("led_ws2812b") != 18:
-            return False, f"Pin LED harus GPIO 18 (ditemukan {pins.get('led_ws2812b')})."
+        led_pin = pins.get("led_ws2812b")
+        if led_pin not in (12, 18):
+            return False, f"Pin LED harus GPIO 12 atau 18 PWM0 (ditemukan {led_pin})."
         if leds.get("total_leds", 0) <= 0:
             return False, "total_leds pada config_hardware.json harus > 0."
         if mqtt.get("topic_cmd") != "decy13/hmi/cmd" or mqtt.get("topic_state") != "decy13/rpi/state":
             return False, "Topic MQTT di config_hardware.json berubah dari kontrak!"
-        return True, f"Valid (GPIO 18 WS2812B, {leds['total_leds']} LED, SPI0 LCD)."
+        return True, f"Valid (GPIO {led_pin} WS2812B, {leds['total_leds']} LED, SPI0 LCD)."
     except Exception as e:
         return False, f"Gagal membaca config_hardware.json: {e}"
 
