@@ -1,756 +1,392 @@
-
 #!/usr/bin/env python3
+"""DECY-13 Divisi 3: visualisasi WS2812B, GPIO18 PWM0/DMA.
+
+Core: LedStripModule(config), setup(), update(state, dt, now), cleanup().
+Animasi edukatif, bukan model lintasan partikel atau interlock keselamatan.
 """
-DECY-13 | DIVISI 3
-MODUL LED WS2812B - RASPBERRY PI 3B+
-
-Integrasi:
-    LedStripModule(config)
-    setup()
-    update(state, dt, now)
-    cleanup()
-
-GPIO18 / PWM0 / DMA, bukan SPI0.
-
-Jumlah LED, spiral, RF gap dan shoot
-dibaca dari config_hardware.json.
-
-Windows: mode MemoryStrip (virtual).
-Raspberry Pi: rpi_ws281x.
-"""
-
 import importlib
 import math
 import threading
 import time
-
 from .base_module import HardwareModule
 
 
 def Color(r, g, b):
-    """Warna RGB 24-bit, kompatibel rpi_ws281x."""
-    r = max(0, min(255, int(r)))
-    g = max(0, min(255, int(g)))
-    b = max(0, min(255, int(b)))
+    r, g, b = (max(0, min(255, int(v))) for v in (r, g, b))
     return (r << 16) | (g << 8) | b
 
 
 class MemoryStrip:
-    """Driver virtual tanpa GPIO."""
-
+    """Buffer virtual dengan API yang sama seperti PixelStrip."""
     def __init__(self, count):
         self.pixels = [0] * count
+        self._buffer = self.pixels.copy()
         self.frames = 0
 
     def numPixels(self):
         return len(self.pixels)
 
     def setPixelColor(self, index, color):
-        if 0 <= index < len(self.pixels):
-            self.pixels[index] = int(color)
+        if not 0 <= index < len(self.pixels):
+            raise IndexError(index)
+        self._buffer[index] = int(color)
 
     def show(self):
+        # Readers see a complete virtual frame, not a partially drawn frame.
+        self.pixels = self._buffer.copy()
         self.frames += 1
 
 
-class LedStripModule(HardwareModule):
-    """Modul LED resmi Divisi 3."""
+def validate_mapping(config):
+    m = config['led_mapping']
+    total = int(m['total_leds'])
+    a, b, c, d = (int(m[k]) for k in ('spiral_start_idx', 'spiral_end_idx',
+                                      'shoot_start_idx', 'shoot_end_idx'))
+    gaps = frozenset(int(i) for i in m.get('rf_gap_indices', []))
+    brightness = int(m.get('brightness', 10))
+    pin = int(config['pins_bcm']['led_ws2812b'])
+    if not (0 <= a <= b < c <= d < total):
+        raise ValueError('Mapping tidak valid: spiral harus mendahului shoot dan tidak overlap')
+    if not all(a <= i <= b for i in gaps):
+        raise ValueError('RF gap harus berada di zona spiral')
+    if not 1 <= brightness <= 255:
+        raise ValueError('Brightness harus 1..255')
+    if pin not in (12, 18):
+        raise ValueError('Divisi 3 menggunakan GPIO12 atau GPIO18 PWM0')
+    return total, a, b, c, d, gaps, brightness, pin
 
+
+def open_strip(count, pin, brightness):
+    """Tidak menyembunyikan kegagalan hardware dari Pixel Finder."""
+    ws = importlib.import_module('rpi_ws281x')
+    strip = ws.PixelStrip(count, pin, 800000, 10, False, brightness, 0)
+    strip.begin()
+    return strip
+
+
+def write_frame(strip, frame):
+    for i, color in enumerate(frame):
+        strip.setPixelColor(i, color)
+    strip.show()
+
+
+def _number(value, default):
+    try:
+        v = float(value)
+        return v if math.isfinite(v) else default
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+class Animation:
+    """Mesin frame murni: dapat diuji tanpa thread, GPIO atau waktu nyata."""
+    RF_HOLD = 0.12
+    TARGET_HOLD = 0.18
+
+    def __init__(self, config):
+        (self.total, self.a, self.b, self.c, self.d, self.gaps,
+         self.brightness, self.pin) = validate_mapping(config)
+        self.n = self.b - self.a + 1
+        self.m = self.d - self.c + 1
+        self.peak = _number(config.get('physics_defaults', {}).get('max_energy_mev'), 13.)
+        if self.peak <= 0:
+            self.peak = 13.
+        self.reset()
+
+    def reset(self):
+        self.spiral_pos = 0.
+        self.shoot_pos = 0.
+        self.rf_timers = {}
+        self.target_time = 0.
+        self.last_mode = 'off'
+
+    def mode(self, state):
+        if state.get('emergency') or not state.get('power') or state.get('stage') == 0:
+            return 'off'
+        if state.get('beam'):
+            return 'shoot' if state.get('exposureActive') else 'spiral'
+        stage = int(_number(state.get('stage'), 0))
+        return {4: 'vacuum', 5: 'ready'}.get(stage, 'standby')
+
+    @staticmethod
+    def comet(frame, head, start, color, tail, end=None):
+        # Spiral boleh wrap; ekstraksi linear tanpa wrap.
+        count = min(tail, end-start+1) if end is not None else min(tail, head-start+1)
+        for k in range(count):
+            f = ((tail - k) / tail) ** 1.5
+            idx = start + (head-start-k) % (end-start+1) if end is not None else head-k
+            frame[idx] = Color(*(v * f for v in color))
+
+    def speed(self, state):
+        peak = _number(state.get('peakEnergy'), self.peak)
+        if peak <= 0:
+            peak = self.peak
+        ratio = max(0., min(1., _number(state.get('beamEnergy'), 0.) / peak))
+        return self.n * (0.20 + 0.55 * ratio)
+
+    def step(self, state, dt):
+        dt = max(0., min(0.20, _number(dt, 0.)))
+        frame = [0] * self.total
+        active = shoot = -1
+        mode = self.mode(state)
+        prior = self.last_mode
+        entering = mode != prior
+        if entering:
+            if mode in ('spiral', 'shoot') and prior in ('spiral', 'shoot'):
+                # Exposure changes must not reset the circulating spiral.
+                self.shoot_pos = self.target_time = 0.
+            else:
+                self.reset()
+            self.last_mode = mode
+            dt = 0.
+        if mode == 'off':
+            return frame, active, shoot
+        if mode in ('standby', 'vacuum', 'ready'):
+            active = self.a
+            count = max(1, self.n // 4) if mode == 'vacuum' else min(16, self.n)
+            color = {'standby': (0, 95, 225), 'vacuum': (120, 20, 220),
+                     'ready': (0, 200, 255)}[mode]
+            for i in range(self.a, self.a + count):
+                frame[i] = Color(*color)
+            if mode == 'ready':
+                for gap in self.gaps:
+                    for i in range(max(self.a, gap-2), min(self.b, gap+2)+1):
+                        frame[i] = Color(220, 180, 30)
+            return frame, active, shoot
+
+        # Both phases retain two circulating cyan particle packets.
+        old = self.spiral_pos
+        delta = self.speed(state) * dt
+        self.spiral_pos = (old + delta) % self.n
+        offsets = [0]
+        tail = max(7, self.n // 16)
+        if self.n >= tail * 2:
+            offsets.append(self.n // 2)
+        self.rf_timers = {g: t-dt for g, t in self.rf_timers.items() if t > dt}
+        for offset in offsets:
+            start = (old + offset) % self.n
+            head = self.a + int((self.spiral_pos + offset) % self.n)
+            self.comet(frame, head, self.a, (0, 190, 255), tail, self.b)
+            # Crossings include wrap and a head which starts on the gap.
+            for gap in self.gaps:
+                distance = (gap - self.a - start) % self.n
+                if distance <= delta:
+                    self.rf_timers[gap] = self.RF_HOLD
+        active = self.a + int(self.spiral_pos)
+        for gap in self.rf_timers:
+            for i in range(max(self.a, gap-2), min(self.b, gap+2)+1):
+                frame[i] = Color(255, 220, 55)
+
+        # Continuous exposure: repeat beam packets until Core disables SHOOT.
+        if mode == 'shoot':
+            end = self.m - 1
+            if self.shoot_pos >= end and self.target_time >= self.TARGET_HOLD:
+                self.shoot_pos = self.target_time = 0.
+                dt = 0.
+            if self.shoot_pos < end:
+                self.shoot_pos = min(float(end), self.shoot_pos + max(32., self.m * 1.4) * dt)
+            else:
+                self.target_time += dt
+            shoot = self.c + int(self.shoot_pos)
+            if self.shoot_pos >= end:
+                for i in range(max(self.c, self.d - 7), self.d + 1):
+                    frame[i] = Color(170, 255, 65)
+            else:
+                self.comet(frame, shoot, self.c, (255, 110, 0), max(5, self.m // 3))
+        return frame, active, shoot
+
+
+class LedStripModule(HardwareModule):
     FPS = 40
 
     def __init__(self, config):
         super().__init__(config)
-
-        led = self.cfg["led_mapping"]
-        pins = self.cfg["pins_bcm"]
-
-        # Konfigurasi berasal dari JSON resmi.
-        self.total_leds = int(led["total_leds"])
-        self.pin_led = int(pins["led_ws2812b"])
-        self.brightness = int(
-            led.get("brightness", 110)
-        )
-
-        self.spiral_start = int(
-            led["spiral_start_idx"]
-        )
-        self.spiral_end = int(
-            led["spiral_end_idx"]
-        )
-        self.shoot_start = int(
-            led["shoot_start_idx"]
-        )
-        self.shoot_end = int(
-            led["shoot_end_idx"]
-        )
-
-        self.rf_gaps = set(
-            map(
-                int,
-                led.get("rf_gap_indices", [])
-            )
-        )
-
-        self._validate_mapping()
-
+        self.anim = Animation(config)
+        self.total_leds = self.anim.total
+        self.spiral_start, self.spiral_end = self.anim.a, self.anim.b
+        self.shoot_start, self.shoot_end = self.anim.c, self.anim.d
+        self.rf_gaps = self.anim.gaps
+        self.pin_led, self.brightness = self.anim.pin, self.anim.brightness
         self.strip = MemoryStrip(self.total_leds)
-        self.enabled = False
-
         self._lock = threading.Lock()
-        self._stop_event = threading.Event()
+        self._stop = threading.Event()
         self._thread = None
+        self._state = None
+        self._snapshot = {}
+        self._indices = (-1, -1)
+        self.error = None
 
-        self._state = {
-            "power": False,
-            "beam": False,
-            "exposure": False,
-            "emergency": False,
-            "stage": 0,
-            "energy_ratio": 0.0
-        }
-
-        self._spiral_position = float(
-            self.spiral_start
-        )
-        self._shoot_position = float(
-            self.shoot_start
-        )
-
-        self._last_beam = False
-        self._last_exposure = False
-
-    # ========================================
-    # CONFIG VALIDATION
-    # ========================================
-
-    def _validate_mapping(self):
-
-        if self.total_leds <= 0:
-            raise ValueError(
-                "total_leds harus positif"
-            )
-
-        if not 0 <= self.brightness <= 255:
-            raise ValueError(
-                "brightness harus 0..255"
-            )
-
-        if not (
-            0 <= self.spiral_start
-            <= self.spiral_end
-            < self.total_leds
-        ):
-            raise ValueError(
-                "Rentang spiral tidak valid"
-            )
-
-        if not (
-            0 <= self.shoot_start
-            <= self.shoot_end
-            < self.total_leds
-        ):
-            raise ValueError(
-                "Rentang shoot tidak valid"
-            )
-
-        if not (
-            self.spiral_end < self.shoot_start
-            or self.shoot_end < self.spiral_start
-        ):
-            raise ValueError(
-                "Spiral dan shoot bertumpang tindih"
-            )
-
-        for index in self.rf_gaps:
-            if not (
-                self.spiral_start
-                <= index
-                <= self.spiral_end
-            ):
-                raise ValueError(
-                    "RF gap di luar spiral"
-                )
-
-    # ========================================
-    # SETUP - CORE CONTRACT
-    # ========================================
-
-    def setup(self):
-        """
-        True: hardware WS2812B aktif.
-        False: mode virtual Windows/fallback.
-        """
-
-        if (
-            self._thread is not None
-            and self._thread.is_alive()
-        ):
-            return self.enabled
-
-        self._stop_event.clear()
-        self.enabled = False
-        self.strip = MemoryStrip(
-            self.total_leds
-        )
-
-        # Flag khusus pengujian, hanya digunakan
-        # dalam salinan config di memori.
-        force_virtual = self.cfg.get(
-            "_div3_force_virtual", False
-        )
-
-        if not force_virtual:
-            try:
-                ws = importlib.import_module(
-                    "rpi_ws281x"
-                )
-
-                strip = ws.PixelStrip(
-                    self.total_leds,
-                    self.pin_led,
-                    800000,
-                    10,
-                    False,
-                    self.brightness,
-                    0
-                )
-
-                strip.begin()
-                self.strip = strip
-                self.enabled = True
-
-            except (
-                ImportError,
-                RuntimeError,
-                OSError,
-                ValueError
-            ) as exc:
-                print(
-                    "[DIVISI 3] Fallback virtual:",
-                    exc
-                )
-
-        self._clear()
-
-        self._thread = threading.Thread(
-            target=self._animation_loop,
-            daemon=True,
-            name="DECY13-LED-DIV3"
-        )
-        self._thread.start()
-
-        return self.enabled
-
-    # ========================================
-    # UPDATE - CORE CONTRACT
-    # ========================================
-
-    def update(self, state, dt, now):
-        """
-        Dipanggil oleh Core Daemon.
-
-        Hanya menulis:
-        - state["activeLedIdx"]
-        - state["shootLedIdx"]
-
-        Tidak mengubah state divisi lain.
-        """
-
-        power = bool(
-            state.get("power", False)
-        )
-        emergency = bool(
-            state.get("emergency", False)
-        )
-
-        beam = (
-            power
-            and not emergency
-            and bool(state.get("beam", False))
-        )
-
-        exposure = (
-            beam
-            and bool(
-                state.get(
-                    "exposureActive", False
-                )
-            )
-        )
-
-        try:
-            stage = int(
-                state.get("stage", 0)
-            )
-        except (ValueError, TypeError):
-            stage = 0
-
-        try:
-            energy = float(
-                state.get("beamEnergy", 0.0)
-            )
-            peak = float(
-                state.get("peakEnergy", 13.0)
-            )
-
-            if not math.isfinite(energy):
-                energy = 0.0
-
-            if (
-                not math.isfinite(peak)
-                or peak <= 0
-            ):
-                peak = 13.0
-
-            ratio = max(
-                0.0,
-                min(1.0, energy / peak)
-            )
-
-        except (ValueError, TypeError):
-            ratio = 0.0
-
-        with self._lock:
-
-            if not beam:
-                self._spiral_position = float(
-                    self.spiral_start
-                )
-
-            if not exposure:
-                self._shoot_position = float(
-                    self.shoot_start
-                )
-
-            self._state = {
-                "power": power,
-                "beam": beam,
-                "exposure": exposure,
-                "emergency": emergency,
-                "stage": stage,
-                "energy_ratio": ratio
-            }
-
-            # HMI menerima indeks berdasarkan
-            # posisi animasi terbaru.
-            if emergency or not power:
-                active_idx = -1
-                shoot_idx = -1
-
-            elif not beam:
-                active_idx = self.spiral_start
-                shoot_idx = -1
-
-            else:
-                active_idx = int(
-                    self._spiral_position
-                )
-
-                shoot_idx = (
-                    int(self._shoot_position)
-                    if exposure
-                    else -1
-                )
-
-            state["activeLedIdx"] = active_idx
-            state["shootLedIdx"] = shoot_idx
-
-    # ========================================
-    # PIXEL UTILITIES
-    # ========================================
+    def _publish_indices(self, indices):
+        self._indices = indices
 
     def _clear(self):
-        for i in range(
-            self.strip.numPixels()
-        ):
-            self.strip.setPixelColor(i, 0)
+        self._publish_indices((-1, -1))
+        write_frame(self.strip, [0] * self.total_leds)
 
-        self.strip.show()
-
-    def _set_pixel(self, index, color):
-        if 0 <= index < self.total_leds:
-            self.strip.setPixelColor(
-                index, color
-            )
-
-    def _comet(
-        self,
-        head,
-        start,
-        end,
-        color,
-        tail=7
-    ):
-        """Komet dengan ekor memudar."""
-
-        if not start <= head <= end:
-            return
-
-        length = end - start + 1
-        tail = min(tail, length)
-
-        r, g, b = color
-
-        for step in range(tail):
-            index = start + (
-                head - start - step
-            ) % length
-
-            fade = (
-                (tail - step) / tail
-            ) ** 1.5
-
-            self._set_pixel(
-                index,
-                Color(
-                    r * fade,
-                    g * fade,
-                    b * fade
-                )
-            )
-
-    # ========================================
-    # ANIMATION WORKER
-    # ========================================
-
-    def _animation_loop(self):
-
-        last_time = time.monotonic()
-
-        while not self._stop_event.is_set():
-
-            current = time.monotonic()
-            dt = min(
-                0.1,
-                max(0.0, current - last_time)
-            )
-            last_time = current
-
-            with self._lock:
-                s = dict(self._state)
-
-                power = s["power"]
-                beam = s["beam"]
-                exposure = s["exposure"]
-                emergency = s["emergency"]
-                ratio = s["energy_ratio"]
-
-                if emergency or not power:
-                    self._spiral_position = float(
-                        self.spiral_start
-                    )
-                    self._shoot_position = float(
-                        self.shoot_start
-                    )
-
-                elif beam:
-
-                    if not self._last_beam:
-                        self._spiral_position = float(
-                            self.spiral_start
-                        )
-
-                    # Visual particle speed proportional
-                    # to spiral length and beam energy.
-                    spiral_length = (
-                        self.spiral_end
-                        - self.spiral_start + 1
-                    )
-                    speed = spiral_length * (
-                        0.20 + 0.55 * ratio
-                    )
-
-                    self._spiral_position = (
-                        self.spiral_start
-                        + (
-                            self._spiral_position
-                            - self.spiral_start
-                            + speed * dt
-                        ) % spiral_length
-                    )
-
-                    if exposure:
-
-                        if not self._last_exposure:
-                            self._shoot_position = float(
-                                self.shoot_start
-                            )
-
-                        shoot_length = (
-                            self.shoot_end
-                            - self.shoot_start + 1
-                        )
-                        shoot_speed = max(
-                            32.0,
-                            shoot_length * 1.4
-                        )
-
-                        self._shoot_position = (
-                            self.shoot_start
-                            + (
-                                self._shoot_position
-                                - self.shoot_start
-                                + shoot_speed * dt
-                            ) % shoot_length
-                        )
-
-                    else:
-                        self._shoot_position = float(
-                            self.shoot_start
-                        )
-
-                self._last_beam = (
-                    beam and not emergency
-                )
-                self._last_exposure = (
-                    exposure and not emergency
-                )
-
-                spiral_index = int(
-                    self._spiral_position
-                )
-                shoot_index = int(
-                    self._shoot_position
-                )
-
+    def setup(self):
+        with self._lock:
+            if self._thread is not None and self._thread.is_alive():
+                return self.enabled
+            self._stop.clear()
+            self.anim.reset()
+            self._snapshot = {}
+            self._state = None
+            self.error = None
+            self.enabled = False
+            self.strip = MemoryStrip(self.total_leds)
+            if not self.cfg.get('_div3_force_virtual', False):
+                try:
+                    self.strip = open_strip(self.total_leds, self.pin_led, self.brightness)
+                    self.enabled = True
+                except (ImportError, RuntimeError, OSError, ValueError) as exc:
+                    print('[DIVISI 3] Hardware tidak aktif; fallback virtual:', exc, flush=True)
             try:
-                self._render(
-                    s,
-                    spiral_index,
-                    shoot_index,
-                    current
-                )
+                self._clear()
+            except Exception:
+                self.enabled = False
+                raise
+            self._thread = threading.Thread(target=self._worker, name='DECY13-LED-DIV3', daemon=True)
+            self._thread.start()
+            return self.enabled
 
-            except Exception as exc:
-                print(
-                    "[DIVISI 3] Render error:",
-                    exc
+    def update(self, state, dt, now):
+        # Core hanya mengirim snapshot dan membaca indeks.
+        # Tidak ada operasi GPIO, PWM, DMA atau strip.show().
+        with self._lock:
+            self._snapshot = {
+                k: state.get(k)
+                for k in (
+                    "power", "beam", "exposureActive",
+                    "emergency", "stage", "beamEnergy",
+                    "peakEnergy"
                 )
-                self._stop_event.set()
+            }
 
-            self._stop_event.wait(
-                1.0 / self.FPS
+            active, shoot = self._indices
+
+            if (
+                self._stop.is_set()
+                or self.error is not None
+                or self._thread is None
+                or not state.get("power")
+                or state.get("emergency")
+            ):
+                active, shoot = -1, -1
+
+            if not state.get("exposureActive"):
+                shoot = -1
+
+            state.update(
+                activeLedIdx=active,
+                shootLedIdx=shoot
             )
+
+    def _draw(self, snapshot, dt):
+        frame, active, shoot = self.anim.step(snapshot, dt)
+        write_frame(self.strip, frame)
+        return active, shoot
+
+    def _worker(self):
+        last = time.monotonic()
 
         try:
-            self._clear()
+            while not self._stop.is_set():
+                start = time.monotonic()
+
+                # Lock hanya untuk menyalin snapshot.
+                with self._lock:
+                    snapshot = dict(self._snapshot)
+
+                # Seluruh operasi hardware berada di luar lock.
+                mode = self.anim.mode(snapshot)
+
+                if mode == "off":
+                    self.anim.reset()
+
+                dt = (
+                    0.0 if mode != self.anim.last_mode
+                    else start - last
+                )
+
+                indices = self._draw(snapshot, dt)
+
+                # Publikasi hasil tanpa mengakses state Core.
+                with self._lock:
+                    keys = (
+                        "power", "beam", "exposureActive",
+                        "emergency", "stage"
+                    )
+
+                    if all(
+                        snapshot.get(k) == self._snapshot.get(k)
+                        for k in keys
+                    ):
+                        self._publish_indices(indices)
+
+                last = start
+
+                self._stop.wait(
+                    max(
+                        0.0,
+                        1 / self.FPS -
+                        (time.monotonic() - start)
+                    )
+                )
+
         except Exception as exc:
-            print(
-                "[DIVISI 3] Cleanup error:",
-                exc
-            )
+            with self._lock:
+                self.error = str(exc)
+                self.enabled = False
+                self._publish_indices((-1, -1))
 
-    # ========================================
-    # RENDER BY CORE STAGE
-    # ========================================
+            self._stop.set()
+            print("[DIVISI 3] Render gagal:", exc, flush=True)
 
-    def _render(
-        self,
-        s,
-        spiral_index,
-        shoot_index,
-        now
-    ):
-
-        # Clear frame buffer.
-        for i in range(self.total_leds):
-            self.strip.setPixelColor(i, 0)
-
-        power = s["power"]
-        beam = s["beam"]
-        exposure = s["exposure"]
-        emergency = s["emergency"]
-        stage = s["stage"]
-
-        spiral_length = (
-            self.spiral_end
-            - self.spiral_start + 1
-        )
-        shoot_length = (
-            self.shoot_end
-            - self.shoot_start + 1
-        )
-
-        if emergency or not power:
-            # Stage 0 / EMERGENCY_STOP: Safe OFF total.
-            pass
-
-        elif beam:
-            # FASE 1 — Core Stage 6:
-            # Akselerasi spiral penuh 400 LED di dalam Dee.
-            spiral_tail = max(
-                7,
-                spiral_length // 16
-            )
-
-            self._comet(
-                spiral_index,
-                self.spiral_start,
-                self.spiral_end,
-                (0, 190, 255),
-                tail=spiral_tail
-            )
-
-            # Paket partikel kedua di sisi berlawanan
-            # agar lintasan spiral 400 LED tampak hidup penuh.
-            active_heads = [spiral_index]
-            if spiral_length >= spiral_tail * 2:
-                second_head = (
-                    self.spiral_start
-                    + (
-                        spiral_index
-                        - self.spiral_start
-                        + spiral_length // 2
-                    ) % spiral_length
+        finally:
+            # Hanya worker yang memadamkan LED saat shutdown.
+            try:
+                write_frame(
+                    self.strip,
+                    [0] * self.total_leds
                 )
-                self._comet(
-                    second_head,
-                    self.spiral_start,
-                    self.spiral_end,
-                    (0, 190, 255),
-                    tail=spiral_tail
-                )
-                active_heads.append(second_head)
+            except Exception as exc:
+                with self._lock:
+                    self.error = str(exc)
 
-            # Kilatan kuning emas pada blok RF Gap (+-2 piksel)
-            # saat kepala komet melintas dekat RF Gap.
-            for gap in self.rf_gaps:
-                if any(
-                    abs(head - gap) <= 2
-                    for head in active_heads
-                ):
-                    g_start = max(
-                        self.spiral_start,
-                        gap - 2
-                    )
-                    g_end = min(
-                        self.spiral_end,
-                        gap + 2
-                    )
-                    for idx in range(
-                        g_start,
-                        g_end + 1
-                    ):
-                        self._set_pixel(
-                            idx,
-                            Color(255, 220, 55)
-                        )
-
-            if exposure:
-                # FASE 2 — Core Stage 7:
-                # Ekstraksi & Tembakan Target (400..447).
-                shoot_tail = max(
-                    5,
-                    shoot_length // 3
-                )
-                self._comet(
-                    shoot_index,
-                    self.shoot_start,
-                    self.shoot_end,
-                    (255, 110, 0),
-                    tail=shoot_tail
+                print(
+                    "[DIVISI 3] Gagal blank LED:",
+                    exc,
+                    flush=True
                 )
 
-                # Kilatan dampak target hijau-emas di 8 LED ujung
-                # saat komet menyentuh area ujung target.
-                impact_trigger = max(
-                    self.shoot_start,
-                    self.shoot_end - 3
-                )
-                if shoot_index >= impact_trigger:
-                    impact_start = max(
-                        self.shoot_start,
-                        self.shoot_end - 7
-                    )
-                    for idx in range(
-                        impact_start,
-                        self.shoot_end + 1
-                    ):
-                        self._set_pixel(
-                            idx,
-                            Color(170, 255, 65)
-                        )
-
-        elif stage == 4:
-            # Stage 4 (Vacuum Pumping): 1/4 awal spiral
-            # menyala ungu-biru terang agar jelas terlihat.
-            count = max(1, spiral_length // 4)
-            for index in range(
-                self.spiral_start,
-                self.spiral_start + count
-            ):
-                self._set_pixel(
-                    index,
-                    Color(120, 20, 220)
-                )
-
-        elif stage == 5:
-            # Stage 5 (Beam Ready / AUTO INIT):
-            # Sumber ion cyan terang + 4 blok RF Gap kuning-cyan.
-            src_end = min(
-                self.spiral_end,
-                self.spiral_start + 15
-            )
-            for index in range(
-                self.spiral_start,
-                src_end + 1
-            ):
-                self._set_pixel(
-                    index,
-                    Color(0, 200, 255)
-                )
-
-            for gap in self.rf_gaps:
-                g_start = max(
-                    self.spiral_start,
-                    gap - 2
-                )
-                g_end = min(
-                    self.spiral_end,
-                    gap + 2
-                )
-                for index in range(
-                    g_start,
-                    g_end + 1
-                ):
-                    self._set_pixel(
-                        index,
-                        Color(220, 180, 30)
-                    )
-
-        else:
-            # Stage 1-3 (Power ON / Standby):
-            # Zona sumber ion (0..15) biru cerah lembut.
-            src_end = min(
-                self.spiral_end,
-                self.spiral_start + 15
-            )
-            for index in range(
-                self.spiral_start,
-                src_end + 1
-            ):
-                self._set_pixel(
-                    index,
-                    Color(0, 95, 225)
-                )
-
-        self.strip.show()
-
-    # ========================================
-    # CLEANUP - CORE CONTRACT
-    # ========================================
+            finally:
+                with self._lock:
+                    self._publish_indices((-1, -1))
+                    self.enabled = False
 
     def cleanup(self):
+        self._stop.set()
 
-        self._stop_event.set()
+        thread = self._thread
 
-        if (
-            self._thread is not None
-            and self._thread.is_alive()
-        ):
-            self._thread.join(
-                timeout=1.0
+        if thread is not None:
+            thread.join(timeout=2.0)
+
+            if thread.is_alive():
+                raise RuntimeError(
+                    "LED worker belum berhenti. "
+                    "Matikan PSU LED secara manual."
+                )
+
+        with self._lock:
+            error = self.error
+            self.enabled = False
+            self._thread = None
+            self._state = None
+            self._snapshot = {}
+            self._indices = (-1, -1)
+
+        if error is not None:
+            raise RuntimeError(
+                "LED worker melaporkan error: " + error
             )
-
-        self._clear()
-        self.enabled = False
