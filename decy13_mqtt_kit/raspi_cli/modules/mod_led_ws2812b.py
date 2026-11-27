@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DECY-13 Divisi 3: visualisasi WS2812B, GPIO18 PWM0/DMA.
+"""DECY-13 Divisi 3: visualisasi WS2812B, GPIO12 (Pin Fisik 32) PWM0/DMA10.
 
 Core: LedStripModule(config), setup(), update(state, dt, now), cleanup().
 Animasi edukatif, bukan model lintasan partikel atau interlock keselamatan.
@@ -59,14 +59,19 @@ def validate_mapping(config):
 def open_strip(count, pin, brightness):
     """Tidak menyembunyikan kegagalan hardware dari Pixel Finder."""
     ws = importlib.import_module('rpi_ws281x')
-    strip = ws.PixelStrip(count, pin, 800000, 10, False, brightness, 0)
+    # Alokasikan minimal 450 piksel pada hardware fisik agar sisa mata LED di ujung strip ikut padam.
+    strip = ws.PixelStrip(max(int(count), 450), pin, 800000, 10, False, brightness, 0)
     strip.begin()
     return strip
 
 
 def write_frame(strip, frame):
+    n = strip.numPixels()
     for i, color in enumerate(frame):
-        strip.setPixelColor(i, color)
+        if i < n:
+            strip.setPixelColor(i, color)
+    for i in range(len(frame), n):
+        strip.setPixelColor(i, 0)
     strip.show()
 
 
@@ -288,6 +293,7 @@ class LedStripModule(HardwareModule):
 
     def _worker(self):
         last = time.monotonic()
+        off_flushes = 0
 
         try:
             while not self._stop.is_set():
@@ -302,13 +308,20 @@ class LedStripModule(HardwareModule):
 
                 if mode == "off":
                     self.anim.reset()
-
-                dt = (
-                    0.0 if mode != self.anim.last_mode
-                    else start - last
-                )
-
-                indices = self._draw(snapshot, dt)
+                    if off_flushes < 2:
+                        indices = self._draw(snapshot, 0.0)
+                        off_flushes += 1
+                    else:
+                        # Berhenti menembak strip.show() 40 FPS saat OFF agar jalur PWM0
+                        # diam tenang di 0V (mencegah glitch pulsa 3.3V->5V menyalakan LED).
+                        indices = (-1, -1)
+                else:
+                    off_flushes = 0
+                    dt = (
+                        0.0 if mode != self.anim.last_mode
+                        else start - last
+                    )
+                    indices = self._draw(snapshot, dt)
 
                 # Publikasi hasil tanpa mengakses state Core.
                 with self._lock:

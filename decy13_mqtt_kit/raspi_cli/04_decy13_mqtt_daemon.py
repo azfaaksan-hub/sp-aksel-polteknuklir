@@ -169,7 +169,7 @@ class Decy13CoreDaemon:
             except Exception as e:
                 print(f"  - {mod.name:<22} : [ERROR ISOLATED: {e}]")
         if not self.lcd_spi_enabled:
-            print(f"  - {'LcdDisplayModule':<22} : [NONAKTIF - Mode 3-TFT USB / Anti-Konflik GPIO 18]")
+            print(f"  - {'LcdDisplayModule':<22} : [NONAKTIF - Mode 3-TFT USB / Anti-Konflik PWM0 LED]")
         print("=" * 64, flush=True)
 
     def handle_command(self, payload: dict) -> None:

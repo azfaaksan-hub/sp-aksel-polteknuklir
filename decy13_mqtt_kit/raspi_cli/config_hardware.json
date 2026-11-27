@@ -23,7 +23,7 @@
   },
   "led_mapping": {
     "total_leds": 437,
-    "brightness": 45,
+    "brightness": 15,
     "spiral_start_idx": 0,
     "spiral_end_idx": 388,
     "rf_gap_indices": [

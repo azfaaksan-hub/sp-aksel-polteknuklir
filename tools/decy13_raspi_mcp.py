@@ -247,20 +247,19 @@ def tool_raspi_diagnose_led_sweep(args: Dict[str, Any]) -> Dict[str, Any]:
         a, b = samples_beam[i - 1], samples_beam[i]
         dt = b["t"] - a["t"]
         if dt > 0.05 and a["activeLedIdx"] >= 0 and b["activeLedIdx"] >= 0:
-            diff = (b["activeLedIdx"] - a["activeLedIdx"]) % 400
+            diff = (b["activeLedIdx"] - a["activeLedIdx"]) % 389
             if diff > 0:
                 deltas.append(diff / dt)
     avg_spiral_speed = round(sum(deltas) / len(deltas), 1) if deltas else 0.0
 
-    # Kesimpulan diagnostik kode Raspi vs fisik strip
+    # Kesimpulan diagnostik kode Raspi vs fisik strip (mendukung 435/437/448 LED)
     if not beam_indices:
-        verdict = "ERROR_SOFTWARE_DAEMON: activeLedIdx tidak pernah masuk rentang 0..399."
-    elif max_spiral >= 60 and avg_spiral_speed >= 60.0 and max_shoot >= 400:
+        verdict = "ERROR_SOFTWARE_DAEMON: activeLedIdx tidak pernah bergerak di rentang spiral."
+    elif max_spiral >= 50 and avg_spiral_speed >= 55.0 and max_shoot >= 385:
         verdict = (
-            f"KODE RASPI NORMAL (VERSI 2-FASE 448 LED AKTIF): spiral bergerak cepat ~{avg_spiral_speed} LED/dtk "
-            f"(terbaca hingga LED #{max_spiral}/399) dan shoot menembak di rentang 400..447 (hingga #{max_shoot}). "
-            "Jika di fisik LED 0 mati, 1-5 nyala, dan 6..447 mati -> 100% masalah FISIK (putus jalur DOUT->DIN di LED #5/#6, "
-            "LED #0 rusak, voltage divider di jalur DIN, Common GND, atau PSU 5V LED drop)."
+            f"KODE RASPI NORMAL (SINGLE-WRITER PWM0 GPIO 12 AKTIF): spiral bergerak ~{avg_spiral_speed} LED/dtk "
+            f"(terbaca hingga LED #{max_spiral}) dan shoot menembak hingga #{max_shoot}. "
+            "Jika fisik strip tidak sesuai -> periksa sambungan solder DOUT->DIN, Pin Fisik 32 (GPIO 12), Common GND Pin 39, dan tegangan 5V LM2596."
         )
     elif max_spiral > 0 and avg_spiral_speed < 55.0:
         verdict = (
@@ -295,7 +294,7 @@ def tool_raspi_ssh_inspect(args: Dict[str, Any]) -> Dict[str, Any]:
     remote_cmd = (
         "REPO_DIR=~/sp-aksel-polteknuklir; [ -d ~/decy13/.git ] && REPO_DIR=~/decy13; "
         "cd $REPO_DIR && echo '=== GIT ===' && git log -1 --oneline && "
-        "echo '=== CONFIG ===' && grep -E 'total_leds|brightness|spiral|shoot' decy13_mqtt_kit/raspi_cli/config_hardware.json && "
+        "echo '=== CONFIG ===' && grep -E 'led_ws2812b|total_leds|brightness|spiral|shoot' decy13_mqtt_kit/raspi_cli/config_hardware.json && "
         "echo '=== SERVICES ===' && systemctl is-active mosquitto decy13.service decy13-autolink.service decy13-usb-hub.service ; "
         "echo '=== BOOT CFG ===' && grep -E 'audio|spi' /boot/firmware/config.txt /boot/config.txt 2>/dev/null && "
         "echo '=== POWER ===' && vcgencmd get_throttled && "

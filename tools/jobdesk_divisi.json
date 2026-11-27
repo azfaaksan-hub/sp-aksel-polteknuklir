@@ -58,7 +58,7 @@
       "dependencies": [],
       "cross_division_warnings": [
         "Setiap perubahan pin/indeks LED/parameter di config_hardware.json wajib diumumkan ke Divisi 2-6.",
-        "Daemon wajib dijalankan dengan sudo karena modul Divisi 3 (rpi_ws281x DMA GPIO 18) membutuhkan akses root."
+        "Daemon wajib dijalankan dengan sudo karena modul Divisi 3 (rpi_ws281x DMA PWM0 GPIO 12 / Pin Fisik 32) membutuhkan akses root."
       ],
       "tahap_b_commands": [
         {
@@ -136,13 +136,13 @@
       "id": 3,
       "name": "Sistem Animasi LED Strip WS2812B (Spiral, RF Gap & Shoot)",
       "pic": "blufiaa",
-      "branch": "divisi-3-uji-fisik / divisi-3-led-ws2812b-v13",
+      "branch": "divisi-3-single-writer-final",
       "report_file": "UJI_DIVISI_3_LED_WS2812B.md",
-      "current_announcement": "UPDATE v1.6: Branch `divisi-3-uji-fisik` (`f6c367d`: 448 LED WS2812B — 400 spiral 0..399 + 48 extraction 400..447, `brightness=20`, `10/10` ceklis 5/5 A & 5/5 B) SUDAH DIINTEGRASIKAN ke `main`! Tinggal verifikasi akhir bersama LCD/daemon asli & keputusan sinkronisasi `config_hardware.json` dari 64 ke 448 LED untuk naik ke `LULUS_UJI_FISIK`.",
+      "current_announcement": "UPDATE FINAL PR #4: Arsitektur Single-Writer 437 LED (`0..388` spiral, RF `[96,193,290,387]`, `389..436` shoot) pada `GPIO 12` (`Pin Fisik 32` PWM0/DMA10 — menggantikan `Pin Fisik 12 / GPIO 18` yang rusak) SUDAH DI-MERGE ke `main`!",
       "current_tasks": [
-        "Tarik update `main` v1.6 secara aman lewat: python tools/aman_pull_dan_sync.py --divisi 3",
-        "Uji terintegrasi `04_decy13_mqtt_daemon.py` + `LedStripModule` pada 448 LED fisik bersamaan dengan 3-TFT USB & Relay/Buzzer RPi (serta tempelkan bukti log terminal RPi ke Bagian C `UJI_DIVISI_3_LED_WS2812B.md`).",
-        "Konfirmasikan ke Ketua apakah `config_hardware.json` (`led_mapping`: 448 LED, 0..399 spiral, 400..447 shoot) sudah siap diaktifkan menyeluruh bersama Web HMI & Core Daemon agar status naik menjadi `LULUS_UJI_FISIK`."
+        "Tarik update `main` terbaru secara aman lewat: python tools/aman_pull_dan_sync.py --divisi 3",
+        "Pastikan kabel data DIN LED Strip menancap di `Pin Fisik 32` (`GPIO 12`) via resistor 330-470 Ohm dan Common GND ke `Pin Fisik 39` (JANGAN gunakan Pin Fisik 12 / GPIO 18 karena rusak).",
+        "Uji terintegrasi `04_decy13_mqtt_daemon.py` bersama Web HMI Mini PC dan catat bukti fisik akhir ke Bagian C `UJI_DIVISI_3_LED_WS2812B.md`."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_led_ws2812b.py",
@@ -150,18 +150,18 @@
         "laporan_uji/UJI_DIVISI_3_LED_WS2812B.md"
       ],
       "hardware_scope": [
-        "GPIO 18 (Pin Fisik 12, PWM0/DMA): Data IN LED Strip WS2812B via resistor 330 Ohm",
-        "Power Supply 5V 3A eksternal (common GND dengan RPi) untuk 64 LED (0..47 Spiral, 48..63 Shoot)"
+        "GPIO 12 (Pin Fisik 32, PWM0/DMA10): Data IN LED Strip WS2812B via resistor 330-470 Ohm (pengganti Pin Fisik 12 / GPIO 18 yang rusak)",
+        "PSU Eksternal 5V (Common GND ke Pin Fisik 39 RPi) untuk 437 LED (0..388 Spiral, 389..436 Shoot, brightness aman 10-15)"
       ],
       "dependencies": [1],
       "cross_division_warnings": [
-        "WAJIB mematikan audio onboard (dtparam=audio=off) + reboot sebelum uji LED, karena audio onboard memakai PWM0 yang sama dengan GPIO 18.",
-        "Skrip LED wajib dijalankan dengan sudo karena rpi_ws281x mengakses DMA.",
-        "Jika urutan piksel fisik di papan siklotron berbeda dari 0..47 dan 48..63, catat hasilnya dari 03_test_led_pixel_finder.py dan lapor ke Ketua untuk diupdate di config_hardware.json."
+        "JANGAN gunakan Pin Fisik 12 (GPIO 18) karena pin fisik tersebut rusak; gunakan Pin Fisik 32 (GPIO 12, PWM0/DMA10).",
+        "WAJIB mematikan audio onboard (dtparam=audio=off) agar kanal PWM0 pada GPIO 12 berjalan stabil.",
+        "Skrip LED wajib dijalankan dengan sudo karena rpi_ws281x mengakses DMA."
       ],
       "tahap_b_commands": [
         {
-          "item": "Audio analog di RPi sudah dimatikan (dtparam=audio=off) agar DMA GPIO 18 berjalan normal",
+          "item": "Audio analog di RPi sudah dimatikan (dtparam=audio=off) agar DMA PWM0 GPIO 12 berjalan normal",
           "cmd": "grep -E '^dtparam=audio=off' /boot/firmware/config.txt /boot/config.txt 2>/dev/null"
         },
         {

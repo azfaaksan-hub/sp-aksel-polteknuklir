@@ -76,7 +76,7 @@ if [ -f "$BOOT_CFG" ]; then
     if grep -q "^dtparam=audio=on" "$BOOT_CFG"; then
         sudo sed -i 's/^dtparam=audio=on/dtparam=audio=off/' "$BOOT_CFG"
         NEED_REBOOT=1
-        ok "dtparam=audio=off diaktifkan (mencegah konflik DMA GPIO 18 LED WS2812B)."
+        ok "dtparam=audio=off diaktifkan (mencegah konflik DMA PWM0 GPIO 12/18 LED WS2812B)."
     elif ! grep -q "^dtparam=audio=off" "$BOOT_CFG"; then
         echo "dtparam=audio=off" | sudo tee -a "$BOOT_CFG" >/dev/null
         NEED_REBOOT=1
@@ -93,10 +93,10 @@ if [ -f "$BOOT_CFG" ]; then
         ok "Interface SPI0 sudah ON (dtparam=spi=on)."
     fi
 
-    # Blacklist snd_bcm2835 agar tidak pernah merampas kanal PWM0 GPIO 18 di Debian 13
+    # Blacklist snd_bcm2835 agar tidak pernah merampas kanal PWM0 GPIO 12/18 di Debian 13
     if [ ! -f /etc/modprobe.d/decy13-disable-audio.conf ]; then
         printf 'blacklist snd_bcm2835\n' | sudo tee /etc/modprobe.d/decy13-disable-audio.conf >/dev/null
-        ok "Blacklist modul kernel snd_bcm2835 dipasang (anti-bentrok PWM0 GPIO 18)."
+        ok "Blacklist modul kernel snd_bcm2835 dipasang (anti-bentrok PWM0 GPIO 12/18)."
     fi
 else
     warn "File $BOOT_CFG tidak ditemukan (bukan OS Raspberry Pi standar?)."

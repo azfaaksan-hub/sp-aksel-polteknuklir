@@ -598,8 +598,8 @@ def sync_local_led_files_to_raspi(ssh_bin: str, user: str, ip: str) -> int:
         "bash tools/raspi_bootstrap.sh --install-service --install-autolink --install-usb-service --disable-eth && "
         "sudo systemctl restart decy13-autolink.service decy13.service decy13-usb-hub.service && "
         "sleep 2 && "
-        "echo '=== CEK PIN GPIO 18 (HARUS a5 / PWM0, BUKAN op hi!) ===' && "
-        "(command -v pinctrl >/dev/null && pinctrl get 18) || true && "
+        "echo '=== CEK PIN DATA LED GPIO 12 / PIN FISIK 32 (HARUS a0 / PWM0) ===' && "
+        "(command -v pinctrl >/dev/null && pinctrl get 12,17,21) || true && "
         "sudo journalctl -u decy13.service -n 18 --no-pager && "
         "vcgencmd get_throttled"
     )
