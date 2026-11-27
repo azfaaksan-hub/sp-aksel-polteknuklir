@@ -1473,6 +1473,7 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     simSpiralPos: 0.0,
     simShootPos: 0.0,
     simTargetHoldSec: 0.0,
+    livePacketMs: 0.0,
     rfHoldUntilMs: {},
 
     soundEnabled: true,
@@ -1762,7 +1763,7 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
       appendCommLog('ERR', 'Alamat broker harus diawali ws:// atau wss://');
       return;
     }
-    if (state.mqttClient && state.activeBrokerUrl === brokerUrl && state.mqttConnected) {
+    if (state.mqttClient && state.activeBrokerUrl === brokerUrl) {
       return;
     }
     if (state.mqttClient) {
@@ -1887,7 +1888,11 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
   function applyRpiState(packet, received = true) {
     if (!packet || typeof packet !== 'object' || Array.isArray(packet)) return;
     live = { ...live, ...packet };
-    if (received) lastPacket = performance.now();
+    const nowPerf = performance.now();
+    if (received) {
+      lastPacket = nowPerf;
+      state.livePacketMs = nowPerf;
+    }
 
     for (const [key, source] of Object.entries({
       power: 'power', vacuum: 'vacuum', rf: 'rf', magnet: 'magnet',
@@ -1958,6 +1963,10 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
       applyRpiState.lastLog = packet.logs[0];
     }
     syncUiFromState();
+    if (received) {
+      renderStrip(nowPerf);
+      drawCyclotronSimulator(nowPerf);
+    }
   }
 
   function renderLive() {
@@ -2057,6 +2066,34 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     }
   }
 
+  function getVisualLedState(nowMs) {
+    const nSpiral = state.ledSpiralCount;
+    const mShoot = state.ledShootCount;
+    let visSpiral = state.activeLedIndex;
+    let visShoot = state.shootLedIndex;
+
+    // Saat MQTT terhubung, state.activeLedIndex & state.shootLedIndex TIDAK pernah ditimpa;
+    // proyeksi visual ini hanya menghaluskan gerak di antara dua paket 200 ms agar sinkron 40 FPS fisik.
+    if (state.mqttConnected && state.power && !state.estop && state.beam && state.activeLedIndex >= 0) {
+      const dt = Math.max(0, Math.min(0.24, (nowMs - (state.livePacketMs || nowMs)) / 1000));
+      const peak = Number.isFinite(live.peakEnergy) && live.peakEnergy > 0 ? live.peakEnergy : 13.0;
+      const eRatio = Math.max(0, Math.min(1, (state.beamEnergyMev || 0) / peak));
+      const spiralSpeed = nSpiral * (0.20 + 0.55 * eRatio);
+      visSpiral = Math.floor((state.activeLedIndex + spiralSpeed * dt) % nSpiral);
+
+      if (state.shooting && state.shootLedIndex >= 0) {
+        const shootSpeed = Math.max(32.0, mShoot * 1.4);
+        const endIdx = mShoot - 1;
+        if (state.shootLedIndex >= endIdx) {
+          visShoot = endIdx;
+        } else {
+          visShoot = Math.min(endIdx, Math.floor(state.shootLedIndex + shootSpeed * dt));
+        }
+      }
+    }
+    return { visSpiral, visShoot };
+  }
+
   function drawCyclotronSimulator(nowMs) {
     const canvas = $('cyclotronCanvas');
     if (!canvas || !canvas.clientWidth) return;
@@ -2135,8 +2172,9 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
 
     const nSpiral = state.ledSpiralCount;
     const mShoot = state.ledShootCount;
-    const targetHit = state.shooting && state.beam && !state.estop;
-    const impactActive = targetHit && state.shootLedIndex >= mShoot - 1;
+    const { visSpiral, visShoot } = getVisualLedState(nowMs);
+    const targetHit = state.power && state.shooting && state.beam && !state.estop;
+    const impactActive = targetHit && visShoot >= mShoot - 1;
 
     ctx.fillStyle = impactActive ? 'rgba(170, 255, 65, 0.28)' : (targetHit ? '#b45309' : '#16202c');
     ctx.strokeStyle = impactActive ? 'rgb(170, 255, 65)' : (targetHit ? '#f59e0b' : '#4a607a');
@@ -2154,8 +2192,8 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     // Pemetaan 1:1 seluruh 389 LED spiral (0..388) sesuai Animation.step() di mod_led_ws2812b.py
     const stg = (!state.power || state.estop) ? 0 : state.currentStage;
     const spiralTail = Math.max(7, Math.floor(nSpiral / 16)); // 24 LED pada 389 LED
-    const head1 = (state.beam && !state.estop && state.activeLedIndex >= 0)
-      ? Math.min(nSpiral - 1, state.activeLedIndex)
+    const head1 = (state.power && state.beam && !state.estop && visSpiral >= 0)
+      ? Math.min(nSpiral - 1, visSpiral)
       : -1;
     const head2 = head1 >= 0 ? (head1 + Math.floor(nSpiral / 2)) % nSpiral : -1;
 
@@ -2253,8 +2291,8 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
       if (impactActive && j >= Math.max(0, mShoot - 8)) {
         pRad = 2.9;
         pFill = 'rgb(170, 255, 65)';
-      } else if (!impactActive && targetHit && state.shootLedIndex >= 0) {
-        const k = state.shootLedIndex - j;
+      } else if (!impactActive && targetHit && visShoot >= 0) {
+        const k = visShoot - j;
         if (k === 0) {
           pRad = 3.0;
           pFill = '#fde047';
@@ -2362,14 +2400,15 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     ctx.stroke();
   }
 
-  function renderStrip() {
+  function renderStrip(nowMs = performance.now()) {
     const stg = (!state.power || state.estop) ? 0 : state.currentStage;
-    const spiralActive = state.beam && !state.estop && state.activeLedIndex >= 0;
-    const shootActive = state.shooting && state.beam && !state.estop && state.shootLedIndex >= 0;
-    const rawShootIdx = shootActive ? (state.ledShootStart + state.shootLedIndex) : null;
+    const { visSpiral, visShoot } = getVisualLedState(nowMs);
+    const spiralActive = state.power && state.beam && !state.estop && visSpiral >= 0;
+    const shootActive = state.power && state.shooting && state.beam && !state.estop && visShoot >= 0;
+    const rawShootIdx = shootActive ? (state.ledShootStart + visShoot) : null;
     const shootEndRaw = state.ledShootStart + state.ledShootCount - 1;
     const targetStartRaw = Math.max(state.ledShootStart, shootEndRaw - 7);
-    const impactActive = shootActive && state.shootLedIndex >= state.ledShootCount - 1;
+    const impactActive = shootActive && visShoot >= state.ledShootCount - 1;
 
     $('targetShootBadge').textContent = impactActive
       ? `Target hijau #${targetStartRaw}-${shootEndRaw}`
@@ -2378,8 +2417,8 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     let spiralLabel = 'Padam';
     const vacEnd = Math.max(0, Math.floor(state.ledSpiralCount / 4) - 1);
     if (spiralActive) {
-      const pairIdx = (state.activeLedIndex + Math.floor(state.ledSpiralCount / 2)) % state.ledSpiralCount;
-      spiralLabel = `Fase 1 #${state.activeLedIndex} & #${pairIdx} (ekor 24)`;
+      const pairIdx = (visSpiral + Math.floor(state.ledSpiralCount / 2)) % state.ledSpiralCount;
+      spiralLabel = `Fase 1 #${visSpiral} & #${pairIdx} (ekor 24)`;
     } else if (stg === 4) {
       spiralLabel = `Vakum #0-${vacEnd}`;
     } else if (stg === 5) {
@@ -2395,7 +2434,7 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     const shootTail = Math.max(5, Math.floor(state.ledShootCount / 3)); // 16 segmen linear tanpa wrap
     ledCells.forEach((cell, i) => {
       const isImpactCell = impactActive && i >= Math.max(0, nCells - 8);
-      const k = (!impactActive && shootActive) ? (state.shootLedIndex - i) : -1;
+      const k = (!impactActive && shootActive) ? (visShoot - i) : -1;
       cell.classList.toggle('is-impact', isImpactCell);
       cell.classList.toggle('is-lit', k === 0);
       cell.classList.toggle('is-trail', k > 0 && k < shootTail);
@@ -2405,15 +2444,12 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
   // ==================== RESET SISTEM KE AWAL (UNTUK INSTRUKTUR LOOP & IDLE) ====================
   function resetSystemToColdStandby(reasonLabel) {
     if (state.mqttConnected) {
-      // Pada Core Daemon RPi: bila power sedang hidup, TOGGLE_POWER mematikan power,
-      // vakum, interlock, beam, dan shoot secara aman tanpa membunyikan sirene E-Stop 3 detik.
-      if (state.power) {
+      // Hanya tab aktif (tidak tersembunyi) yang boleh mengirim reset otomatis,
+      // dan HANYA matikan daya bila state.power benar-benar true (jangan pernah menyalakan Power ON!).
+      if (!document.hidden && state.power === true) {
         publishCommand({ cmd: 'TOGGLE_POWER' });
-      } else if (state.estop) {
-        // Bersihkan bendera emergency dengan on-off singkat hanya saat diperlukan,
-        // atau biarkan Langkah 1 (TOGGLE_POWER) membersihkannya secara alami.
+        publishCommand({ cmd: 'SET_PARAMS', magnet_a: 1450, rf_mhz: 22.5, rf_kv: 45, beam_ua: 25 });
       }
-      publishCommand({ cmd: 'SET_PARAMS', magnet_a: 1450, rf_mhz: 22.5, rf_kv: 45, beam_ua: 25 });
     } else {
       state.power = false;
       state.vacuum = false;
@@ -2628,8 +2664,8 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
         return;
       }
 
-      // Mode hitung mundur Auto-Reset saat tutorial ditinggal (tidak diselesaikan)
-      const inProgress = this.stepIdx > 0 || state.power || state.beam || state.estop;
+      // Mode hitung mundur Auto-Reset saat tutorial ditinggal (hanya saat tab aktif & Power ON)
+      const inProgress = !document.hidden && (this.stepIdx > 0 || state.power || state.beam);
       if (!inProgress || this.idleLimitSec <= 0) {
         this.lastActivityMs = nowMs;
         if (lbl) lbl.textContent = this.idleLimitSec <= 0 ? 'Auto-reset diam: Nonaktif' : 'Menunggu langkah pertama dimulai';
@@ -2759,7 +2795,7 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
       if (cfg.autoConnect && cfg.wsUrl) {
         const urlChanged = cfg.wsUrl !== state.activeBrokerUrl;
         if ($('commEndpoint')) $('commEndpoint').value = cfg.wsUrl;
-        if (forceConnect || urlChanged || !state.mqttConnected) {
+        if (forceConnect || urlChanged || !state.mqttClient) {
           connectMQTT(cfg.wsUrl);
         }
       } else if (cfg.mode === 'simulation' && lastRuntimeStamp === 0) {
@@ -2802,20 +2838,24 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
   let lastLedStepMs = performance.now();
   let lastSecondMs = performance.now();
   let liveFrameTime = -Infinity;
+  let liveChartTime = -Infinity;
 
   function simulationStep(nowMs) {
     instructor.tick(nowMs);
 
     if (state.mqttConnected) {
-      if (nowMs - liveFrameTime >= 90) {
+      if (nowMs - liveFrameTime >= 24) {
         liveFrameTime = nowMs;
         const status = lastPacket === null ? 'Menunggu paket' :
           (nowMs - lastPacket > 2500 ? 'Telemetri jeda' : 'Telemetri langsung');
         $('seqClockOut').textContent = `MQTT: ${status}`;
-        renderStrip();
-        const phase = Math.max(0, state.activeLedIndex) * 18;
+        renderStrip(nowMs);
         drawCyclotronSimulator(nowMs);
         drawRfWaveform(nowMs);
+      }
+      if (nowMs - liveChartTime >= 110) {
+        liveChartTime = nowMs;
+        const phase = Math.max(0, state.activeLedIndex) * 18;
         drawBeamProfile(phase);
         drawLineChart('vacTrendCanvas', state.vacHistory, -7, 3.1, '#0ea5e9', 'rgba(14, 165, 233, 0.14)');
         drawLineChart('trendChartCanvas', state.beamHistory, 0, 105, '#16a34a', 'rgba(22, 163, 74, 0.14)');
@@ -2958,9 +2998,13 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     state.power = !state.power;
     if (!state.power) {
       state.vacuum = false;
+      state.rf = false;
       state.interlock = false;
       state.beam = false;
       state.shooting = false;
+      state.activeLedIndex = -1;
+      state.shootLedIndex = -1;
+      state.rfHoldUntilMs = {};
     }
     playBeep(state.power ? 660 : 330, 80);
     syncUiFromState();
@@ -3072,6 +3116,9 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     state.rf = false;
     state.vacuum = false;
     state.interlock = false;
+    state.activeLedIndex = -1;
+    state.shootLedIndex = -1;
+    state.rfHoldUntilMs = {};
     playBeep(240, 320, 'sawtooth');
     syncUiFromState();
     broadcastToRaspberryPi('HARDWARE_ISR_EMERGENCY_STOP');
@@ -3208,9 +3255,19 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
   instructor.render();
   requestAnimationFrame(simulationStep);
 
+  // Tutup soket WebSocket bersih saat tab ditutup/di-refresh agar tidak menumpuk di Mosquitto RPi
+  window.addEventListener('beforeunload', () => {
+    if (state.mqttClient) {
+      try { state.mqttClient.end(true); } catch (_) {}
+      state.mqttClient = null;
+    }
+  });
+
   // Tarik konfigurasi otomatis dari server Python Mini PC saat halaman dibuka & tiap 6 detik
   pullRuntimeConfig(false);
-  setInterval(() => pullRuntimeConfig(false), 6000);
+  setInterval(() => {
+    if (!document.hidden) pullRuntimeConfig(false);
+  }, 6000);
 })();
 </script>
 </body>

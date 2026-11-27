@@ -129,6 +129,7 @@ class Decy13CoreDaemon:
             "exposureSeconds": 0.0,
             "activeLedIdx": -1,
             "shootLedIdx": -1,
+            "ledOffSeq": 0,
             "buzzerActive": False,
             "buzzerUntil": 0.0,
             "logs": ["Sistem Core Daemon RPi 3B+ siap. Menunggu perintah MQTT."]
@@ -185,11 +186,16 @@ class Decy13CoreDaemon:
                     self.add_log("Tahap 1: Power ON (Buzzer Indikator 5 detik aktif)")
                 else:
                     s["vacuum"] = False
+                    s["rf"] = False
                     s["interlocks"] = False
                     s["beam"] = False
                     s["exposureActive"] = False
+                    s["stage"] = 0
+                    s["activeLedIdx"] = -1
+                    s["shootLedIdx"] = -1
                     s["buzzerUntil"] = 0.0
-                    self.add_log("Power OFF: Seluruh subsistem dimatikan.")
+                    s["ledOffSeq"] = int(s.get("ledOffSeq", 0)) + 1
+                    self.add_log("Power OFF: Seluruh subsistem & LED dimatikan.")
 
             elif cmd == "TOGGLE_VACUUM":
                 if not s["power"]:
@@ -238,11 +244,16 @@ class Decy13CoreDaemon:
                 s["emergency"] = True
                 s["power"] = False
                 s["vacuum"] = False
+                s["rf"] = False
                 s["interlocks"] = False
                 s["beam"] = False
                 s["exposureActive"] = False
+                s["stage"] = 0
+                s["activeLedIdx"] = -1
+                s["shootLedIdx"] = -1
                 s["buzzerUntil"] = time.time() + 3.0
-                self.add_log("DARURAT: EMERGENCY STOP DITEKAN! Semua sistem diputus.")
+                s["ledOffSeq"] = int(s.get("ledOffSeq", 0)) + 1
+                self.add_log("DARURAT: EMERGENCY STOP DITEKAN! Semua sistem & LED diputus.")
 
             elif cmd == "SET_PARAMS":
                 # Validasi input HMI: nilai non-angka, NaN/Infinity, atau di luar
@@ -432,10 +443,14 @@ def main():
         if getattr(rc, "value", rc) != 0:
             print(f"Koneksi MQTT terputus (rc={rc}). Auto-reconnect aktif, hardware tetap berjalan aman.")
 
+    cmd_wake = threading.Event()
+
     def on_message(c, userdata, msg):
         try:
             data = json.loads(msg.payload.decode("utf-8"))
             daemon.handle_command(data)
+            # Bangunkan loop utama seketika (<5 ms) agar aktuator & telemetri HMI tidak menunggu 200 ms
+            cmd_wake.set()
         except Exception as e:
             print("Gagal parsing payload MQTT:", e)
 
@@ -475,12 +490,16 @@ def main():
                 client.publish(mqtt_cfg["topic_state"], payload_out, qos=0)
             except Exception:
                 pass
-            # Periode tetap (~200 ms) tanpa akumulasi drift, penting untuk debounce E-Stop.
+            # Periode tetap (~200 ms) saat steady-state, namun bangun instan saat ada perintah HMI baru.
             next_tick += interval
             sisa = next_tick - time.monotonic()
             if sisa > 0:
-                time.sleep(sisa)
+                if cmd_wake.wait(timeout=sisa):
+                    cmd_wake.clear()
+                    next_tick = time.monotonic()
             else:
+                if cmd_wake.is_set():
+                    cmd_wake.clear()
                 next_tick = time.monotonic()
     except KeyboardInterrupt:
         print("\nMenghentikan Core Daemon DECY-13...")

@@ -78,6 +78,15 @@ class VacuumSafetyModule(HardwareModule):
             GPIO.setup(self.pin_buzzer, GPIO.OUT, initial=buz_off)
             GPIO.setup(self.pin_estop, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             self.enabled = True
+            phys_map = {17: "Pin 11", 27: "Pin 13", 22: "Pin 15", 21: "Pin 40"}
+            buz_phys = phys_map.get(self.pin_buzzer, "BCM")
+            vac_phys = phys_map.get(self.pin_vac, "BCM")
+            print(
+                f"    [Divisi 2] Relay Vakum=GPIO {self.pin_vac} ({vac_phys}, active_low={self.vac_active_low}) | "
+                f"Buzzer=GPIO {self.pin_buzzer} ({buz_phys}, active_low={self.buzzer_active_low}) | "
+                f"E-Stop=GPIO {self.pin_estop} (hw_enabled={self.estop_enabled})",
+                flush=True,
+            )
             return True
         except Exception as e:
             print(f"[VacuumSafetyModule] setup gagal: {e}")
@@ -123,9 +132,14 @@ class VacuumSafetyModule(HardwareModule):
             state["emergency"] = True
             state["power"] = False
             state["vacuum"] = False
+            state["rf"] = False
             state["interlocks"] = False
             state["beam"] = False
             state["exposureActive"] = False
+            state["stage"] = 0
+            state["activeLedIdx"] = -1
+            state["shootLedIdx"] = -1
+            state["ledOffSeq"] = int(state.get("ledOffSeq", 0)) + 1
             state["buzzerUntil"] = now + ESTOP_ALARM_SEC
             self._alarm_until = now + ESTOP_ALARM_SEC
             ts = time.strftime("%H:%M:%S")

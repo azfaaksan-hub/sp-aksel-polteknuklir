@@ -59,8 +59,8 @@ def validate_mapping(config):
 def open_strip(count, pin, brightness):
     """Tidak menyembunyikan kegagalan hardware dari Pixel Finder."""
     ws = importlib.import_module('rpi_ws281x')
-    # Alokasikan minimal 450 piksel pada hardware fisik agar sisa mata LED di ujung strip ikut padam.
-    strip = ws.PixelStrip(max(int(count), 450), pin, 800000, 10, False, brightness, 0)
+    # Alokasikan minimal 512 piksel pada hardware fisik agar seluruh sisa mata LED di ujung strip ikut padam total.
+    strip = ws.PixelStrip(max(int(count), 512), pin, 800000, 10, False, brightness, 0)
     strip.begin()
     return strip
 
@@ -203,6 +203,10 @@ class Animation:
 
 class LedStripModule(HardwareModule):
     FPS = 40
+    # Jadwal blank bertahap saat Power OFF / Emergency Stop (detik):
+    # menyapu instan (0-80ms), transien mati relay kipas 12V (200-500ms),
+    # serta akhir alarm buzzer E-Stop 3 detik (1.2s & 3.25s), lalu diam 0V.
+    OFF_FLUSH_SCHEDULE = (0.0, 0.03, 0.08, 0.20, 0.50, 1.20, 3.25)
 
     def __init__(self, config):
         super().__init__(config)
@@ -215,10 +219,12 @@ class LedStripModule(HardwareModule):
         self.strip = MemoryStrip(self.total_leds)
         self._lock = threading.Lock()
         self._stop = threading.Event()
+        self._wake = threading.Event()
         self._thread = None
         self._state = None
         self._snapshot = {}
         self._indices = (-1, -1)
+        self._off_epoch = 0
         self.error = None
 
     def _publish_indices(self, indices):
@@ -236,6 +242,7 @@ class LedStripModule(HardwareModule):
             self.anim.reset()
             self._snapshot = {}
             self._state = None
+            self._off_epoch = 0
             self.error = None
             self.enabled = False
             self.strip = MemoryStrip(self.total_leds)
@@ -258,14 +265,33 @@ class LedStripModule(HardwareModule):
         # Core hanya mengirim snapshot dan membaca indeks.
         # Tidak ada operasi GPIO, PWM, DMA atau strip.show().
         with self._lock:
-            self._snapshot = {
+            prev_snap = self._snapshot
+            new_snap = {
                 k: state.get(k)
                 for k in (
                     "power", "beam", "exposureActive",
                     "emergency", "stage", "beamEnergy",
-                    "peakEnergy"
+                    "peakEnergy", "ledOffSeq"
                 )
             }
+            self._snapshot = new_snap
+            force_off = (
+                (prev_snap.get("power") is True and not new_snap.get("power"))
+                or (not prev_snap.get("emergency") and bool(new_snap.get("emergency")))
+                or (
+                    new_snap.get("ledOffSeq") is not None
+                    and new_snap.get("ledOffSeq") != prev_snap.get("ledOffSeq")
+                    and (not new_snap.get("power") or bool(new_snap.get("emergency")))
+                )
+            )
+            if force_off:
+                self._off_epoch += 1
+                self._wake.set()
+            elif any(
+                prev_snap.get(k) != new_snap.get(k)
+                for k in ("power", "beam", "exposureActive", "emergency", "stage")
+            ):
+                self._wake.set()
 
             active, shoot = self._indices
 
@@ -293,30 +319,41 @@ class LedStripModule(HardwareModule):
 
     def _worker(self):
         last = time.monotonic()
-        off_flushes = 0
+        off_started_at = None
+        off_step = 0
+        seen_off_epoch = -1
 
         try:
             while not self._stop.is_set():
                 start = time.monotonic()
 
-                # Lock hanya untuk menyalin snapshot.
+                # Lock hanya untuk menyalin snapshot & token paksa-padam.
                 with self._lock:
                     snapshot = dict(self._snapshot)
+                    off_epoch = self._off_epoch
 
                 # Seluruh operasi hardware berada di luar lock.
                 mode = self.anim.mode(snapshot)
 
                 if mode == "off":
                     self.anim.reset()
-                    if off_flushes < 2:
+                    if off_started_at is None or off_epoch != seen_off_epoch:
+                        off_started_at = start
+                        off_step = 0
+                        seen_off_epoch = off_epoch
+                    if (
+                        off_step < len(self.OFF_FLUSH_SCHEDULE)
+                        and (start - off_started_at) >= self.OFF_FLUSH_SCHEDULE[off_step]
+                    ):
                         indices = self._draw(snapshot, 0.0)
-                        off_flushes += 1
+                        off_step += 1
                     else:
-                        # Berhenti menembak strip.show() 40 FPS saat OFF agar jalur PWM0
-                        # diam tenang di 0V (mencegah glitch pulsa 3.3V->5V menyalakan LED).
+                        # Di luar jadwal blank bertahap, jalur PWM0 diam tenang di 0V.
                         indices = (-1, -1)
                 else:
-                    off_flushes = 0
+                    off_started_at = None
+                    off_step = 0
+                    seen_off_epoch = off_epoch
                     dt = (
                         0.0 if mode != self.anim.last_mode
                         else start - last
@@ -338,13 +375,22 @@ class LedStripModule(HardwareModule):
 
                 last = start
 
-                self._stop.wait(
-                    max(
+                if mode == "off":
+                    if off_step < len(self.OFF_FLUSH_SCHEDULE):
+                        next_due = off_started_at + self.OFF_FLUSH_SCHEDULE[off_step]
+                        wait_sec = max(0.005, min(0.25, next_due - time.monotonic()))
+                    else:
+                        wait_sec = 0.25
+                else:
+                    wait_sec = max(
                         0.0,
                         1 / self.FPS -
                         (time.monotonic() - start)
                     )
-                )
+                if wait_sec > 0.0 and self._wake.wait(timeout=wait_sec):
+                    self._wake.clear()
+                elif self._wake.is_set():
+                    self._wake.clear()
 
         except Exception as exc:
             with self._lock:
@@ -379,6 +425,7 @@ class LedStripModule(HardwareModule):
 
     def cleanup(self):
         self._stop.set()
+        self._wake.set()
 
         thread = self._thread
 
