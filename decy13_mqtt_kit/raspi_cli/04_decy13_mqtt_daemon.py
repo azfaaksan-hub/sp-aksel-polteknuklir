@@ -188,6 +188,7 @@ class Decy13CoreDaemon:
                     s["interlocks"] = False
                     s["beam"] = False
                     s["exposureActive"] = False
+                    s["buzzerUntil"] = 0.0
                     self.add_log("Power OFF: Seluruh subsistem dimatikan.")
 
             elif cmd == "TOGGLE_VACUUM":

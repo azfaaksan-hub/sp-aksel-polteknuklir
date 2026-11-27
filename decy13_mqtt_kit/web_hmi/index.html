@@ -1120,7 +1120,7 @@
       <section class="panel">
         <div class="panel-head">
           <h2 class="panel-title">Aktuator vakum &amp; peringatan</h2>
-          <span class="mono panel-meta">GPIO 21 &amp; GPIO 17</span>
+          <span class="mono panel-meta">GPIO 21 &amp; GPIO 27</span>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;background-color:var(--bg-inset);border:1px solid var(--border-hairline);border-radius:var(--rad-control);flex-shrink:0;">
@@ -1132,7 +1132,7 @@
           <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;">
             <span id="hwFanState" style="font-size:12.5px;font-weight:600;">Kipas vakum: Mati</span>
             <span id="hwFanPwmTxt" class="mono" style="font-size:11px;color:var(--ink-secondary);">Relay GPIO 21: HIGH (Mati)</span>
-            <span id="hwBuzzerState" style="font-size:11.5px;color:var(--ink-secondary);">Buzzer GPIO 17: Hening</span>
+            <span id="hwBuzzerState" style="font-size:11.5px;color:var(--ink-secondary);">Buzzer GPIO 27: Hening</span>
             <span id="hwInterruptTxt" class="mono" style="font-size:10.5px;color:var(--sig-nominal);">Pengaman E-Stop: Siaga</span>
           </div>
         </div>
@@ -1352,7 +1352,7 @@
               <button id="btnCopyRpiCode" type="button" class="btn" style="padding:3px 8px;font-size:11px;">Salin</button>
             </div>
             <pre id="codeRpiBlock" class="mono" style="margin:0;height:190px;padding:10px;background-color:var(--bg-chassis);border:1px solid var(--border-hairline);border-radius:var(--rad-control);font-size:11px;overflow:auto;"># Konfigurasi Aktual Siklotron DECY-13 (config_hardware.json - 437 LED Single-Writer)
-PIN_BUZZER      = 17    # Pin Fisik 11 (Active-HIGH Buzzer SFM-27)
+PIN_BUZZER      = 27    # Pin Fisik 13 (Active-HIGH Buzzer SFM-27, pengganti Pin 11/GPIO 17)
 PIN_WS2812B     = 12    # Pin Fisik 32 PWM0/DMA10 (kompatibel GPIO 18 Pin 12, 437 LED @ 40 FPS)
                         # Standby: 0..15 biru | Vakum: 0..96 ungu | Ready: 0..15 + RF[96,193,290,387]
                         # Fase 1 (Stage 6): 2 paket cyan 0..388 (ekor 24 LED) + kilatan 4 RF Gap
@@ -1655,15 +1655,15 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     }
 
     if (state.estop) {
-      $('hwBuzzerState').textContent = 'Buzzer GPIO 17: Alarm darurat aktif';
+      $('hwBuzzerState').textContent = 'Buzzer GPIO 27: Alarm darurat aktif';
       $('hwInterruptTxt').textContent = 'Pengaman E-Stop: TRIP DARURAT';
       $('hwInterruptTxt').style.color = 'var(--sig-hazard)';
     } else if (state.shooting) {
-      $('hwBuzzerState').textContent = 'Buzzer GPIO 17: Indikator paparan target';
+      $('hwBuzzerState').textContent = 'Buzzer GPIO 27: Indikator paparan target';
       $('hwInterruptTxt').textContent = 'Pengaman E-Stop: Siaga aman';
       $('hwInterruptTxt').style.color = 'var(--sig-nominal)';
     } else {
-      $('hwBuzzerState').textContent = 'Buzzer GPIO 17: Hening';
+      $('hwBuzzerState').textContent = 'Buzzer GPIO 27: Hening';
       $('hwInterruptTxt').textContent = 'Pengaman E-Stop: Siaga aman';
       $('hwInterruptTxt').style.color = 'var(--sig-nominal)';
     }
@@ -2014,7 +2014,7 @@ AUTO_INIT, START_BEAM, SHOOT, EMERGENCY_STOP, SET_PARAMS</pre>
     $('fanSvgIcon')?.classList.toggle('fan-spinning', fanOn);
     put('hwFanState', fanOn ? 'Kipas vakum: Aktif (Relay ON)' : 'Kipas vakum: Mati');
     put('hwFanPwmTxt', fanOn ? 'Relay GPIO 21: LOW (Aktif)' : 'Relay GPIO 21: HIGH (Mati)');
-    put('hwBuzzerState', live.buzzerActive ? 'Buzzer GPIO 17: Berbunyi' : 'Buzzer GPIO 17: Hening');
+    put('hwBuzzerState', live.buzzerActive ? 'Buzzer GPIO 27: Berbunyi' : 'Buzzer GPIO 27: Hening');
     put('hwInterruptTxt', state.estop ? 'Pengaman E-Stop: TRIP DARURAT' : 'Pengaman E-Stop: Siaga aman');
     $('hwInterruptTxt').style.color = state.estop ? 'var(--sig-hazard)' : 'var(--sig-nominal)';
 

@@ -90,11 +90,11 @@
       "pic": "dzakimumtazi",
       "branch": "divisi-2-vacum-safety",
       "report_file": "UJI_DIVISI_2_VAKUM_SAFETY.md",
-      "current_announcement": "Divisi 2 RESMI LULUS_UJI_FISIK (4/4 Tahap B, 7/7 Total): Relay Kipas 12V (GPIO 21), Buzzer (GPIO 17), serta cleanup() lulus uji fisik bersama Ketua & PJ Divisi 2. Catatan: saklar fisik E-Stop GPIO 22 tidak dipasang/diuji (N/A) karena fungsi E-Stop dipindah ke HTML Web HMI di Mini PC.",
+      "current_announcement": "UPDATE PIN & POLA BUZZER: Pin Buzzer dipindahkan dari GPIO 17 (Pin 11) ke GPIO 27 (Pin Fisik 13) di config_hardware.json, serta pola bunyi baru Divisi 2 (Power ON 5s, Shoot 1s, E-Stop 3s, Energi Maks 13 MeV hingga E-Stop/Power OFF) sudah diintegrasikan bersih ke mod_vacuum_safety.py.",
       "current_tasks": [
-        "Jika menyentuh branch `divisi-2-vacum-safety`, tarik update `main` v1.6 dengan aman lewat: python tools/aman_pull_dan_sync.py --divisi 2",
-        "Pertahankan hasil uji fisik Divisi 2 yang sudah lulus (Relay Kipas GPIO 21 & Buzzer GPIO 17) dan jangan ubah file divisi lain.",
-        "Siap mendampingi uji integrasi penuh M3 (04_decy13_mqtt_daemon.py serentak dengan LED Divisi 3 & 3-TFT USB Divisi 4) serta verifikasi E-Stop via HTML Web HMI Mini PC."
+        "Tarik update `main` terbaru secara aman lewat: python tools/aman_pull_dan_sync.py --divisi 2",
+        "Pastikan kabel (+) Buzzer menancap di `Pin Fisik 13` (`GPIO 27`) dan (-) Buzzer di `Pin Fisik 09` (`GND`), serta Relay Kipas 12V tetap di `GPIO 21` (`Pin Fisik 40`).",
+        "Uji pola bunyi Buzzer GPIO 27 dan Relay Kipas GPIO 21 bersama daemon utama (`04_decy13_mqtt_daemon.py`)."
       ],
       "allowed_files": [
         "decy13_mqtt_kit/raspi_cli/modules/mod_vacuum_safety.py",
@@ -103,14 +103,14 @@
       ],
       "hardware_scope": [
         "GPIO 21 (Pin Fisik 40): Relay Kipas Vakum 12V (Active-LOW)",
-        "GPIO 17 (Pin Fisik 11): Buzzer SFM-27 (Active-HIGH)",
+        "GPIO 27 (Pin Fisik 13): Buzzer SFM-27 (Active-HIGH — menggantikan Pin Fisik 11 / GPIO 17)",
         "E-Stop: Dilakukan melalui tombol HTML Web HMI di Mini PC (saklar fisik GPIO 22 tidak dipasang)"
       ],
       "dependencies": [1],
       "cross_division_warnings": [
         "GND Adaptor 12V Kipas WAJIB disatukan (common ground) dengan Pin GND RPi.",
         "Relay bersifat Active-LOW: initial setup() dan cleanup() wajib mengeset GPIO 21 ke HIGH agar kipas mati saat program berhenti.",
-        "Saklar fisik E-Stop GPIO 22 tidak dipasang; kendali E-Stop operasional dijalankan melalui tombol EMERGENCY_STOP pada HTML Web HMI Mini PC."
+        "Pin Buzzer resmi sekarang adalah GPIO 27 (Pin Fisik 13); jangan sambungkan buzzer ke jalur 5V/3.3V langsung."
       ],
       "tahap_b_commands": [
         {
@@ -122,7 +122,7 @@
           "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 2 (ON) lalu 3 (OFF)"
         },
         {
-          "item": "Menu [1] & pola daemon membunyikan Buzzer GPIO 17 dengan jelas",
+          "item": "Menu [1] & pola daemon membunyikan Buzzer GPIO 27 dengan jelas",
           "cmd": "Di dalam 01_test_relay_buzzer.py: ketik 1 (Buzzer 1 detik)"
         },
         {

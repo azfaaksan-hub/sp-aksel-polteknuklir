@@ -14,7 +14,7 @@ Pastikan kondisi **semua adaptor masih mati**, lalu periksa 6 titik wajib ini:
 - [ ] **Kabel Ethernet RPi DICABUT** *(mode 100% Wi-Fi agar chip LAN7515 tidak memicu drop daya/restart pada RPi 3B+)*.
 - [ ] **Common Ground LED (Divisi 3):** `(-)` GND PSU Eksternal 5V / `LM2596` sudah tersambung ke `GND` LED Strip **DAN** `Pin 39` / `Pin 06` (`GND` RPi). **`(+)` 5V PSU LED TIDAK BOLEH menyentuh `Pin 02`/`04` RPi!**
 - [ ] **Resistor Data LED (PIN BARU — Pin 12 Rusak!):** Resistor `330–470 Ω` terpasang seri antara **`Pin Fisik 32` (`GPIO 12` / `BCM 12`, PWM0)** → `DIN` LED Strip WS2812B *(JANGAN tancap ke `Pin Fisik 12` / `GPIO 18` karena pin tersebut rusak)*.
-- [ ] **Relay & Buzzer (Divisi 2):** `Pin 11` (`GPIO 17`) → Buzzer `(+)`, `Pin 09` → Buzzer `(-)`, `Pin 40` (`GPIO 21`) → `IN` Relay, `Pin 02` (`5V`) → `VCC` Relay, `Pin 39` → `GND` Relay. Tegangan **12V hanya di terminal `COM`/`NO` Relay + Kipas 12V**.
+- [ ] **Relay & Buzzer (Divisi 2 — Pin Buzzer Baru!):** **`Pin 13` (`GPIO 27`)** → Buzzer `(+)`, `Pin 09` → Buzzer `(-)`, `Pin 40` (`GPIO 21`) → `IN` Relay, `Pin 02` (`5V`) → `VCC` Relay, `Pin 39` → `GND` Relay. Tegangan **12V hanya di terminal `COM`/`NO` Relay + Kipas 12V**.
 - [ ] **3 Arduino Uno + 3 Shield TFT (Divisi 4):**
   - Ketiga Uno tercolok ke **Powered USB Hub 5V (≥ 2A)** *(bukan langsung ke port USB RPi)*.
   - **Slot microSD Uno 2 & Uno 3 KOSONG**.

@@ -11,7 +11,7 @@
     "led_ws2812b": 12,
     "relay_vacuum_fan": 21,
     "relay_vacuum_active_low": true,
-    "buzzer": 17,
+    "buzzer": 27,
     "estop_button": 22,
     "estop_active_low": true,
     "estop_hardware_enabled": false,
