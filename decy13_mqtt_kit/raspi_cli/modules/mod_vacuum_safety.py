@@ -9,11 +9,11 @@ File Terkait     : - raspi_cli/modules/mod_vacuum_safety.py (File ini)
 
 Tugas & Tanggung Jawab Modul Ini:
 1. Mengendalikan Relay Kipas DC 12V (GPIO 21 / Pin Fisik 40, Active-LOW) sebagai simulasi Pompa Vakum.
-2. Mengendalikan Buzzer SFM-27 (GPIO 27 / Pin Fisik 13, membaca `pins_bcm.buzzer` di config_hardware.json):
-   - Tahap 1 (Power ON): Bunyi kontinyu selama 5 detik saat power baru menyala.
-   - Tahap 7 (Shoot / `exposureActive`): Bunyi indikator 1 detik saat tembakan baru aktif.
+2. Mengendalikan Buzzer SFM-27 (GPIO 26 / Pin Fisik 37, membaca `pins_bcm.buzzer` di config_hardware.json):
+   - Tahap 1 (Power ON): Bunyi kontinyu selama 5 detik saat daya utama baru dihidupkan.
+   - Tahap 4 (Pompa Vakum ON): Bunyi kontinyu selama 1 detik saat pompa vakum baru dihidupkan.
+   - Tahap 6 (Start Beam ON): Bunyi kontinyu selama 3 detik saat berkas spiral baru dihidupkan.
    - Darurat (Emergency Stop dari Web HMI maupun tombol fisik): Alarm kontinyu selama 3 detik.
-   - Energi Maksimum (`beamEnergy >= max_energy_mev`): Bunyi kontinyu hingga E-Stop atau Power OFF.
 3. Membaca tombol fisik Emergency Stop (GPIO 22, Pull-Up) dengan software debounce
    apabila `estop_hardware_enabled` bernilai True pada `config_hardware.json`.
 """
@@ -30,7 +30,8 @@ except ImportError:
 
 
 POWER_ON_BEEP_SEC = 5.0
-SHOOT_BEEP_SEC = 1.0
+VACUUM_ON_BEEP_SEC = 1.0
+BEAM_ON_BEEP_SEC = 3.0
 ESTOP_ALARM_SEC = 3.0
 DEBOUNCE_COUNT = 2  # 2 x 200 ms = ~400 ms anti-noise
 
@@ -43,8 +44,13 @@ class VacuumSafetyModule(HardwareModule):
         pins = self.cfg.get("pins_bcm", {})
         self.pin_vac = int(pins.get("relay_vacuum_fan", 21))
         self.vac_active_low = bool(pins.get("relay_vacuum_active_low", True))
-        self.pin_buzzer = int(pins.get("buzzer", 27))
+        self.pin_buzzer = int(pins.get("buzzer", 26))
         self.buzzer_active_low = bool(pins.get("buzzer_active_low", False))
+        self.buzzer_passive_pwm = bool(pins.get("buzzer_passive_pwm", False))
+        try:
+            self.buzzer_pwm_freq = max(100.0, min(10000.0, float(pins.get("buzzer_pwm_freq_hz", 2500.0))))
+        except (TypeError, ValueError):
+            self.buzzer_pwm_freq = 2500.0
         self.pin_estop = int(pins.get("estop_button", 22))
         self.estop_active_low = bool(pins.get("estop_active_low", True))
         self.estop_enabled = bool(pins.get("estop_hardware_enabled", True))
@@ -55,14 +61,18 @@ class VacuumSafetyModule(HardwareModule):
         self._estop_count = 0
         self._estop_down = False
         self._prev_power = False
-        self._prev_shoot = False
+        self._prev_vacuum = False
+        self._prev_beam = False
         self._prev_emergency = False
-        self._power_until = 0.0
-        self._shoot_until = 0.0
-        self._alarm_until = 0.0
-        self._max_latched = False
+        self._prev_off_seq = None
+        self._last_now = None
+        self._power_rem = 0.0
+        self._vacuum_rem = 0.0
+        self._beam_rem = 0.0
+        self._alarm_rem = 0.0
         self._last_vac_state = None
         self._last_buz_state = None
+        self._buz_pwm = None
 
     def setup(self) -> bool:
         if not HAS_GPIO:
@@ -77,13 +87,16 @@ class VacuumSafetyModule(HardwareModule):
             GPIO.setup(self.pin_vac, GPIO.OUT, initial=vac_off)
             GPIO.setup(self.pin_buzzer, GPIO.OUT, initial=buz_off)
             GPIO.setup(self.pin_estop, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            if self.buzzer_passive_pwm:
+                self._buz_pwm = GPIO.PWM(self.pin_buzzer, self.buzzer_pwm_freq)
             self.enabled = True
-            phys_map = {17: "Pin 11", 27: "Pin 13", 22: "Pin 15", 21: "Pin 40"}
-            buz_phys = phys_map.get(self.pin_buzzer, "BCM")
+            phys_map = {16: "Pin 36", 17: "Pin 11", 20: "Pin 38", 21: "Pin 40", 22: "Pin 15", 23: "Pin 16", 26: "Pin 37", 27: "Pin 13"}
+            self._buz_phys = phys_map.get(self.pin_buzzer, "BCM")
             vac_phys = phys_map.get(self.pin_vac, "BCM")
+            buz_mode = f"PWM {int(self.buzzer_pwm_freq)}Hz" if self.buzzer_passive_pwm else f"DC active_low={self.buzzer_active_low}"
             print(
                 f"    [Divisi 2] Relay Vakum=GPIO {self.pin_vac} ({vac_phys}, active_low={self.vac_active_low}) | "
-                f"Buzzer=GPIO {self.pin_buzzer} ({buz_phys}, active_low={self.buzzer_active_low}) | "
+                f"Buzzer=GPIO {self.pin_buzzer} ({self._buz_phys}, {buz_mode}) | "
                 f"E-Stop=GPIO {self.pin_estop} (hw_enabled={self.estop_enabled})",
                 flush=True,
             )
@@ -102,14 +115,31 @@ class VacuumSafetyModule(HardwareModule):
             GPIO.output(self.pin_vac, GPIO.HIGH if turn_on else GPIO.LOW)
         self._last_vac_state = turn_on
 
-    def _write_buzzer_pin(self, turn_on: bool) -> None:
+    def _write_buzzer_pin(self, turn_on: bool, reason: str = "") -> None:
         if not self.enabled or turn_on == self._last_buz_state:
             return
-        if self.buzzer_active_low:
-            GPIO.output(self.pin_buzzer, GPIO.LOW if turn_on else GPIO.HIGH)
+        if self.buzzer_passive_pwm and self._buz_pwm is not None:
+            if turn_on:
+                self._buz_pwm.start(50.0)
+            else:
+                self._buz_pwm.stop()
+                GPIO.output(self.pin_buzzer, GPIO.HIGH if self.buzzer_active_low else GPIO.LOW)
         else:
-            GPIO.output(self.pin_buzzer, GPIO.HIGH if turn_on else GPIO.LOW)
+            if self.buzzer_active_low:
+                GPIO.output(self.pin_buzzer, GPIO.LOW if turn_on else GPIO.HIGH)
+            else:
+                GPIO.output(self.pin_buzzer, GPIO.HIGH if turn_on else GPIO.LOW)
+        prev = self._last_buz_state
         self._last_buz_state = turn_on
+        if prev is not None or turn_on:
+            ts = time.strftime("%H:%M:%S")
+            buz_phys = getattr(self, "_buz_phys", "BCM")
+            tag = f" ({reason})" if reason else ""
+            print(
+                f"[{ts}] [Divisi 2 Buzzer] GPIO {self.pin_buzzer} ({buz_phys}) -> "
+                f"{'ON' if turn_on else 'OFF'}{tag}",
+                flush=True,
+            )
 
     def _is_estop_pressed(self) -> bool:
         if not self.enabled or not self.estop_enabled:
@@ -120,6 +150,25 @@ class VacuumSafetyModule(HardwareModule):
         return raw_val == GPIO.HIGH
 
     def update(self, state: Dict[str, Any], dt: float, now: float) -> None:
+        # Hitung selang waktu kebal loncatan jam NTP (RPi 3B+ tidak memiliki RTC baterai):
+        # gunakan selisih `now` bila wajar (<=10 dtk), dan fallback ke `dt` bila jam meloncat ekstrem.
+        try:
+            safe_dt = max(0.0, min(1.0, float(dt)))
+        except (TypeError, ValueError):
+            safe_dt = 0.0
+        if self._last_now is None:
+            step_dt = safe_dt
+        else:
+            raw_delta = now - self._last_now
+            step_dt = raw_delta if (0.0 <= raw_delta <= 10.0) else safe_dt
+        self._last_now = now
+
+        # Kurangi timer sisa secara monotonik
+        self._alarm_rem = max(0.0, self._alarm_rem - step_dt)
+        self._power_rem = max(0.0, self._power_rem - step_dt)
+        self._vacuum_rem = max(0.0, self._vacuum_rem - step_dt)
+        self._beam_rem = max(0.0, self._beam_rem - step_dt)
+
         # 1. Cek Tombol Fisik E-Stop dengan Debounce (sekali per tekanan)
         if self._is_estop_pressed():
             self._estop_count = min(self._estop_count + 1, DEBOUNCE_COUNT)
@@ -141,7 +190,7 @@ class VacuumSafetyModule(HardwareModule):
             state["shootLedIdx"] = -1
             state["ledOffSeq"] = int(state.get("ledOffSeq", 0)) + 1
             state["buzzerUntil"] = now + ESTOP_ALARM_SEC
-            self._alarm_until = now + ESTOP_ALARM_SEC
+            self._alarm_rem = max(self._alarm_rem, ESTOP_ALARM_SEC)
             ts = time.strftime("%H:%M:%S")
             msg = f"{ts} - INTERUPSI FISIK: Tombol E-Stop Hardware (GPIO {self.pin_estop}) Ditekan!"
             state.setdefault("logs", []).insert(0, msg)
@@ -153,58 +202,77 @@ class VacuumSafetyModule(HardwareModule):
         # Baca state terbaru (mendukung tombol Web HMI maupun interupsi fisik)
         power = bool(state.get("power", False))
         vacuum = bool(state.get("vacuum", False))
+        beam = bool(state.get("beam", False))
         emergency = bool(state.get("emergency", False))
-        shoot = bool(state.get("exposureActive", False) or state.get("shootTrigger", False))
-        try:
-            energy = float(state.get("beamEnergy", 0.0) or 0.0)
-        except (TypeError, ValueError):
-            energy = 0.0
+        off_seq = state.get("ledOffSeq")
 
-        # 2. E-Stop dari Web HMI (transisi False -> True): alarm kontinyu 3 detik
-        if emergency and not self._prev_emergency:
-            self._alarm_until = max(self._alarm_until, now + ESTOP_ALARM_SEC)
+        # 2. Hentikan Darurat / E-Stop (transisi False -> True atau ditekan ulang): bunyi kontinyu 3 detik
+        retriggered_estop = (
+            emergency
+            and off_seq is not None
+            and self._prev_off_seq is not None
+            and off_seq != self._prev_off_seq
+        )
+        if (emergency and not self._prev_emergency) or retriggered_estop:
+            self._alarm_rem = max(self._alarm_rem, ESTOP_ALARM_SEC)
         self._prev_emergency = emergency
+        self._prev_off_seq = off_seq
 
-        # 3. Power ON: bunyi 5 detik saat power baru menyala; Power OFF langsung bersihkan timer
+        # 3. Daya Utama ON: bunyi kontinyu 5 detik saat power baru menyala; Power OFF langsung bersihkan semua timer
         if power and not self._prev_power and not emergency:
-            self._power_until = now + POWER_ON_BEEP_SEC
+            self._power_rem = POWER_ON_BEEP_SEC
+            self._alarm_rem = 0.0
         elif not power:
-            self._power_until = 0.0
-            self._shoot_until = 0.0
+            self._power_rem = 0.0
+            self._vacuum_rem = 0.0
+            self._beam_rem = 0.0
+            if not emergency:
+                self._alarm_rem = 0.0
         self._prev_power = power
 
-        # 4. Tembakan (`exposureActive` / SHOOT): bunyi 1 detik saat tembakan baru aktif
-        if power and not emergency and shoot and not self._prev_shoot:
-            self._shoot_until = now + SHOOT_BEEP_SEC
-        self._prev_shoot = shoot
+        # 4. Pompa Vakum ON: bunyi kontinyu 1 detik saat pompa vakum baru dihidupkan
+        if power and not emergency and vacuum and not self._prev_vacuum:
+            self._vacuum_rem = VACUUM_ON_BEEP_SEC
+        self._prev_vacuum = vacuum
 
-        # 5. Energi maksimum: bunyi terus sampai E-Stop atau Power OFF
-        if emergency or not power:
-            self._max_latched = False
-        elif energy >= self.max_energy:
-            self._max_latched = True
+        # 5. Start Beam ON: bunyi kontinyu 3 detik saat berkas spiral baru dihidupkan
+        if power and not emergency and beam and not self._prev_beam:
+            self._beam_rem = BEAM_ON_BEEP_SEC
+        self._prev_beam = beam
 
         # 6. Kendalikan Relay Kipas Vakum (hanya menyala bila Power ON, Vacuum ON, & tidak E-Stop)
         vac_on = power and vacuum and not emergency
         self._write_vacuum_pin(vac_on)
 
-        # 7. Gabungkan sumber bunyi Buzzer (tetap sinkron dengan `buzzerUntil` dari Core Daemon)
+        # 7. Gabungkan sumber bunyi Buzzer kontinyu (kebal loncatan NTP & sinkron `buzzerUntil` daemon)
         daemon_until = float(state.get("buzzerUntil", 0.0) or 0.0)
-        in_daemon_timer = (now < daemon_until) and (power or emergency)
-        buzzer_on = (
-            now < self._alarm_until
-            or now < self._power_until
-            or now < self._shoot_until
-            or self._max_latched
-            or in_daemon_timer
-        )
+        daemon_rem = daemon_until - now
+        in_daemon_timer = (0.0 < daemon_rem <= 10.0) and (power or emergency)
+        reasons = []
+        if self._alarm_rem > 0.0:
+            reasons.append("estop")
+        if self._power_rem > 0.0:
+            reasons.append("power_on")
+        if self._vacuum_rem > 0.0:
+            reasons.append("vacuum_on")
+        if self._beam_rem > 0.0:
+            reasons.append("beam_on")
+        if in_daemon_timer and not reasons:
+            reasons.append("daemon_timer")
+        buzzer_on = bool(reasons)
         state["buzzerActive"] = buzzer_on
-        self._write_buzzer_pin(buzzer_on)
+        self._write_buzzer_pin(buzzer_on, "+".join(reasons))
 
     def cleanup(self) -> None:
         if self.enabled:
+            if self._buz_pwm is not None:
+                try:
+                    self._buz_pwm.stop()
+                except Exception:
+                    pass
+                self._buz_pwm = None
             self._last_vac_state = None
             self._last_buz_state = None
             self._write_vacuum_pin(False)
-            self._write_buzzer_pin(False)
+            self._write_buzzer_pin(False, "cleanup")
             self.enabled = False

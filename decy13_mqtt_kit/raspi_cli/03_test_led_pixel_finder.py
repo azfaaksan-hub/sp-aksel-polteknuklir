@@ -744,7 +744,7 @@ def main():
 
     config = load_config()
     m = validate_mapping(config)
-    cfg_buzzer_pin = int(config["pins_bcm"].get("buzzer", 27))
+    cfg_buzzer_pin = int(config["pins_bcm"].get("buzzer", 26))
     if args.buzzer_pin is None:
         args.buzzer_pin = cfg_buzzer_pin
     if args.total_leds is None:
@@ -759,7 +759,7 @@ def main():
         parser.error("Pemetaan spiral/beam tidak valid")
     if not 1 <= args.brightness <= 255:
         parser.error("Brightness harus 1..255")
-    if args.buzzer_pin not in (cfg_buzzer_pin, 17, 27):
+    if args.buzzer_pin not in (cfg_buzzer_pin, 17, 26, 27):
         parser.error(f"Buzzer bersama harus mengikuti config_hardware.json (GPIO{cfg_buzzer_pin})")
     if (args.hardware or args.auto) and args.mode != "finder":
         parser.error("--hardware/--auto hanya untuk finder")

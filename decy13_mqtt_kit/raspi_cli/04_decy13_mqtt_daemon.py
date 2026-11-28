@@ -134,7 +134,7 @@ class Decy13CoreDaemon:
             "buzzerUntil": 0.0,
             "logs": ["Sistem Core Daemon RPi 3B+ siap. Menunggu perintah MQTT."]
         }
-        self.last_tick = time.time()
+        self.last_tick = time.monotonic()
 
         # Daftar plugin modul dari Divisi 2, 3, dan 4.
         # PENTING: LcdDisplayModule (SPI0 ILI9341) dinonaktifkan secara default saat
@@ -202,7 +202,9 @@ class Decy13CoreDaemon:
                     self.add_log("Ditolak: Nyalakan Power utama terlebih dahulu!")
                     return
                 s["vacuum"] = not s["vacuum"]
-                self.add_log("Tahap 4: Kipas Vakum " + ("ON (Memompa ruang hampa)" if s["vacuum"] else "OFF"))
+                if s["vacuum"]:
+                    s["buzzerUntil"] = max(float(s.get("buzzerUntil", 0.0) or 0.0), time.time() + 1.0)
+                self.add_log("Tahap 4: Kipas Vakum " + ("ON (Memompa ruang hampa, Buzzer 1 detik)" if s["vacuum"] else "OFF"))
 
             elif cmd == "TOGGLE_INTERLOCK":
                 if s["power"] and s["vacuum"] and s["pressure"] <= 1e-3:
@@ -214,21 +216,27 @@ class Decy13CoreDaemon:
                     self.add_log("Gagal: Power & Vacuum harus ON sebelum mengunci Interlock!")
 
             elif cmd == "AUTO_INIT":
+                was_power = bool(s["power"])
                 s["emergency"] = False
                 s["power"] = True
                 s["vacuum"] = True
                 s["basePressure"] = 5.0e-6
                 s["pressure"] = 5.0e-6
                 s["interlocks"] = True
+                if not was_power:
+                    s["buzzerUntil"] = time.time() + 5.0
                 self.add_log("Tahap 5: AUTO-INIT OK — Power, Vakum, dan Interlock SIAP.")
 
             elif cmd == "START_BEAM":
                 if s["power"] and s["vacuum"] and s["interlocks"]:
+                    was_beam = bool(s["beam"])
                     s["emergency"] = False
                     s["beam"] = True
                     s["exposureActive"] = False
                     s["activeLedIdx"] = CFG["led_mapping"]["spiral_start_idx"]
-                    self.add_log("Tahap 6: START BEAM! LED Strip Spiral & RF aktif.")
+                    if not was_beam:
+                        s["buzzerUntil"] = max(float(s.get("buzzerUntil", 0.0) or 0.0), time.time() + 3.0)
+                    self.add_log("Tahap 6: START BEAM! LED Strip Spiral & RF aktif (Buzzer 3 detik).")
                 else:
                     self.add_log("START BEAM ditolak: Pastikan Power, Vacuum, & Interlock aktif!")
 
@@ -281,8 +289,9 @@ class Decy13CoreDaemon:
 
     def step_physics_and_hardware(self) -> None:
         now = time.time()
-        dt = max(0.01, min(1.0, now - self.last_tick))
-        self.last_tick = now
+        mono = time.monotonic()
+        dt = max(0.01, min(1.0, mono - self.last_tick))
+        self.last_tick = mono
 
         with self.lock:
             s = self.state

@@ -121,7 +121,7 @@ Yang dilakukan skrip secara otomatis:
 Setelah masuknya paket `integrasi-tiga-tft.patch` (`207ac04`) dari Divisi 4, jalur fisik terbagi bersih menjadi **3 domain hardware yang tidak saling bersentuhan**:
 
 1. **Domain Header 40-Pin GPIO RPi 3B+ → Eksklusif Divisi 2 & Divisi 3:**
-   - **Divisi 2 (Vakum & Safety):** **`GPIO 27` (`Pin Fisik 13`, Buzzer `+` & `Pin 09` `GND` — menggantikan `Pin 11 / GPIO 17`)**, `GPIO 21` (`Pin 40`, Relay Kipas 12V Active-LOW & `Pin 02` `5V` & `Pin 39` `GND`), serta reservasi `GPIO 22` (`Pin 15`, E-Stop Pull-Up — nonaktif/N/A karena E-Stop lewat Web HMI HTML).
+   - **Divisi 2 (Vakum & Safety):** **`GPIO 26` (`Pin Fisik 37`, Buzzer `+` & `Pin 39` `GND` — Active-HIGH)**, `GPIO 21` (`Pin 40`, Relay Kipas 12V Active-LOW & `Pin 02` `5V` & `Pin 39` `GND`), serta reservasi `GPIO 22` (`Pin 15`, E-Stop Pull-Up — nonaktif/N/A karena E-Stop lewat Web HMI HTML).
    - **Divisi 3 (LED Strip WS2812B — 437 LED Single-Writer):** **`GPIO 12` (`Pin Fisik 32` via resistor `330–470 Ω`, jalur `PWM0` + `DMA Channel 10` @ `800 kHz`, menggantikan `Pin Fisik 12 / GPIO 18` yang rusak)**, daya **PSU Eksternal 5V** + *Common Ground* ke `Pin 39` / `Pin 06`. Saat uji isolasi terpisah (`03_test_led_pixel_finder.py --hardware`, daemon mati), skrip Divisi 3 ikut memakai **Buzzer Bersama `GPIO 17` (`Pin 11`)** untuk bunyi `1..9x` dan otomatis melakukan `GPIO.cleanup(17)` saat selesai, sedangkan saat operasional penuh `04_decy13_mqtt_daemon.py` hanya `VacuumSafetyModule` yang memegang `GPIO 17` (bergantian waktu / **0 konflik runtime**).
    - **Audio Onboard RPi Dimatikan (`dtparam=audio=off`):** Menutup potensi konflik `snd_bcm2835` dengan kanal `PWM0` pada `GPIO 12`.
    - **Pin `SPI0` RPi (`GPIO 8, 9, 10, 11, 24, 25`):** Kini bebas 100% dan tetap siap sebagai cadangan fallback apabila suatu saat memakai layar SPI langsung (`mod_lcd_ili9341.py`).
@@ -161,7 +161,7 @@ flowchart TB
     end
 
     subgraph HW_GPIO["Aktuator Langsung GPIO RPi (Divisi 2 & Divisi 3)"]
-        BUZZ["Divisi 2: Buzzer SFM-27 (GPIO 27 / Pin 13, GND Pin 09)"]
+        BUZZ["Divisi 2: Buzzer SFM-27 (GPIO 26 / Pin 37, GND Pin 39)"]
         RELAY["Divisi 2: Relay Kipas 12V Active-LOW (GPIO 21 / Pin 40, 5V Pin 02, GND Pin 39) + PSU 12V Terisolasi"]
         LED["Divisi 3: LED Strip WS2812B (GPIO 12 / Pin 32 via R 330-470 Ohm + PSU 5V + Common GND Pin 39)"]
     end
@@ -210,8 +210,8 @@ flowchart TB
      v [DIVISI 2]                    v [DIVISI 3]               v                          v
 +----+-------------------------+ +---+-----------------------+ +------------------+ +------+------------------+
 | VAKUM & BUZZER (RPi.GPIO)    | | LED WS2812B (PWM0/DMA10)  | | /dev/arduino_hmi | | /dev/arduino_sensor     |
-| - Pin 13 GPIO27 -> (+) Buzz  | | - Pin 32 GPIO12 -> [R330] | | UNO 1 + TFT 1    | | UNO 2 + TFT 2 (SD Kosong)|
-| - Pin 09 GND    -> (-) Buzz  | |   -> DIN LED (Pin12 Rusak)| | Shield D2-D9,    | | Shield D2-D9, A0-A4     |
+| - Pin 37 GPIO26 -> (+) Buzz  | | - Pin 32 GPIO12 -> [R330] | | UNO 1 + TFT 1    | | UNO 2 + TFT 2 (SD Kosong)|
+| - Pin 39 GND    -> (-) Buzz  | |   -> DIN LED (Pin12 Rusak)| | Shield D2-D9,    | | Shield D2-D9, A0-A4     |
 | - Pin 02 5V     -> VCC Relay | | - PSU Eksternal 5V 3A:    | | A0-A4 (Touch)    | | D10=HIGH (SD CS OFF)    |
 | - Pin 40 GPIO21 -> IN Relay  | |   (+)5V -> VCC LED Strip  | |                  | | IC 74HC4051 (5V):       |
 |   (Active-LOW)               | |   (-)GND-> GND Strip +    | +------------------+ | - Z/COM->A5, S0->D11,   |
@@ -239,9 +239,9 @@ flowchart TB
              (I2C1 SDA) GPIO 2 [03] || [04] 5V  ---> (Cadangan / Jangan bebani LED atau 3 Uno!)
              (I2C1 SCL) GPIO 3 [05] || [06] GND ---> [DIV 3] Common GND LED & PSU 5V
                         GPIO 4 [07] || [08] GPIO 14 (UART TXD)
-  [DIV 2] (-) Buzzer <---  GND [09] || [10] GPIO 15 (UART RXD)
+                (Cadangan)  GND [09] || [10] GPIO 15 (UART RXD)
              (Diganti) GPIO17 [11] || [12] GPIO 18 (RUSAK - JANGAN DIPAKAI!)
-  [DIV 2] (+) Buzzer <- GPIO27 [13] || [14] GND     ---> [DIV 2] Reservasi COM E-Stop
+                       GPIO27 [13] || [14] GND     ---> [DIV 2] Reservasi COM E-Stop
   [DIV 2] (Res. E-Stop) GPIO22 [15] || [16] GPIO 23
  [DIV 4 SPI Cad.] 3.3V <- 3.3V [17] || [18] GPIO 24 ---> [DIV 4 SPI Cad.] LCD DC
  [DIV 4 SPI Cad.] MOSI <- GPIO10 [19] || [20] GND   ---> [DIV 4 SPI Cad.] GND LCD
@@ -253,7 +253,7 @@ flowchart TB
                         GPIO 6 [31] || [32] GPIO 12 ---> [DIV 3] LED WS2812B DIN (PWM0 via R 330-470Ω)
                        GPIO 13 [33] || [34] GND     (Cadangan)
                        GPIO 19 [35] || [36] GPIO 16
-                       GPIO 26 [37] || [38] GPIO 20
+  [DIV 2] (+) Buzzer <- GPIO26 [37] || [38] GPIO 20
   [DIV 2 & 3] Common GND < GND [39] || [40] GPIO 21 ---> [DIV 2] IN Relay Kipas 12V (Active-LOW)
 ```
 
